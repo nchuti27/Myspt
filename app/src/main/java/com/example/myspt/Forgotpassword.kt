@@ -38,17 +38,17 @@ class Forgotpassword : AppCompatActivity() {
             if(fMail.isEmpty()){
                 edtFemail!!.setError("Please input your email")
             } else {
-                // 4. ใช้คำสั่ง Firebase ส่งอีเมลรีเซ็ตรหัสผ่าน
+
                 auth.sendPasswordResetEmail(fMail)
                     .addOnCompleteListener { task ->
                         if (task.isSuccessful) {
-                            // ส่งสำเร็จ
-                            Toast.makeText(this, "อีเมลรีเซ็ตรหัสผ่านถูกส่งไปที่ $fMail แล้ว", Toast.LENGTH_LONG).show()
-                            // (Optional) พากลับไปหน้า Login ทันที
+
+                            Toast.makeText(this, "The password reset email has been sent to $fMail ", Toast.LENGTH_LONG).show()
+
                             finish()
                         } else {
-                            // เกิดข้อผิดพลาด (เช่น ไม่พบอีเมลนี้ในระบบ)
-                            Toast.makeText(this, "ผิดพลาด: ${task.exception?.message}", Toast.LENGTH_SHORT).show()
+
+                            Toast.makeText(this, "Fail: ${task.exception?.message}", Toast.LENGTH_SHORT).show()
                         }
                     }
             }
