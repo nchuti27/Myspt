@@ -57,7 +57,11 @@
             android:name=".AddFriend"
             android:exported="false" />
 
-        <activity android:name=".RecentBill" android:exported="false" />
+        <activity android:name=".RecentBill"
+            android:exported="false" />
+
+        <activity android:name=".DebtSummary"
+            android:exported="false" />
     </application>
 
 </manifest>
