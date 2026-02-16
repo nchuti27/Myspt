@@ -1,4 +1,5 @@
 package com.example.myspt
+
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
@@ -9,6 +10,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import com.google.firebase.auth.FirebaseAuth
 
 class Login : AppCompatActivity() {
     var btnLogin: Button? = null
@@ -16,50 +18,60 @@ class Login : AppCompatActivity() {
     var edtLpass : EditText? = null
     var jointxt : TextView? = null
     var forgotP : TextView? = null
-    /*Login
-    title_txt *
-    user_pt*
-    pass_pt*
-    forgot_txt
-    login_btn *
-    join_txt*/
-    override fun onCreate(savedInstanceState: Bundle?) {
 
+    private lateinit var auth: FirebaseAuth
+
+    override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_login)
+
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
+
+
+        auth = FirebaseAuth.getInstance()
+
         init()
+
         btnLogin!!.setOnClickListener {
-            val uUsername = edtLuser!!.text.toString().trim()
+            val uEmail = edtLuser!!.text.toString().trim()
             val uPass = edtLpass!!.text.toString().trim()
 
-            if (uUsername.isEmpty()) {
-                edtLuser!!.setError("Please input your username")
+            if (uEmail.isEmpty()) {
+                edtLuser!!.setError("Please input your email")
             } else if (uPass.isEmpty()) {
                 edtLpass!!.setError("Please input your password")
             } else {
-                Toast.makeText(this, "Welcome $uUsername", Toast.LENGTH_LONG).show()
-                val intent = Intent(this, MainActivity::class.java)
-                startActivity(intent)
-            }
 
+                auth.signInWithEmailAndPassword(uEmail, uPass)
+                    .addOnCompleteListener { task ->
+                        if (task.isSuccessful) {
+
+                            Toast.makeText(this, "Welcome to Split Next", Toast.LENGTH_SHORT).show()
+                            val intent = Intent(this, MainActivity::class.java)
+                            startActivity(intent)
+                            finish()
+                        } else {
+
+                            Toast.makeText(this, "Login Failed: ${task.exception?.message}", Toast.LENGTH_LONG).show()
+                        }
+                    }
+            }
         }
+
         forgotP?.setOnClickListener {
             val intent = Intent(this, Forgotpassword::class.java)
             startActivity(intent)
-
         }
 
         jointxt?.setOnClickListener {
             val intent = Intent(this, Register::class.java)
             startActivity(intent)
-    }
-
+        }
     }
 
     private fun init() {
