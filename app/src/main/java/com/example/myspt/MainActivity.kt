@@ -44,7 +44,6 @@ class MainActivity : AppCompatActivity() {
         setupFriendList() // แสดงแค่ปุ่มบวกที่ท้ายเพื่อน
         setupGroupList()  // แสดงแค่ปุ่มบวกที่ท้ายกลุ่ม
 
-        // ส่วน Click Listener ของปุ่มอื่นๆ ยังคงเดิม
         imgUserProfile?.setOnClickListener { startActivity(Intent(this, EditProfile::class.java)) }
         btnNotification?.setOnClickListener { startActivity(Intent(this, notification::class.java)) }
         tvSeeMoreFriend?.setOnClickListener { startActivity(Intent(this, Friend_list::class.java)) }
