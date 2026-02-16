@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
+    <color name="purple_500">#6200EE</color>
+
+    <color name="fintech_blue">#3D79CA</color>
+    <color name="fintech_light_bg">#F4F8FB</color>
+    <color name="fintech_card_bg">#FFFFFF</color>
+    <color name="fintech_text_main">#1A1A1A</color>
+    <color name="fintech_text_sub">#666666</color>
+
+    <color name="fintech_blue_dark">#2A5A9A</color>
+    <color name="fintech_border">#E0E6ED</color>
+    <color name="red_error">#E53935</color>
+
+    <style name="CircleImageStyle">
+        <item name="cornerSize">50%</item>
+    </style>
+</resources>
