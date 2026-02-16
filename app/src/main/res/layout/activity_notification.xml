@@ -5,7 +5,7 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/white"
+    android:background="@color/fintech_light_bg"
     android:padding="24dp">
 
     <ImageButton
@@ -15,6 +15,7 @@
         android:background="?attr/selectableItemBackgroundBorderless"
         android:contentDescription="Back"
         android:src="@drawable/ic_arrow_back"
+        app:tint="@color/fintech_blue_dark"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -23,7 +24,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Notification"
-        android:textColor="@android:color/black"
+        android:textColor="@color/fintech_blue_dark"
         android:textSize="20sp"
         android:textStyle="bold"
         app:layout_constraintBottom_toBottomOf="@+id/btnBack"
@@ -45,10 +46,10 @@
             android:layout_width="123dp"
             android:layout_height="match_parent"
             android:layout_marginEnd="8dp"
-            android:backgroundTint="@android:color/black"
+            android:backgroundTint="@color/fintech_blue"
             android:text="Friend"
             android:textAllCaps="false"
-            android:textColor="@android:color/white"
+            android:textColor="@color/white"
             android:textSize="14sp"
             app:cornerRadius="20dp" />
 
@@ -56,10 +57,10 @@
             android:id="@+id/btnTabGroup"
             android:layout_width="118dp"
             android:layout_height="wrap_content"
-            android:backgroundTint="#E0E0E0"
+            android:backgroundTint="@color/fintech_card_bg"
             android:text="Group"
             android:textAllCaps="false"
-            android:textColor="@android:color/black"
+            android:textColor="@color/fintech_text_sub"
             android:textSize="14sp"
             app:cornerRadius="20dp" />
     </LinearLayout>
