@@ -12,9 +12,6 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.MyApplication">
         <activity
-            android:name=".FriendOwe"
-            android:exported="false" />
-        <activity
             android:name=".HomeFriendAdapter"
             android:exported="false" />
         <activity
@@ -59,11 +56,11 @@
         <activity
             android:name=".AddFriend"
             android:exported="false" />
-        <activity
-            android:name=".RecentBill"
+
+        <activity android:name=".RecentBill"
             android:exported="false" />
-        <activity
-            android:name=".DebtSummary"
+
+        <activity android:name=".DebtSummary"
             android:exported="false" />
     </application>
 

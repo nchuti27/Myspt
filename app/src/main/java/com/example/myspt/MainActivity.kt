@@ -19,6 +19,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
 class MainActivity : AppCompatActivity() {
 
@@ -39,17 +40,28 @@ class MainActivity : AppCompatActivity() {
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
 
+
+        val mainView = findViewById<View>(R.id.main)
+        mainView?.let {
+            ViewCompat.setOnApplyWindowInsetsListener(it) { v, insets ->
+                val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+                v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+                insets
+            }
+        }
+
         init()
 
-        setupFriendList() // แสดงแค่ปุ่มบวกที่ท้ายเพื่อน
-        setupGroupList()  // แสดงแค่ปุ่มบวกที่ท้ายกลุ่ม
+        setupFriendList()
+        setupGroupList()
+
 
         imgUserProfile?.setOnClickListener { startActivity(Intent(this, EditProfile::class.java)) }
         btnNotification?.setOnClickListener { startActivity(Intent(this, notification::class.java)) }
         tvSeeMoreFriend?.setOnClickListener { startActivity(Intent(this, Friend_list::class.java)) }
         tvSeeMoreGroup?.setOnClickListener { startActivity(Intent(this, Group_list::class.java)) }
         btnSplitBill?.setOnClickListener { startActivity(Intent(this, BillSplit::class.java)) }
-        btnRecentBill?.setOnClickListener { startActivity(Intent(this, RecentBill::class.java)) }
+        btnRecentBill?.setOnClickListener { startActivity(Intent(this, BillDetail::class.java)) }
         btnOwe?.setOnClickListener { startActivity(Intent(this, Owe::class.java)) }
         btnLogout?.setOnClickListener { showLogoutDialog() }
     }
@@ -67,29 +79,64 @@ class MainActivity : AppCompatActivity() {
         rvGroups = findViewById(R.id.rvGroups)
     }
 
-    // ฟังก์ชันเพื่อน: ไม่มีข้อมูลคนอื่น มีแค่ปุ่มบวกอันเดียว
+
     private fun setupFriendList() {
+        val db = FirebaseFirestore.getInstance()
+        val myUid = FirebaseAuth.getInstance().currentUser?.uid
         val friendItems = ArrayList<CircleItem>()
 
-        // ใส่แค่ปุ่มบวก (+) อย่างเดียว
-        friendItems.add(CircleItem(name = "เพิ่มเพื่อน", isAddButton = true))
+        if (myUid == null) return
 
+
+        db.collection("users").document(myUid).get().addOnSuccessListener { document ->
+            val friendUids = document.get("friends") as? List<String> ?: listOf()
+
+            if (friendUids.isEmpty()) {
+
+                friendItems.add(CircleItem(name = "Add Friend", isAddButton = true))
+                updateFriendAdapter(friendItems)
+            } else {
+
+                var count = 0
+                for (fUid in friendUids) {
+                    db.collection("users").document(fUid).get().addOnSuccessListener { fDoc ->
+                        val name = fDoc.getString("name") ?: "Unknown"
+                        friendItems.add(CircleItem(id = fUid, name = name))
+                        count++
+
+
+                        if (count == friendUids.size) {
+                            friendItems.add(CircleItem(name = "Add Friend", isAddButton = true))
+                            updateFriendAdapter(friendItems)
+                        }
+                    }
+                }
+            }
+        }.addOnFailureListener {
+
+            friendItems.add(CircleItem(name = "Add Friend", isAddButton = true))
+            updateFriendAdapter(friendItems)
+        }
+    }
+
+
+    private fun updateFriendAdapter(items: List<CircleItem>) {
         rvFriends?.apply {
             layoutManager = LinearLayoutManager(this@MainActivity, LinearLayoutManager.HORIZONTAL, false)
-            adapter = CircleAdapter(friendItems) { item ->
+            adapter = CircleAdapter(items) { item ->
                 if (item.isAddButton) {
                     startActivity(Intent(this@MainActivity, AddFriend::class.java))
+                } else {
+                    Toast.makeText(this@MainActivity, "Friend: ${item.name}", Toast.LENGTH_SHORT).show()
                 }
             }
         }
     }
 
-    // ฟังก์ชันกลุ่ม: ไม่มีข้อมูลกลุ่ม มีแค่ปุ่มบวกอันเดียว
+
     private fun setupGroupList() {
         val groupItems = ArrayList<CircleItem>()
-
-        // ใส่แค่ปุ่มบวก (+) สำหรับสร้างกลุ่มใหม่
-        groupItems.add(CircleItem(name = "สร้างกลุ่ม", isAddButton = true))
+        groupItems.add(CircleItem(name = "Create Group", isAddButton = true))
 
         rvGroups?.apply {
             layoutManager = LinearLayoutManager(this@MainActivity, LinearLayoutManager.HORIZONTAL, false)
