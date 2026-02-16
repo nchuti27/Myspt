@@ -38,6 +38,7 @@ class MainActivity : AppCompatActivity() {
 
     // *** 1. เพิ่มตัวแปรสำหรับ RecyclerView ***
     private var rvFriends: RecyclerView? = null
+    private var rvGroups: RecyclerView? = null // <--- [เพิ่มใหม่] ตัวแปร RecyclerView ของ Group
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -55,7 +56,9 @@ class MainActivity : AppCompatActivity() {
         }
 
         init() // เชื่อมตัวแปร
-        setupFriendList() // *** 2. เรียกฟังก์ชันสร้างรายการเพื่อน ***
+
+        setupFriendList() // ฟังก์ชันสร้างรายการเพื่อน
+        setupGroupList()  // <--- [เพิ่มใหม่] เรียกฟังก์ชันสร้างรายการกลุ่ม
 
         // ตั้งค่าปุ่มกดต่างๆ
         imgUserProfile?.setOnClickListener {
@@ -107,12 +110,12 @@ class MainActivity : AppCompatActivity() {
         btnOwe = findViewById(R.id.btnOwe)
         btnLogout = findViewById(R.id.btnLogout)
 
-        // *** 3. เชื่อมต่อ ID ของ RecyclerView (ต้องตรงกับใน XML) ***
+        // *** 3. เชื่อมต่อ ID ของ RecyclerView ***
         rvFriends = findViewById(R.id.rvFriends)
+        rvGroups = findViewById(R.id.rvGroups) // <--- [เพิ่มใหม่] เชื่อม ID กับ XML
     }
 
-    // *** 4. ฟังก์ชันสำหรับสร้างข้อมูลและแสดงผล List ***
-    // (เหลือไว้แค่อันเดียว ที่ใช้ HomeFriendAdapter)
+    // *** 4. ฟังก์ชันสำหรับสร้างข้อมูลและแสดงผล List Friend ***
     private fun setupFriendList() {
         val friendList = ArrayList<FriendData>()
         friendList.add(FriendData("Somchai", "ID: 001"))
@@ -122,13 +125,32 @@ class MainActivity : AppCompatActivity() {
 
         // ตรวจสอบว่า rvFriends เชื่อมต่อแล้ว
         if (rvFriends != null) {
-
             // ใช้ Adapter ตัวใหม่ (HomeFriendAdapter) เพื่อแสดงผลแบบวงกลม
             val adapter = HomeFriendAdapter(friendList)
             rvFriends?.adapter = adapter
 
             // กำหนดเป็นแนวนอน (Horizontal)
             rvFriends?.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+        }
+    }
+
+    // แก้ไขฟังก์ชันนี้ใน MainActivity.kt
+    private fun setupGroupList() {
+        val groupList = ArrayList<GroupData>()
+
+        // เพิ่มข้อมูลตัวอย่าง
+        groupList.add(GroupData("Trip Japan"))
+        groupList.add(GroupData("Football"))
+        groupList.add(GroupData("Office"))
+        groupList.add(GroupData("Family"))
+
+        if (rvGroups != null) {
+            // *** เปลี่ยนตรงนี้: จาก GroupAdapter เป็น HomeGroupAdapter ***
+            val adapter = HomeGroupAdapter(groupList)
+            rvGroups?.adapter = adapter
+
+            // กำหนดเป็นแนวนอน (Horizontal) เหมือนเดิม
+            rvGroups?.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
         }
     }
 
