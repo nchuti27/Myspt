@@ -50,7 +50,7 @@ class MainActivity : AppCompatActivity() {
         tvSeeMoreFriend?.setOnClickListener { startActivity(Intent(this, Friend_list::class.java)) }
         tvSeeMoreGroup?.setOnClickListener { startActivity(Intent(this, Group_list::class.java)) }
         btnSplitBill?.setOnClickListener { startActivity(Intent(this, BillSplit::class.java)) }
-        btnRecentBill?.setOnClickListener { startActivity(Intent(this, BillDetail::class.java)) }
+        btnRecentBill?.setOnClickListener { startActivity(Intent(this, RecentBill::class.java)) }
         btnOwe?.setOnClickListener { startActivity(Intent(this, Owe::class.java)) }
         btnLogout?.setOnClickListener { showLogoutDialog() }
     }
