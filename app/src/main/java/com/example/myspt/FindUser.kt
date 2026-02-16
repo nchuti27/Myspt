@@ -10,38 +10,87 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+// --- 1. เพิ่ม Import ที่จำเป็น ---
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FieldValue
+import com.google.firebase.firestore.FirebaseFirestore
 
 class FindUser : AppCompatActivity() {
     var btnBack: ImageButton? = null
     var tvFoundUserName: TextView? = null
     var btnAddFriend: Button? = null
 
+    // --- 2. ประกาศตัวแปร DB ---
+    private lateinit var db: FirebaseFirestore
+    private lateinit var auth: FirebaseAuth
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContentView(R.layout.activity_find_user)
+        setContentView(R.layout.activity_finduser)
+
+        db = FirebaseFirestore.getInstance()
+        auth = FirebaseAuth.getInstance()
+
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
         init()
-        val receivedName = intent.getStringExtra("USER_NAME_KEY")
+
+        // --- 3. รับค่า FRIEND_UID ที่ส่งมาจากหน้า AddFriend ---
+        val receivedName = intent.getStringExtra("FRIEND_NAME")
+        val friendUid = intent.getStringExtra("FRIEND_UID")
+
         if (receivedName != null) {
-            tvFoundUserName!!.text = receivedName
+            tvFoundUserName!!.text = "Found User: $receivedName"
         } else {
             tvFoundUserName!!.text = "User not found"
         }
 
         btnBack!!.setOnClickListener {
-            val intent = Intent(this, AddFriend::class.java)
-            startActivity(intent)
-        }
-        btnAddFriend!!.setOnClickListener {
-            Toast.makeText(this, "The request has been submitted", Toast.LENGTH_LONG).show()
+            finish() // ใช้ finish() เพื่อย้อนกลับไปหน้าเดิมได้เลย
         }
 
+        btnAddFriend!!.setOnClickListener {
+            if (friendUid != null) {
+                // --- 4. เรียกฟังก์ชันบันทึกเพื่อนลง Database ---
+                addFriendToFirestore(friendUid)
+            } else {
+                Toast.makeText(this, "Cannot add this user", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
+
+    private fun addFriendToFirestore(friendUid: String) {
+        val myUid = auth.currentUser?.uid
+
+        if (myUid != null) {
+            // ป้องกันการแอดตัวเอง
+            if (myUid == friendUid) {
+                Toast.makeText(this, "You cannot add yourself", Toast.LENGTH_SHORT).show()
+                return
+            }
+
+            // บันทึก UID เพื่อนลงในฟิลด์ "friends" (แบบ Array) ของเรา
+            db.collection("users").document(myUid)
+                .update("friends", FieldValue.arrayUnion(friendUid))
+                .addOnSuccessListener {
+                    Toast.makeText(this, "Friend added successfully!", Toast.LENGTH_LONG).show()
+
+                    // เมื่อแอดเสร็จ ให้กลับไปหน้า Dashboard หลัก
+                    val intent = Intent(this, MainActivity::class.java)
+                    intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP // เคลียร์หน้าเก่า ๆ ทิ้ง
+                    startActivity(intent)
+                    finish()
+                }
+                .addOnFailureListener { e ->
+                    Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+        }
+    }
+
     private fun init() {
         btnBack = findViewById(R.id.btnBackF)
         tvFoundUserName = findViewById(R.id.tvFoundUserName)

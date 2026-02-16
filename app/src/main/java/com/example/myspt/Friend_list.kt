@@ -59,13 +59,9 @@ class Friend_list : AppCompatActivity() {
             finish()
         }
 
-        // ==========================================
-        // 3. ส่วนการตั้งค่า List (RecyclerView)
-        // ==========================================
 
         friendList = ArrayList()
 
-        // *** เพิ่มข้อมูลตัวอย่าง (Dummy Data) ไม่งั้น List จะว่างเปล่า ***
         friendList?.add(FriendData("Somchai", "User ID: 001"))
         friendList?.add(FriendData("Somsak", "User ID: 002"))
         friendList?.add(FriendData("Somsri", "User ID: 003"))

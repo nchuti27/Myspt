@@ -14,7 +14,7 @@ class HomeGroupAdapter(private val groupList: ArrayList<GroupData>) :
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        // *** จุดสำคัญ: เรียกใช้ Layout วงกลมที่เราเพิ่งสร้าง ***
+
         val view = LayoutInflater.from(parent.context).inflate(R.layout.item_home_group, parent, false)
         return ViewHolder(view)
     }

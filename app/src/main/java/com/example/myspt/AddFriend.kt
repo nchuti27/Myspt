@@ -10,32 +10,37 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import com.google.firebase.firestore.FirebaseFirestore // เพิ่มตัวนี้
 
 class AddFriend : AppCompatActivity() {
 
-    var etSearchUser: EditText? = null
-    var btnAdd: Button? = null
-    var btnBackAF: ImageButton? = null
+    private var etSearchUser: EditText? = null
+    private var btnAdd: Button? = null
+    private lateinit var db: FirebaseFirestore
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContentView(R.layout.activity_add_friend)
+        setContentView(R.layout.activity_addfriend)
+
+
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
+
+        db = FirebaseFirestore.getInstance()
         init()
     }
-    private fun init() {
-        etSearchUser = findViewById<EditText>(R.id.etSearchUser)
-        btnAdd = findViewById<Button>(R.id.btnAdd)
 
+    private fun init() {
+        etSearchUser = findViewById(R.id.etSearchUser)
+        btnAdd = findViewById(R.id.btnAdd)
         val btnBack = findViewById<ImageButton>(R.id.btnBackF)
 
-        btnBack.setOnClickListener{
-            val intent = Intent(this, Friend_list::class.java)
-            startActivity(intent)
+        btnBack.setOnClickListener {
+            finish()
         }
 
         btnAdd?.setOnClickListener {
@@ -46,21 +51,34 @@ class AddFriend : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            // 2. ถ้ามีข้อมูล ให้เรียกฟังก์ชันค้นหา
             checkUserAndNavigate(username)
         }
     }
-    private fun checkUserAndNavigate(username: String) {
-        // จำลอง Database
-        val mockDatabase = listOf("admin", "friend1", "somchai")
-        val isUserFound = mockDatabase.contains(username)
 
-        if (isUserFound) {
-            val intent = Intent(this, FindUser::class.java)
-            intent.putExtra("FRIEND_NAME", username)
-            startActivity(intent)
-        } else {
-            Toast.makeText(this, "Not found user", Toast.LENGTH_SHORT).show()
-        }
+    private fun checkUserAndNavigate(username: String) {
+
+        db.collection("users")
+            .whereEqualTo("username", username)
+            .get()
+            .addOnSuccessListener { documents ->
+                if (!documents.isEmpty) {
+
+                    for (document in documents) {
+                        val friendName = document.getString("name")
+                        val friendUid = document.id
+
+                        val intent = Intent(this, FindUser::class.java)
+                        intent.putExtra("FRIEND_NAME", friendName)
+                        intent.putExtra("FRIEND_UID", friendUid)
+                        startActivity(intent)
+                    }
+                } else {
+
+                    Toast.makeText(this, "Not found user", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .addOnFailureListener { e ->
+                Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
     }
 }
