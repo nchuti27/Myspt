@@ -11,6 +11,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
 class Register : AppCompatActivity() {
     var edtRname: EditText? = null
@@ -22,6 +23,8 @@ class Register : AppCompatActivity() {
     var edtMail : EditText? = null
 
     private lateinit var auth: FirebaseAuth
+    // 2. ประกาศตัวแปร Firestore
+    private lateinit var db: FirebaseFirestore
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,6 +38,8 @@ class Register : AppCompatActivity() {
         }
 
         auth = FirebaseAuth.getInstance()
+        db = FirebaseFirestore.getInstance()
+
         init()
 
         btnRegis!!.setOnClickListener {
@@ -46,14 +51,13 @@ class Register : AppCompatActivity() {
 
             val checkName = "[a-zA-Z]{3,12}"
             val checkUser = "[a-zA-Z0-9_]{6,12}"
-            val checkPass = "[a-zA-Z]+[0-9]+[a-zA-Z0-9]*"
-
+            val checkPass = "^[A-Za-z0-9]{6,12}$"
 
             if (!rName.matches(checkName.toRegex())) {
                 edtRname!!.setError("Name must be 3-12 characters")
             }
             else if (!rUser.matches(checkUser.toRegex())) {
-                edtRUser!!.setError("User must be 6-12 characters (A-Z, 0-9)")
+                edtRUser!!.setError("User must be 6-12 characters (A-Z,0-9)")
             }
             else if (rPass.isEmpty() || rPass != rCfpass) {
                 edtRConf!!.setError("Passwords do not match")
@@ -68,27 +72,59 @@ class Register : AppCompatActivity() {
                 edtMail!!.setError("Only @gmail.com is allowed")
             }
             else {
-
                 auth.createUserWithEmailAndPassword(rMail, rPass)
                     .addOnCompleteListener { task ->
                         if (task.isSuccessful) {
-                            Toast.makeText(this, "Register Success", Toast.LENGTH_LONG).show()
-                            val intent = Intent(this, Login::class.java)
-                            startActivity(intent)
-                            finish()
+                            // สร้างAcc สำเร็จ ดึง UID มาบันทึก Profile ลง Firestore
+                            val uid = auth.currentUser?.uid
+                            saveUser(uid, rName, rUser, rMail)
                         } else {
-                            Toast.makeText(this, "Error: ${task.exception?.message}", Toast.LENGTH_LONG).show()
+                            val exception = task.exception
+                            if (exception is com.google.firebase.auth.FirebaseAuthUserCollisionException) {
+                                // Email นี้เคยถูกใช้งานไปแล้ว
+                                edtMail!!.setError("This email is already registered")
+                                Toast.makeText(this, "This email is already in use. Please use another email",
+                                    Toast.LENGTH_SHORT).show()
+                            } else {
+                                Toast.makeText(this, "Error: ${exception?.message}",
+                                    Toast.LENGTH_SHORT).show()
+                            }
                         }
                     }
             }
         }
-
 
         btnRback!!.setOnClickListener {
             val intent = Intent(this, Login::class.java)
             startActivity(intent)
             finish()
         }
+    }
+
+
+    private fun saveUser(uid: String?, name: String, username: String, email: String) {
+        if (uid == null) return
+
+        val userProfile = hashMapOf(
+            "uid" to uid,
+            "name" to name,
+            "username" to username,
+            "email" to email,
+            "qr_code" to "",
+            "friends" to arrayListOf<String>()
+        )
+
+        db.collection("users").document(uid)
+            .set(userProfile)
+            .addOnSuccessListener {
+                Toast.makeText(this, "Register & Profile Saved!", Toast.LENGTH_SHORT).show()
+                val intent = Intent(this, Login::class.java)
+                startActivity(intent)
+                finish()
+            }
+            .addOnFailureListener { e ->
+                Toast.makeText(this, "Database Error: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
     }
 
     private fun init() {

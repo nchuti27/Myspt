@@ -18,139 +18,87 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.firebase.auth.FirebaseAuth
 
 class MainActivity : AppCompatActivity() {
 
-    // ประกาศตัวแปร View
     private var imgUserProfile: ImageView? = null
     private var btnNotification: ImageView? = null
-
-    private var tvFriendLabel: TextView? = null
     private var tvSeeMoreFriend: TextView? = null
-
-    private var tvGroupLabel: TextView? = null
     private var tvSeeMoreGroup: TextView? = null
-
     private var btnSplitBill: LinearLayout? = null
     private var btnRecentBill: LinearLayout? = null
     private var btnOwe: LinearLayout? = null
     private var btnLogout: ImageView? = null
 
-    // *** 1. เพิ่มตัวแปรสำหรับ RecyclerView ***
     private var rvFriends: RecyclerView? = null
-    private var rvGroups: RecyclerView? = null // <--- [เพิ่มใหม่] ตัวแปร RecyclerView ของ Group
+    private var rvGroups: RecyclerView? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
 
-        // ตั้งค่า Padding
-        val mainView = findViewById<View>(R.id.main)
-        if (mainView != null) {
-            ViewCompat.setOnApplyWindowInsetsListener(mainView) { v, insets ->
-                val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-                v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-                insets
-            }
-        }
+        init()
 
-        init() // เชื่อมตัวแปร
+        setupFriendList() // แสดงแค่ปุ่มบวกที่ท้ายเพื่อน
+        setupGroupList()  // แสดงแค่ปุ่มบวกที่ท้ายกลุ่ม
 
-        setupFriendList() // ฟังก์ชันสร้างรายการเพื่อน
-        setupGroupList()  // <--- [เพิ่มใหม่] เรียกฟังก์ชันสร้างรายการกลุ่ม
-
-        // ตั้งค่าปุ่มกดต่างๆ
-        imgUserProfile?.setOnClickListener {
-            startActivity(Intent(this, EditProfile::class.java))
-        }
-
-        btnNotification?.setOnClickListener {
-            startActivity(Intent(this, notification::class.java))
-        }
-
-        tvSeeMoreFriend?.setOnClickListener {
-            startActivity(Intent(this, Friend_list::class.java))
-        }
-
-        tvSeeMoreGroup?.setOnClickListener {
-            startActivity(Intent(this, Group_list::class.java))
-        }
-
-        btnSplitBill?.setOnClickListener {
-            startActivity(Intent(this, BillSplit::class.java))
-        }
-
-        btnRecentBill?.setOnClickListener {
-            startActivity(Intent(this, BillDetail::class.java))
-        }
-
-        btnOwe?.setOnClickListener {
-            startActivity(Intent(this, Owe::class.java))
-        }
-
-        btnLogout?.setOnClickListener {
-            showLogoutDialog()
-        }
+        // ส่วน Click Listener ของปุ่มอื่นๆ ยังคงเดิม
+        imgUserProfile?.setOnClickListener { startActivity(Intent(this, EditProfile::class.java)) }
+        btnNotification?.setOnClickListener { startActivity(Intent(this, notification::class.java)) }
+        tvSeeMoreFriend?.setOnClickListener { startActivity(Intent(this, Friend_list::class.java)) }
+        tvSeeMoreGroup?.setOnClickListener { startActivity(Intent(this, Group_list::class.java)) }
+        btnSplitBill?.setOnClickListener { startActivity(Intent(this, BillSplit::class.java)) }
+        btnRecentBill?.setOnClickListener { startActivity(Intent(this, BillDetail::class.java)) }
+        btnOwe?.setOnClickListener { startActivity(Intent(this, Owe::class.java)) }
+        btnLogout?.setOnClickListener { showLogoutDialog() }
     }
 
     private fun init() {
-        // เชื่อม ID
         imgUserProfile = findViewById(R.id.imgUserProfile)
         btnNotification = findViewById(R.id.btnNotification)
-
-        tvFriendLabel = findViewById(R.id.tvFriendLabel)
         tvSeeMoreFriend = findViewById(R.id.tvSeeMoreFriend)
-
-        tvGroupLabel = findViewById(R.id.tvGroupLabel)
         tvSeeMoreGroup = findViewById(R.id.tvSeeMoreGroup)
-
         btnSplitBill = findViewById(R.id.btnSplitBill)
         btnRecentBill = findViewById(R.id.btnRecentBill)
         btnOwe = findViewById(R.id.btnOwe)
         btnLogout = findViewById(R.id.btnLogout)
-
-        // *** 3. เชื่อมต่อ ID ของ RecyclerView ***
         rvFriends = findViewById(R.id.rvFriends)
-        rvGroups = findViewById(R.id.rvGroups) // <--- [เพิ่มใหม่] เชื่อม ID กับ XML
+        rvGroups = findViewById(R.id.rvGroups)
     }
 
-    // *** 4. ฟังก์ชันสำหรับสร้างข้อมูลและแสดงผล List Friend ***
+    // ฟังก์ชันเพื่อน: ไม่มีข้อมูลคนอื่น มีแค่ปุ่มบวกอันเดียว
     private fun setupFriendList() {
-        val friendList = ArrayList<FriendData>()
-        friendList.add(FriendData("Somchai", "ID: 001"))
-        friendList.add(FriendData("Somsak", "ID: 002"))
-        friendList.add(FriendData("John", "ID: 003"))
-        friendList.add(FriendData("Somsri", "ID: 004"))
+        val friendItems = ArrayList<CircleItem>()
 
-        // ตรวจสอบว่า rvFriends เชื่อมต่อแล้ว
-        if (rvFriends != null) {
-            // ใช้ Adapter ตัวใหม่ (HomeFriendAdapter) เพื่อแสดงผลแบบวงกลม
-            val adapter = HomeFriendAdapter(friendList)
-            rvFriends?.adapter = adapter
+        // ใส่แค่ปุ่มบวก (+) อย่างเดียว
+        friendItems.add(CircleItem(name = "เพิ่มเพื่อน", isAddButton = true))
 
-            // กำหนดเป็นแนวนอน (Horizontal)
-            rvFriends?.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+        rvFriends?.apply {
+            layoutManager = LinearLayoutManager(this@MainActivity, LinearLayoutManager.HORIZONTAL, false)
+            adapter = CircleAdapter(friendItems) { item ->
+                if (item.isAddButton) {
+                    startActivity(Intent(this@MainActivity, AddFriend::class.java))
+                }
+            }
         }
     }
 
-    // แก้ไขฟังก์ชันนี้ใน MainActivity.kt
+    // ฟังก์ชันกลุ่ม: ไม่มีข้อมูลกลุ่ม มีแค่ปุ่มบวกอันเดียว
     private fun setupGroupList() {
-        val groupList = ArrayList<GroupData>()
+        val groupItems = ArrayList<CircleItem>()
 
-        // เพิ่มข้อมูลตัวอย่าง
-        groupList.add(GroupData("Trip Japan"))
-        groupList.add(GroupData("Football"))
-        groupList.add(GroupData("Office"))
-        groupList.add(GroupData("Family"))
+        // ใส่แค่ปุ่มบวก (+) สำหรับสร้างกลุ่มใหม่
+        groupItems.add(CircleItem(name = "สร้างกลุ่ม", isAddButton = true))
 
-        if (rvGroups != null) {
-            // *** เปลี่ยนตรงนี้: จาก GroupAdapter เป็น HomeGroupAdapter ***
-            val adapter = HomeGroupAdapter(groupList)
-            rvGroups?.adapter = adapter
-
-            // กำหนดเป็นแนวนอน (Horizontal) เหมือนเดิม
-            rvGroups?.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+        rvGroups?.apply {
+            layoutManager = LinearLayoutManager(this@MainActivity, LinearLayoutManager.HORIZONTAL, false)
+            adapter = CircleAdapter(groupItems) { item ->
+                if (item.isAddButton) {
+                    startActivity(Intent(this@MainActivity, FindUser::class.java))
+                }
+            }
         }
     }
 
@@ -159,23 +107,19 @@ class MainActivity : AppCompatActivity() {
         val builder = AlertDialog.Builder(this)
         builder.setView(view)
         val dialog = builder.create()
-
         dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
 
         val btnCancel = view.findViewById<Button>(R.id.btnCancel)
         val btnConfirm = view.findViewById<Button>(R.id.btnConfirm)
 
-        btnCancel.setOnClickListener {
-            dialog.dismiss()
-        }
-
+        btnCancel.setOnClickListener { dialog.dismiss() }
         btnConfirm.setOnClickListener {
+            FirebaseAuth.getInstance().signOut()
             dialog.dismiss()
-            Toast.makeText(this, "Logged Out Successfully", Toast.LENGTH_SHORT).show()
-
             val intent = Intent(this, Login::class.java)
             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             startActivity(intent)
+            finish()
         }
         dialog.show()
     }
