@@ -16,10 +16,12 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 
 class MainActivity : AppCompatActivity() {
 
-    // ประกาศตัวแปรแบบ Nullable (มีโอกาสเป็น null)
+    // ประกาศตัวแปร View
     private var imgUserProfile: ImageView? = null
     private var btnNotification: ImageView? = null
 
@@ -33,6 +35,9 @@ class MainActivity : AppCompatActivity() {
     private var btnRecentBill: LinearLayout? = null
     private var btnOwe: LinearLayout? = null
     private var btnLogout: ImageView? = null
+
+    // *** 1. เพิ่มตัวแปรสำหรับ RecyclerView ***
+    private var rvFriends: RecyclerView? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -50,9 +55,9 @@ class MainActivity : AppCompatActivity() {
         }
 
         init() // เชื่อมตัวแปร
+        setupFriendList() // *** 2. เรียกฟังก์ชันสร้างรายการเพื่อน ***
 
-        // --- แก้ไขจุดสำคัญ: ใช้ ?. แทน . ทั้งหมด ---
-
+        // ตั้งค่าปุ่มกดต่างๆ
         imgUserProfile?.setOnClickListener {
             startActivity(Intent(this, EditProfile::class.java))
         }
@@ -87,7 +92,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun init() {
-        // เชื่อม ID (ตรงนี้ใช้ = ได้เลย ไม่ต้องแก้)
+        // เชื่อม ID
         imgUserProfile = findViewById(R.id.imgUserProfile)
         btnNotification = findViewById(R.id.btnNotification)
 
@@ -101,6 +106,30 @@ class MainActivity : AppCompatActivity() {
         btnRecentBill = findViewById(R.id.btnRecentBill)
         btnOwe = findViewById(R.id.btnOwe)
         btnLogout = findViewById(R.id.btnLogout)
+
+        // *** 3. เชื่อมต่อ ID ของ RecyclerView (ต้องตรงกับใน XML) ***
+        rvFriends = findViewById(R.id.rvFriends)
+    }
+
+    // *** 4. ฟังก์ชันสำหรับสร้างข้อมูลและแสดงผล List ***
+    // (เหลือไว้แค่อันเดียว ที่ใช้ HomeFriendAdapter)
+    private fun setupFriendList() {
+        val friendList = ArrayList<FriendData>()
+        friendList.add(FriendData("Somchai", "ID: 001"))
+        friendList.add(FriendData("Somsak", "ID: 002"))
+        friendList.add(FriendData("John", "ID: 003"))
+        friendList.add(FriendData("Somsri", "ID: 004"))
+
+        // ตรวจสอบว่า rvFriends เชื่อมต่อแล้ว
+        if (rvFriends != null) {
+
+            // ใช้ Adapter ตัวใหม่ (HomeFriendAdapter) เพื่อแสดงผลแบบวงกลม
+            val adapter = HomeFriendAdapter(friendList)
+            rvFriends?.adapter = adapter
+
+            // กำหนดเป็นแนวนอน (Horizontal)
+            rvFriends?.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+        }
     }
 
     private fun showLogoutDialog() {
@@ -114,7 +143,6 @@ class MainActivity : AppCompatActivity() {
         val btnCancel = view.findViewById<Button>(R.id.btnCancel)
         val btnConfirm = view.findViewById<Button>(R.id.btnConfirm)
 
-        // ปุ่มใน Dialog ไม่ได้ประกาศเป็น Global จึงใช้ . ได้เลย (เพราะ find มาสดๆ ร้อนๆ)
         btnCancel.setOnClickListener {
             dialog.dismiss()
         }
