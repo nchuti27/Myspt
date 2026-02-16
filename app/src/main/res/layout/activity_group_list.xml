@@ -9,7 +9,7 @@
     android:padding="24dp">
 
     <ImageButton
-        android:id="@+id/btnBack"
+        android:id="@+id/btnBackF"
         android:layout_width="48dp"
         android:layout_height="48dp"
         android:background="?attr/selectableItemBackgroundBorderless"
@@ -27,10 +27,10 @@
         android:textColor="@color/fintech_text_main"
         android:textSize="20sp"
         android:textStyle="bold"
-        app:layout_constraintBottom_toBottomOf="@+id/btnBack"
+        app:layout_constraintBottom_toBottomOf="@+id/btnBackF"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/btnBack" />
+        app:layout_constraintTop_toTopOf="@+id/btnBackF" />
 
     <EditText
         android:id="@+id/etSearch"
@@ -49,7 +49,7 @@
         android:textSize="14sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/btnBack" />
+        app:layout_constraintTop_toBottomOf="@+id/btnBackF" />
 
     <TextView
         android:id="@+id/tvSubHeader"

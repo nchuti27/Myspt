@@ -9,6 +9,7 @@ import android.widget.Button
 import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
@@ -17,9 +18,13 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 
 class Friend_list : AppCompatActivity() {
+
+    // ประกาศตัวแปร RecyclerView และ Adapter
     private var rvFriendList: RecyclerView? = null
     private var friendAdapter: FriendAdapter? = null
     private var friendList: ArrayList<FriendData>? = null
+
+    // *** ลบตัวแปร btnAddFriendPage ที่เป็น ArrayList ออก เพราะเราใช้เป็น Local variable ใน init() แทน ***
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,19 +43,20 @@ class Friend_list : AppCompatActivity() {
     private fun init() {
         // 1. เชื่อมต่อ View
         val btnAddFriendPage = findViewById<ImageButton>(R.id.btnAddFriendPage)
-        val btnBack = findViewById<ImageButton>(R.id.btnBack)
-        rvFriendList = findViewById(R.id.rvFriendList) // เชื่อมต่อ RecyclerView
+        val btnBack = findViewById<ImageButton>(R.id.btnBackF)
+        rvFriendList = findViewById(R.id.rvFriendList)
 
         // 2. ตั้งค่าปุ่มกด
-        /*btnAddFriendPage.setOnClickListener {
+        btnAddFriendPage.setOnClickListener {
+            // ไปหน้าเพิ่มเพื่อน (ต้องมีไฟล์ AddFriend.kt)
             val intent = Intent(this, AddFriend::class.java)
             startActivity(intent)
-        }*/
+        }
 
         btnBack.setOnClickListener {
             val intent = Intent(this, MainActivity::class.java)
             startActivity(intent)
-            finish() // ควรใส่ finish() เพื่อปิดหน้าปัจจุบัน
+            finish()
         }
 
         // ==========================================
@@ -58,42 +64,45 @@ class Friend_list : AppCompatActivity() {
         // ==========================================
 
         friendList = ArrayList()
-        if (friendList != null) {
+
+        // *** เพิ่มข้อมูลตัวอย่าง (Dummy Data) ไม่งั้น List จะว่างเปล่า ***
+        friendList?.add(FriendData("Somchai", "User ID: 001"))
+        friendList?.add(FriendData("Somsak", "User ID: 002"))
+        friendList?.add(FriendData("Somsri", "User ID: 003"))
+        friendList?.add(FriendData("John Doe", "User ID: 004"))
+
+        // ตรวจสอบว่ามีข้อมูลและ rv เชื่อมต่อแล้ว
+        if (friendList != null && rvFriendList != null) {
             friendAdapter = FriendAdapter(friendList!!)
-            rvFriendList?.layoutManager = LinearLayoutManager(this)
-            rvFriendList?.adapter = friendAdapter
+            rvFriendList!!.layoutManager = LinearLayoutManager(this)
+            rvFriendList!!.adapter = friendAdapter
         }
     }
-
 }
 
 // ==========================================
-// Class ที่เพิ่มเข้ามา (อยู่นอก Class Friend_list)
+// Class ภายนอก (Data & Adapter)
 // ==========================================
 
-// 1. Data Class: เก็บข้อมูลและสถานะการยืด/หด
 data class FriendData(
     val name: String,
     val detail: String,
-    var isExpanded: Boolean = false // ค่าเริ่มต้นคือ false (ปิดอยู่)
+    var isExpanded: Boolean = false
 )
 
-// 2. Adapter Class: จัดการการแสดงผลและการกดปุ่ม
-//รับ friendList (รายชื่อเพื่อน) เข้ามาทำงาน
 class FriendAdapter(private var friendList: ArrayList<FriendData>) :
     RecyclerView.Adapter<FriendAdapter.FriendViewHolder>() {
 
-    inner class FriendViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        // เชื่อมต่อ ID จากไฟล์ XML (item_friend_exp.xml)
+    // ลบ inner ออก เพื่อประสิทธิภาพที่ดีกว่า (ถ้าไม่จำเป็นต้องเรียกตัวแปรจาก Class แม่)
+    class FriendViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val tvName: TextView = itemView.findViewById(R.id.tvName)
         val btnExpand: ImageButton = itemView.findViewById(R.id.btnExpand)
         val layoutHidden: LinearLayout = itemView.findViewById(R.id.layoutHidden)
         val btnDelete: Button = itemView.findViewById(R.id.btnDelete)
-        val btnViewProfile: Button = itemView.findViewById(R.id.btnViewProfile)
+        val btnViewProfile: Button = itemView.findViewById(R.id.btnViewProfile) // ต้องมี ID นี้ใน xml
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): FriendViewHolder {
-        // *** ตรวจสอบชื่อไฟล์ Layout ตรงนี้ (R.layout.xxxx) ให้ตรงกับที่คุณสร้าง ***
         val view = LayoutInflater.from(parent.context).inflate(R.layout.item_friend_exp, parent, false)
         return FriendViewHolder(view)
     }
@@ -101,23 +110,29 @@ class FriendAdapter(private var friendList: ArrayList<FriendData>) :
     override fun onBindViewHolder(holder: FriendViewHolder, position: Int) {
         val currentItem = friendList[position]
 
-        // 1. แสดงชื่อ
         holder.tvName.text = currentItem.name
-        // 2. ตรวจสอบสถานะ: ถ้า isExpanded = true ให้โชว์เมนู, ถ้า false ให้ซ่อน
+
+        // Logic การซ่อน/แสดง เมนู
         holder.layoutHidden.visibility = if (currentItem.isExpanded) View.VISIBLE else View.GONE
-        // 3. เมื่อกดปุ่ม 3 จุด (Expand)
+
+        // เปลี่ยนรูป icon ลูกศรขึ้นลง (Optional: ถ้าคุณมีรูป ic_expand_less / ic_expand_more)
+        // if (currentItem.isExpanded) holder.btnExpand.setImageResource(R.drawable.ic_expand_less)
+        // else holder.btnExpand.setImageResource(R.drawable.ic_expand_more)
+
         holder.btnExpand.setOnClickListener {
-            // สลับสถานะ (True <-> False)
             currentItem.isExpanded = !currentItem.isExpanded
-            // สั่งให้รีเฟรชเฉพาะแถวนี้ (เพื่อให้เมนูเด้งออกมา)
-            notifyItemChanged(position)
+            notifyItemChanged(position) // รีเฟรชเฉพาะแถวนี้
         }
 
-        // 4. ปุ่ม Delete
         holder.btnDelete.setOnClickListener {
             friendList.removeAt(position)
             notifyItemRemoved(position)
             notifyItemRangeChanged(position, friendList.size)
+        }
+
+        // เพิ่ม Logic ปุ่ม View Profile (ถ้ามี)
+        holder.btnViewProfile.setOnClickListener {
+            Toast.makeText(holder.itemView.context, "View Profile: ${currentItem.name}", Toast.LENGTH_SHORT).show()
         }
     }
 

@@ -24,6 +24,6 @@ class BillSplit : AppCompatActivity() {
         }
     }
     private fun init() {
-        btnBack = findViewById(R.id.btnBack)
+        btnBack = findViewById(R.id.btnBackF)
     }
 }
