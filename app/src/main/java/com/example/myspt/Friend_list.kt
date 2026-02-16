@@ -19,12 +19,10 @@ import androidx.recyclerview.widget.RecyclerView
 
 class Friend_list : AppCompatActivity() {
 
-    // ประกาศตัวแปร RecyclerView และ Adapter
     private var rvFriendList: RecyclerView? = null
     private var friendAdapter: FriendAdapter? = null
     private var friendList: ArrayList<FriendData>? = null
 
-    // *** ลบตัวแปร btnAddFriendPage ที่เป็น ArrayList ออก เพราะเราใช้เป็น Local variable ใน init() แทน ***
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,14 +39,13 @@ class Friend_list : AppCompatActivity() {
     }
 
     private fun init() {
-        // 1. เชื่อมต่อ View
+
         val btnAddFriendPage = findViewById<ImageButton>(R.id.btnAddFriendPage)
         val btnBack = findViewById<ImageButton>(R.id.btnBackF)
         rvFriendList = findViewById(R.id.rvFriendList)
 
-        // 2. ตั้งค่าปุ่มกด
+
         btnAddFriendPage.setOnClickListener {
-            // ไปหน้าเพิ่มเพื่อน (ต้องมีไฟล์ AddFriend.kt)
             val intent = Intent(this, AddFriend::class.java)
             startActivity(intent)
         }
@@ -67,7 +64,7 @@ class Friend_list : AppCompatActivity() {
         friendList?.add(FriendData("Somsri", "User ID: 003"))
         friendList?.add(FriendData("John Doe", "User ID: 004"))
 
-        // ตรวจสอบว่ามีข้อมูลและ rv เชื่อมต่อแล้ว
+
         if (friendList != null && rvFriendList != null) {
             friendAdapter = FriendAdapter(friendList!!)
             rvFriendList!!.layoutManager = LinearLayoutManager(this)
@@ -76,9 +73,7 @@ class Friend_list : AppCompatActivity() {
     }
 }
 
-// ==========================================
-// Class ภายนอก (Data & Adapter)
-// ==========================================
+
 
 data class FriendData(
     val name: String,
@@ -89,7 +84,6 @@ data class FriendData(
 class FriendAdapter(private var friendList: ArrayList<FriendData>) :
     RecyclerView.Adapter<FriendAdapter.FriendViewHolder>() {
 
-    // ลบ inner ออก เพื่อประสิทธิภาพที่ดีกว่า (ถ้าไม่จำเป็นต้องเรียกตัวแปรจาก Class แม่)
     class FriendViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val tvName: TextView = itemView.findViewById(R.id.tvName)
         val btnExpand: ImageButton = itemView.findViewById(R.id.btnExpand)
@@ -108,12 +102,8 @@ class FriendAdapter(private var friendList: ArrayList<FriendData>) :
 
         holder.tvName.text = currentItem.name
 
-        // Logic การซ่อน/แสดง เมนู
-        holder.layoutHidden.visibility = if (currentItem.isExpanded) View.VISIBLE else View.GONE
 
-        // เปลี่ยนรูป icon ลูกศรขึ้นลง (Optional: ถ้าคุณมีรูป ic_expand_less / ic_expand_more)
-        // if (currentItem.isExpanded) holder.btnExpand.setImageResource(R.drawable.ic_expand_less)
-        // else holder.btnExpand.setImageResource(R.drawable.ic_expand_more)
+        holder.layoutHidden.visibility = if (currentItem.isExpanded) View.VISIBLE else View.GONE
 
         holder.btnExpand.setOnClickListener {
             currentItem.isExpanded = !currentItem.isExpanded
@@ -126,7 +116,6 @@ class FriendAdapter(private var friendList: ArrayList<FriendData>) :
             notifyItemRangeChanged(position, friendList.size)
         }
 
-        // เพิ่ม Logic ปุ่ม View Profile (ถ้ามี)
         holder.btnViewProfile.setOnClickListener {
             Toast.makeText(holder.itemView.context, "View Profile: ${currentItem.name}", Toast.LENGTH_SHORT).show()
         }

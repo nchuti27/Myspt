@@ -20,7 +20,6 @@ class FindUser : AppCompatActivity() {
     var tvFoundUserName: TextView? = null
     var btnAddFriend: Button? = null
 
-    // --- 2. ประกาศตัวแปร DB ---
     private lateinit var db: FirebaseFirestore
     private lateinit var auth: FirebaseAuth
 
@@ -39,7 +38,7 @@ class FindUser : AppCompatActivity() {
         }
         init()
 
-        // --- 3. รับค่า FRIEND_UID ที่ส่งมาจากหน้า AddFriend ---
+
         val receivedName = intent.getStringExtra("FRIEND_NAME")
         val friendUid = intent.getStringExtra("FRIEND_UID")
 
@@ -50,7 +49,7 @@ class FindUser : AppCompatActivity() {
         }
 
         btnBack!!.setOnClickListener {
-            finish() // ใช้ finish() เพื่อย้อนกลับไปหน้าเดิมได้เลย
+            finish()
         }
 
         btnAddFriend!!.setOnClickListener {
@@ -67,21 +66,20 @@ class FindUser : AppCompatActivity() {
         val myUid = auth.currentUser?.uid
 
         if (myUid != null) {
-            // ป้องกันการแอดตัวเอง
             if (myUid == friendUid) {
                 Toast.makeText(this, "You cannot add yourself", Toast.LENGTH_SHORT).show()
                 return
             }
 
-            // บันทึก UID เพื่อนลงในฟิลด์ "friends" (แบบ Array) ของเรา
+
             db.collection("users").document(myUid)
                 .update("friends", FieldValue.arrayUnion(friendUid))
                 .addOnSuccessListener {
                     Toast.makeText(this, "Friend added successfully!", Toast.LENGTH_LONG).show()
 
-                    // เมื่อแอดเสร็จ ให้กลับไปหน้า Dashboard หลัก
+
                     val intent = Intent(this, MainActivity::class.java)
-                    intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP // เคลียร์หน้าเก่า ๆ ทิ้ง
+                    intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP // เคลียร์หน้าเก่า
                     startActivity(intent)
                     finish()
                 }
