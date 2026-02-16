@@ -73,7 +73,7 @@ class MainActivity : AppCompatActivity() {
         val friendItems = ArrayList<CircleItem>()
 
         // ใส่แค่ปุ่มบวก (+) อย่างเดียว
-        friendItems.add(CircleItem(name = "เพิ่มเพื่อน", isAddButton = true))
+        friendItems.add(CircleItem(name = "Add Friend", isAddButton = true))
 
         rvFriends?.apply {
             layoutManager = LinearLayoutManager(this@MainActivity, LinearLayoutManager.HORIZONTAL, false)
@@ -90,7 +90,7 @@ class MainActivity : AppCompatActivity() {
         val groupItems = ArrayList<CircleItem>()
 
         // ใส่แค่ปุ่มบวก (+) สำหรับสร้างกลุ่มใหม่
-        groupItems.add(CircleItem(name = "สร้างกลุ่ม", isAddButton = true))
+        groupItems.add(CircleItem(name = "Create Group", isAddButton = true))
 
         rvGroups?.apply {
             layoutManager = LinearLayoutManager(this@MainActivity, LinearLayoutManager.HORIZONTAL, false)
