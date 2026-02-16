@@ -51,7 +51,6 @@ class MainActivity : AppCompatActivity() {
         }
 
         init()
-
         setupFriendList()
         setupGroupList()
 
@@ -135,14 +134,48 @@ class MainActivity : AppCompatActivity() {
 
 
     private fun setupGroupList() {
+        val db = FirebaseFirestore.getInstance()
+        val myUid = FirebaseAuth.getInstance().currentUser?.uid
         val groupItems = ArrayList<CircleItem>()
-        groupItems.add(CircleItem(name = "Create Group", isAddButton = true))
 
+        if (myUid == null) return
+
+        db.collection("users").document(myUid).get().addOnSuccessListener { document ->
+            val groupIds = document.get("groups") as? List<String> ?: listOf()
+
+            if (groupIds.isEmpty()) {
+                groupItems.add(CircleItem(name = "Create group", isAddButton = true))
+                updateGroupAdapter(groupItems)
+            } else {
+                var count = 0
+                for (gId in groupIds) {
+                    db.collection("groups").document(gId).get().addOnSuccessListener { gDoc ->
+                        val name = gDoc.getString("groupName") ?: "Unknown Group"
+                        groupItems.add(CircleItem(id = gId, name = name))
+                        count++
+
+                        if (count == groupIds.size) {
+                            groupItems.add(CircleItem(name = "Create group", isAddButton = true))
+                            updateGroupAdapter(groupItems)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun updateGroupAdapter(items: List<CircleItem>) {
         rvGroups?.apply {
             layoutManager = LinearLayoutManager(this@MainActivity, LinearLayoutManager.HORIZONTAL, false)
-            adapter = CircleAdapter(groupItems) { item ->
+
+            adapter = HomeGroupAdapter(items) { item ->
                 if (item.isAddButton) {
-                    startActivity(Intent(this@MainActivity, FindUser::class.java))
+
+                    val intent = Intent(this@MainActivity, CreateGroupActivity::class.java)
+                    startActivity(intent)
+                } else {
+
+                    Toast.makeText(this@MainActivity, "Group: ${item.name}", Toast.LENGTH_SHORT).show()
                 }
             }
         }

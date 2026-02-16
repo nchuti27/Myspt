@@ -25,8 +25,20 @@ class HomeGroupAdapter(
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val currentItem = groupList[position]
-        holder.tvGroupName.text = currentItem.name
-        holder.imgGroup.setImageResource(R.drawable.ic_launcher_background)
+
+        if (currentItem.isAddButton) {
+            holder.tvGroupName.text = "Add"
+            holder.imgGroup.setImageResource(android.R.drawable.ic_input_add)
+            holder.imgGroup.setPadding(40, 40, 40, 40)
+            holder.imgGroup.strokeWidth = 0f
+        } else {
+
+            holder.tvGroupName.text = currentItem.name
+            holder.imgGroup.setPadding(0, 0, 0, 0)
+            holder.imgGroup.strokeWidth = 2f
+            holder.imgGroup.setImageResource(R.drawable.ic_launcher_background)
+        }
+
         holder.itemView.setOnClickListener { onClick(currentItem) }
     }
 

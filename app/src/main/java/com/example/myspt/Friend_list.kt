@@ -107,7 +107,7 @@ class FriendAdapter(private var friendList: ArrayList<FriendData>) :
 
         holder.btnExpand.setOnClickListener {
             currentItem.isExpanded = !currentItem.isExpanded
-            notifyItemChanged(position) // รีเฟรชเฉพาะแถวนี้
+            notifyItemChanged(position)
         }
 
         holder.btnDelete.setOnClickListener {

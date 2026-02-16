@@ -28,9 +28,7 @@ class Group_list : AppCompatActivity() {
         val btnBack = findViewById<ImageButton>(R.id.btnBackF)
         rvGroupList = findViewById(R.id.rvGroupList)
         etSearch = findViewById(R.id.etSearch)
-
         btnBack.setOnClickListener { finish() }
-
         fetchUserGroups()
     }
 

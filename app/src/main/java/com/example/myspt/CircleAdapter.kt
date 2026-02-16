@@ -29,7 +29,7 @@ class CircleAdapter(
 
 
         if (item.isAddButton) {
-            holder.name.text = "เพิ่ม"
+            holder.name.text = "Add"
 
             holder.img.setImageResource(android.R.drawable.ic_input_add)
             holder.img.setPadding(40, 40, 40, 40)

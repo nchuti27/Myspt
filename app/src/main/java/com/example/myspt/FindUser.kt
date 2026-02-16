@@ -54,7 +54,6 @@ class FindUser : AppCompatActivity() {
 
         btnAddFriend!!.setOnClickListener {
             if (friendUid != null) {
-                // --- 4. เรียกฟังก์ชันบันทึกเพื่อนลง Database ---
                 addFriendToFirestore(friendUid)
             } else {
                 Toast.makeText(this, "Cannot add this user", Toast.LENGTH_SHORT).show()
@@ -79,7 +78,7 @@ class FindUser : AppCompatActivity() {
 
 
                     val intent = Intent(this, MainActivity::class.java)
-                    intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP // เคลียร์หน้าเก่า
+                    intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
                     startActivity(intent)
                     finish()
                 }
