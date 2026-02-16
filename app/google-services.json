@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "607863048992",
+    "project_id": "myspt-8d77b",
+    "storage_bucket": "myspt-8d77b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:607863048992:android:5a00cf97618273f3d86545",
+        "android_client_info": {
+          "package_name": "com.example.myspt"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAW7eF0f6Dl13VS4hi655OcxUK4Yfkj-VE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
