@@ -54,7 +54,7 @@ class BillSplit : AppCompatActivity() {
     // --- ฟังก์ชัน init() ต้องอยู่ข้างใน Class (ก่อนปีกกาปิดตัวสุดท้าย) ---
     private fun init() {
         // เชื่อม ID จากไฟล์ activity_bill_split.xml
-        btnBack = findViewById(R.id.btnBackF)
+        btnBack = findViewById(R.id.backButton)
         btnSplit = findViewById(R.id.btnSplit)
         rvBillItems = findViewById(R.id.rvBillItems)
         btnAddItem = findViewById(R.id.btnAddItem)
@@ -80,7 +80,7 @@ class BillSplit : AppCompatActivity() {
 
         // เชื่อมปุ่มภายใน Popup
         val btnOk = dialogView.findViewById<Button>(R.id.btnOk)
-        val btnPopupBack = dialogView.findViewById<Button>(R.id.btnBackF)
+        val btnPopupBack = dialogView.findViewById<Button>(R.id.backButton)
         val tvPaymentMessage = dialogView.findViewById<TextView>(R.id.tvPaymentMessage)
 
         // (Optional) ตั้งค่าข้อความยอดเงินที่จะจ่าย

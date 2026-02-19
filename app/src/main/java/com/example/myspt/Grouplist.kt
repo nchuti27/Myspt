@@ -1,5 +1,6 @@
 package com.example.myspt
 
+import android.content.Intent
 import android.os.Bundle
 import android.widget.EditText
 import android.widget.ImageButton
@@ -25,7 +26,7 @@ class Grouplist : AppCompatActivity() {
         db = FirebaseFirestore.getInstance()
         auth = FirebaseAuth.getInstance()
 
-        val btnBack = findViewById<ImageButton>(R.id.btnBackF)
+        val btnBack = findViewById<ImageButton>(R.id.backButton)
         rvGroupList = findViewById(R.id.rvGroupList)
         etSearch = findViewById(R.id.etSearch)
 
@@ -67,15 +68,11 @@ class Grouplist : AppCompatActivity() {
     }
 
     private fun setupRecyclerView(list: List<CircleItem>) {
-        // หน้า See More ใช้แนวตั้ง (Vertical)
         rvGroupList.layoutManager = LinearLayoutManager(this)
-
-        // ส่งค่า true เข้าไปในพารามิเตอร์ที่สอง (isListView)
-        // เพื่อให้ HomeGroupAdapter เลือกใช้ layout item_group_list แทน item_circle
         rvGroupList.adapter = HomeGroupAdapter(list, true) { item ->
-            // เมื่อกดที่แถวกลุ่มในหน้า List
-            Toast.makeText(this, "เลือกกลุ่ม: ${item.name}", Toast.LENGTH_SHORT).show()
-            // ในอนาคตสามารถใช้ Intent ไปหน้าแชทกลุ่มได้จากตรงนี้
+            val intent = Intent(this, GroupDetail::class.java)
+            intent.putExtra("GROUP_ID", item.id) // ส่ง ID กลุ่มไปที่หน้า GroupDetail
+            startActivity(intent)
         }
     }
 }

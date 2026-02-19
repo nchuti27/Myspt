@@ -41,7 +41,7 @@ class Friend_list : AppCompatActivity() {
     private fun init() {
 
         val btnAddFriendPage = findViewById<ImageButton>(R.id.btnAddFriendPage)
-        val btnBack = findViewById<ImageButton>(R.id.btnBackF)
+        val btnBack = findViewById<ImageButton>(R.id.backButton)
         rvFriendList = findViewById(R.id.rvFriendList)
 
 

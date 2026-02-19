@@ -25,6 +25,6 @@ class Owe : AppCompatActivity() {
         }
     }
         private fun init() {
-            btnBack = findViewById(R.id.btnBackF)
+            btnBack = findViewById(R.id.backButton)
     }
 }

@@ -16,7 +16,7 @@
         android:paddingTop="20dp">
 
         <ImageView
-            android:id="@+id/btnBackF"
+            android:id="@+id/backButton"
             android:layout_width="32dp"
             android:layout_height="32dp"
             android:layout_centerVertical="true"

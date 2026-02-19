@@ -9,7 +9,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 
-class CreateGroupActivity : AppCompatActivity() {
+class CreateGroup : AppCompatActivity() {
 
     private lateinit var etGroupName: TextInputEditText
     private lateinit var btnCreate: MaterialButton
@@ -25,7 +25,7 @@ class CreateGroupActivity : AppCompatActivity() {
 
         etGroupName = findViewById(R.id.etGroupName)
         btnCreate = findViewById(R.id.btnCreateGroup)
-        val btnBack = findViewById<MaterialButton>(R.id.btnBackF)
+        val btnBack = findViewById<android.widget.ImageButton>(R.id.backButton)
 
         btnBack?.setOnClickListener { finish() }
 

@@ -59,7 +59,6 @@ class MainActivity : AppCompatActivity() {
         setupClickListeners()
     }
 
-    // ดึงข้อมูลใหม่ทุกครั้งที่กลับมาหน้าเมนู
     override fun onResume() {
         super.onResume()
         setupFriendList()
@@ -77,18 +76,14 @@ class MainActivity : AppCompatActivity() {
         btnLogout = findViewById(R.id.btnLogout)
         rvFriends = findViewById(R.id.rvFriends)
         rvGroups = findViewById(R.id.rvGroups)
+        // ลบโค้ด rvGroupList.adapter ที่เกินมาตรงนี้ออกแล้วครับ
     }
 
     private fun setupClickListeners() {
         imgUserProfile?.setOnClickListener { startActivity(Intent(this, EditProfile::class.java)) }
         btnNotification?.setOnClickListener { startActivity(Intent(this, notification::class.java)) }
         tvSeeMoreFriend?.setOnClickListener { startActivity(Intent(this, Friend_list::class.java)) }
-
-        // กด See More เพื่อไปหน้า Group_list (แบบรายชื่อเรียงลง)
-        tvSeeMoreGroup?.setOnClickListener {
-            startActivity(Intent(this, Grouplist::class.java))
-        }
-
+        tvSeeMoreGroup?.setOnClickListener { startActivity(Intent(this, Grouplist::class.java)) }
         btnSplitBill?.setOnClickListener { startActivity(Intent(this, BillSplit::class.java)) }
         btnRecentBill?.setOnClickListener { startActivity(Intent(this, BillDetail::class.java)) }
         btnOwe?.setOnClickListener { startActivity(Intent(this, Owe::class.java)) }
@@ -112,7 +107,6 @@ class MainActivity : AppCompatActivity() {
                         val name = fDoc.getString("name") ?: "Unknown"
                         friendItems.add(CircleItem(id = fUid, name = name))
                         count++
-
                         if (count == friendUids.size) {
                             friendItems.add(CircleItem(name = "Add Friend", isAddButton = true))
                             updateFriendAdapter(friendItems)
@@ -138,42 +132,44 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupGroupList() {
         val myUid = auth.currentUser?.uid ?: return
-        val groupItems = ArrayList<CircleItem>()
-
         db.collection("users").document(myUid).get().addOnSuccessListener { document ->
             val groupIds = document.get("groups") as? List<String> ?: listOf()
+            val groupItems = ArrayList<CircleItem>()
 
             if (groupIds.isEmpty()) {
-                groupItems.add(CircleItem(name = "Create group", isAddButton = true))
+                groupItems.add(CircleItem(name = "Add", isAddButton = true))
                 updateGroupAdapter(groupItems)
-            } else {
-                var count = 0
-                for (gId in groupIds) {
-                    db.collection("groups").document(gId).get().addOnSuccessListener { gDoc ->
-                        val name = gDoc.getString("groupName") ?: "Unknown Group"
-                        groupItems.add(CircleItem(id = gId, name = name))
-                        count++
+                return@addOnSuccessListener
+            }
 
-                        if (count == groupIds.size) {
-                            groupItems.add(CircleItem(name = "Create group", isAddButton = true))
-                            updateGroupAdapter(groupItems)
-                        }
+            var loadedCount = 0
+            for (gId in groupIds) {
+                db.collection("groups").document(gId).get().addOnSuccessListener { gDoc ->
+                    val name = gDoc.getString("groupName") ?: "Unknown"
+                    groupItems.add(CircleItem(id = gId, name = name))
+                    loadedCount++
+                    if (loadedCount == groupIds.size) {
+                        groupItems.add(CircleItem(name = "Add", isAddButton = true))
+                        updateGroupAdapter(groupItems)
                     }
                 }
             }
+        }.addOnFailureListener {
+            updateGroupAdapter(listOf(CircleItem(name = "Add", isAddButton = true)))
         }
     }
 
     private fun updateGroupAdapter(items: List<CircleItem>) {
         rvGroups?.apply {
             layoutManager = LinearLayoutManager(this@MainActivity, LinearLayoutManager.HORIZONTAL, false)
-
-            // ส่ง false เพื่อให้แสดงเป็นวงกลมในหน้าหลัก
             adapter = HomeGroupAdapter(items, false) { item ->
                 if (item.isAddButton) {
-                    startActivity(Intent(this@MainActivity, CreateGroupActivity::class.java))
+                    startActivity(Intent(this@MainActivity, CreateGroup::class.java))
                 } else {
-                    Toast.makeText(this@MainActivity, "Group: ${item.name}", Toast.LENGTH_SHORT).show()
+                    // แก้ไข: เมื่อคลิกกลุ่มปกติ ให้ไปหน้ารายละเอียดกลุ่มพร้อมส่ง ID ไปด้วย
+                    val intent = Intent(this@MainActivity, GroupDetail::class.java)
+                    intent.putExtra("GROUP_ID", item.id)
+                    startActivity(intent)
                 }
             }
         }
@@ -185,7 +181,6 @@ class MainActivity : AppCompatActivity() {
         builder.setView(view)
         val dialog = builder.create()
         dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-
         view.findViewById<Button>(R.id.btnCancel).setOnClickListener { dialog.dismiss() }
         view.findViewById<Button>(R.id.btnConfirm).setOnClickListener {
             auth.signOut()

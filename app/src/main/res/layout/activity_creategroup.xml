@@ -19,7 +19,7 @@
         app:layout_constraintTop_toTopOf="parent">
 
         <ImageButton
-            android:id="@+id/btnBackF"
+            android:id="@+id/backButton"
             android:layout_width="57dp"
             android:layout_height="64dp"
             android:background="?attr/selectableItemBackgroundBorderless"

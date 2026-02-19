@@ -37,7 +37,7 @@ class AddFriend : AppCompatActivity() {
     private fun init() {
         etSearchUser = findViewById(R.id.etSearchUser)
         btnAdd = findViewById(R.id.btnAdd)
-        val btnBack = findViewById<ImageButton>(R.id.btnBackF)
+        val btnBack = findViewById<ImageButton>(R.id.backButton)
 
         btnBack.setOnClickListener {
             finish()

@@ -15,7 +15,7 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <ImageView
-        android:id="@+id/btnBackF"
+        android:id="@+id/backButton"
         android:layout_width="32dp"
         android:layout_height="32dp"
         android:layout_marginStart="24dp"
@@ -32,10 +32,10 @@
         android:textColor="#FFFFFF"
         android:textSize="20sp"
         android:textStyle="bold"
-        app:layout_constraintBottom_toBottomOf="@id/btnBackF"
+        app:layout_constraintBottom_toBottomOf="@id/backButton"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@id/btnBackF" />
+        app:layout_constraintTop_toTopOf="@id/backButton" />
 
     <androidx.cardview.widget.CardView
         android:id="@+id/cardGroupInfo"
@@ -55,6 +55,7 @@
             android:padding="28dp">
 
             <ImageView
+                android:id="@+id/ImageView"
                 android:layout_width="85dp"
                 android:layout_height="85dp"
                 android:background="@drawable/ic_launcher_background"
@@ -64,7 +65,7 @@
                 tools:ignore="ContentDescription" />
 
             <LinearLayout
-                android:layout_width="wrap_content"
+                android:layout_width="207dp"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:gravity="center_vertical"
@@ -84,6 +85,7 @@
                     android:textStyle="bold" />
 
                 <ImageView
+                    android:id="@+id/btnEditName"
                     android:layout_width="22dp"
                     android:layout_height="17dp"
                     android:layout_marginStart="12dp"

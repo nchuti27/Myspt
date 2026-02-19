@@ -9,7 +9,7 @@
     android:padding="24dp">
 
     <ImageButton
-        android:id="@+id/btnBackF"
+        android:id="@+id/backButton"
         android:layout_width="48dp"
         android:layout_height="48dp"
         android:background="?attr/selectableItemBackgroundBorderless"
@@ -27,10 +27,10 @@
         android:textColor="@color/fintech_blue_dark"
         android:textSize="20sp"
         android:textStyle="bold"
-        app:layout_constraintBottom_toBottomOf="@+id/btnBackF"
+        app:layout_constraintBottom_toBottomOf="@+id/backButton"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/btnBackF" />
+        app:layout_constraintTop_toTopOf="@+id/backButton" />
 
     <LinearLayout
         android:id="@+id/layoutTabs"
@@ -39,7 +39,7 @@
         android:layout_marginTop="24dp"
         android:orientation="horizontal"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/btnBackF">
+        app:layout_constraintTop_toBottomOf="@+id/backButton">
 
         <Button
             android:id="@+id/btnTabFriend"

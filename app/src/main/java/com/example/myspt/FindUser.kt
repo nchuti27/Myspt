@@ -89,7 +89,7 @@ class FindUser : AppCompatActivity() {
     }
 
     private fun init() {
-        btnBack = findViewById(R.id.btnBackF)
+        btnBack = findViewById(R.id.backButton)
         tvFoundUserName = findViewById(R.id.tvFoundUserName)
         btnAddFriend = findViewById(R.id.btnAddFriend)
     }
