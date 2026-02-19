@@ -35,11 +35,16 @@ class MainActivity : AppCompatActivity() {
     private var rvFriends: RecyclerView? = null
     private var rvGroups: RecyclerView? = null
 
+    private lateinit var db: FirebaseFirestore
+    private lateinit var auth: FirebaseAuth
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
 
+        db = FirebaseFirestore.getInstance()
+        auth = FirebaseAuth.getInstance()
 
         val mainView = findViewById<View>(R.id.main)
         mainView?.let {
@@ -51,18 +56,14 @@ class MainActivity : AppCompatActivity() {
         }
 
         init()
+        setupClickListeners()
+    }
+
+    // ดึงข้อมูลใหม่ทุกครั้งที่กลับมาหน้าเมนู
+    override fun onResume() {
+        super.onResume()
         setupFriendList()
         setupGroupList()
-
-
-        imgUserProfile?.setOnClickListener { startActivity(Intent(this, EditProfile::class.java)) }
-        btnNotification?.setOnClickListener { startActivity(Intent(this, notification::class.java)) }
-        tvSeeMoreFriend?.setOnClickListener { startActivity(Intent(this, Friend_list::class.java)) }
-        tvSeeMoreGroup?.setOnClickListener { startActivity(Intent(this, Group_list::class.java)) }
-        btnSplitBill?.setOnClickListener { startActivity(Intent(this, BillSplit::class.java)) }
-        btnRecentBill?.setOnClickListener { startActivity(Intent(this, BillDetail::class.java)) }
-        btnOwe?.setOnClickListener { startActivity(Intent(this, Owe::class.java)) }
-        btnLogout?.setOnClickListener { showLogoutDialog() }
     }
 
     private fun init() {
@@ -78,31 +79,39 @@ class MainActivity : AppCompatActivity() {
         rvGroups = findViewById(R.id.rvGroups)
     }
 
+    private fun setupClickListeners() {
+        imgUserProfile?.setOnClickListener { startActivity(Intent(this, EditProfile::class.java)) }
+        btnNotification?.setOnClickListener { startActivity(Intent(this, notification::class.java)) }
+        tvSeeMoreFriend?.setOnClickListener { startActivity(Intent(this, Friend_list::class.java)) }
+
+        // กด See More เพื่อไปหน้า Group_list (แบบรายชื่อเรียงลง)
+        tvSeeMoreGroup?.setOnClickListener {
+            startActivity(Intent(this, Grouplist::class.java))
+        }
+
+        btnSplitBill?.setOnClickListener { startActivity(Intent(this, BillSplit::class.java)) }
+        btnRecentBill?.setOnClickListener { startActivity(Intent(this, BillDetail::class.java)) }
+        btnOwe?.setOnClickListener { startActivity(Intent(this, Owe::class.java)) }
+        btnLogout?.setOnClickListener { showLogoutDialog() }
+    }
 
     private fun setupFriendList() {
-        val db = FirebaseFirestore.getInstance()
-        val myUid = FirebaseAuth.getInstance().currentUser?.uid
+        val myUid = auth.currentUser?.uid ?: return
         val friendItems = ArrayList<CircleItem>()
-
-        if (myUid == null) return
-
 
         db.collection("users").document(myUid).get().addOnSuccessListener { document ->
             val friendUids = document.get("friends") as? List<String> ?: listOf()
 
             if (friendUids.isEmpty()) {
-
                 friendItems.add(CircleItem(name = "Add Friend", isAddButton = true))
                 updateFriendAdapter(friendItems)
             } else {
-
                 var count = 0
                 for (fUid in friendUids) {
                     db.collection("users").document(fUid).get().addOnSuccessListener { fDoc ->
                         val name = fDoc.getString("name") ?: "Unknown"
                         friendItems.add(CircleItem(id = fUid, name = name))
                         count++
-
 
                         if (count == friendUids.size) {
                             friendItems.add(CircleItem(name = "Add Friend", isAddButton = true))
@@ -111,13 +120,8 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             }
-        }.addOnFailureListener {
-
-            friendItems.add(CircleItem(name = "Add Friend", isAddButton = true))
-            updateFriendAdapter(friendItems)
         }
     }
-
 
     private fun updateFriendAdapter(items: List<CircleItem>) {
         rvFriends?.apply {
@@ -132,13 +136,9 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-
     private fun setupGroupList() {
-        val db = FirebaseFirestore.getInstance()
-        val myUid = FirebaseAuth.getInstance().currentUser?.uid
+        val myUid = auth.currentUser?.uid ?: return
         val groupItems = ArrayList<CircleItem>()
-
-        if (myUid == null) return
 
         db.collection("users").document(myUid).get().addOnSuccessListener { document ->
             val groupIds = document.get("groups") as? List<String> ?: listOf()
@@ -168,13 +168,11 @@ class MainActivity : AppCompatActivity() {
         rvGroups?.apply {
             layoutManager = LinearLayoutManager(this@MainActivity, LinearLayoutManager.HORIZONTAL, false)
 
-            adapter = HomeGroupAdapter(items) { item ->
+            // ส่ง false เพื่อให้แสดงเป็นวงกลมในหน้าหลัก
+            adapter = HomeGroupAdapter(items, false) { item ->
                 if (item.isAddButton) {
-
-                    val intent = Intent(this@MainActivity, CreateGroupActivity::class.java)
-                    startActivity(intent)
+                    startActivity(Intent(this@MainActivity, CreateGroupActivity::class.java))
                 } else {
-
                     Toast.makeText(this@MainActivity, "Group: ${item.name}", Toast.LENGTH_SHORT).show()
                 }
             }
@@ -188,12 +186,9 @@ class MainActivity : AppCompatActivity() {
         val dialog = builder.create()
         dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
 
-        val btnCancel = view.findViewById<Button>(R.id.btnCancel)
-        val btnConfirm = view.findViewById<Button>(R.id.btnConfirm)
-
-        btnCancel.setOnClickListener { dialog.dismiss() }
-        btnConfirm.setOnClickListener {
-            FirebaseAuth.getInstance().signOut()
+        view.findViewById<Button>(R.id.btnCancel).setOnClickListener { dialog.dismiss() }
+        view.findViewById<Button>(R.id.btnConfirm).setOnClickListener {
+            auth.signOut()
             dialog.dismiss()
             val intent = Intent(this, Login::class.java)
             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK

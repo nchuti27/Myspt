@@ -51,7 +51,7 @@
             android:name=".Friend_list"
             android:exported="false" />
         <activity
-            android:name=".Group_list"
+            android:name=".Grouplist"
             android:exported="false" />
         <activity
             android:name=".AddFriend"
