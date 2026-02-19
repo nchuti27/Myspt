@@ -61,7 +61,7 @@ class Forgotpassword : AppCompatActivity() {
     }
 
     private fun init(){
-        edtFemail = findViewById(R.id.etEmail)
+        edtFemail = findViewById(R.id.etName)
         btnReset = findViewById(R.id.btn_Reset)
         backtxt = findViewById(R.id.tvBackToLogin)
     }
