@@ -11,7 +11,6 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.RecyclerView
 
 class FriendOwe : AppCompatActivity() {
-
     var btnBack: ImageView? = null
     var tabItems: TextView? = null
     var rvFriendOwe: RecyclerView? = null
@@ -19,7 +18,8 @@ class FriendOwe : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContentView(R.layout.activity_friend_owe)
+        setContentView(R.layout.activity_friend_owe) // ใช้ Layout ของ FriendOwe
+
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
@@ -30,6 +30,8 @@ class FriendOwe : AppCompatActivity() {
         btnBack?.setOnClickListener {
             finish()
         }
+
+        // กด tabItems เพื่อสลับกลับไปหน้า DebtSummary
         tabItems?.setOnClickListener {
             val intent = Intent(this, DebtSummary::class.java)
             val options = android.app.ActivityOptions.makeCustomAnimation(this, 0, 0)
