@@ -43,35 +43,59 @@ class DebtSummary : AppCompatActivity() {
         }
 
         btnMenu?.setOnClickListener { view ->
-            // สร้าง PopupMenu โดยยึดติดกับ view (ตัว btnMenu)
-            val popupMenu = PopupMenu(this, view)
-
-            // ดึงไฟล์เมนูมาแสดง
+            val popupMenu = PopupMenu(this@DebtSummary, view)
             popupMenu.menuInflater.inflate(R.menu.menu_group_options, popupMenu.menu)
 
-            // ดักจับว่าผู้ใช้กดเลือกเมนูไหน
             popupMenu.setOnMenuItemClickListener { menuItem ->
                 when (menuItem.itemId) {
                     R.id.action_add_member -> {
-                        Toast.makeText(this, "กด Add member", Toast.LENGTH_SHORT).show()
+                        try {
+                            val intent = Intent(this@DebtSummary, SelectFriend::class.java)
+                            startActivity(intent)
+                        } catch (e: Exception) {
+                            Toast.makeText(this@DebtSummary, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                        }
                         true
                     }
                     R.id.action_edit_items -> {
-                        Toast.makeText(this, "กด Edit items", Toast.LENGTH_SHORT).show()
+                        val intent = Intent(this@DebtSummary, BillSplit::class.java)
+                        startActivity(intent)
                         true
                     }
                     R.id.action_leave_group -> {
-                        Toast.makeText(this, "กด Leave group", Toast.LENGTH_SHORT).show()
+                        try {
+                            val dialog = android.app.Dialog(this@DebtSummary)
+                            dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+                            dialog.setContentView(R.layout.dialog_leave_group)
+
+                            val btnNo = dialog.findViewById<android.widget.Button>(R.id.btnNo)
+                            val btnYes = dialog.findViewById<android.widget.Button>(R.id.btnYes)
+                            val tvMessage = dialog.findViewById<TextView>(R.id.tvMessage)
+
+                            tvMessage?.text = "Are you sure you want\nto leave this group?"
+
+                            btnNo?.setOnClickListener { dialog.dismiss() }
+
+                            btnYes?.setOnClickListener {
+                                dialog.dismiss()
+                                Toast.makeText(this@DebtSummary, "You have left the group.", Toast.LENGTH_SHORT).show()
+                                val intent = Intent(this@DebtSummary, MainActivity::class.java)
+                                intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+                                startActivity(intent)
+                                finish()
+                            }
+                            dialog.show()
+                        } catch (e: Exception) {
+                            Toast.makeText(this@DebtSummary, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                        }
                         true
                     }
                     else -> false
                 }
-            }
-
-            // สั่งให้ PopupMenu แสดงขึ้นมา
+            } // ปิด setOnMenuItemClickListener
             popupMenu.show()
-        }
-    } // สิ้นสุดฟังก์ชัน onCreate
+        } // ปิด btnMenu.setOnClickListener
+    } // ปิด onCreate
 
     private fun init() {
         btnBack = findViewById(R.id.imageView)
@@ -79,4 +103,4 @@ class DebtSummary : AppCompatActivity() {
         rvDebts = findViewById(R.id.rvDebts)
         btnMenu = findViewById(R.id.btnMenu)
     }
-} // สิ้นสุดคลาส DebtSummary
+}
