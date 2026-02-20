@@ -47,15 +47,6 @@ class DebtSummary : AppCompatActivity() {
 
             popupMenu.setOnMenuItemClickListener { menuItem ->
                 when (menuItem.itemId) {
-                    R.id.action_add_member -> {
-                        try {
-                            val intent = Intent(this@DebtSummary, SelectFriend::class.java)
-                            startActivity(intent)
-                        } catch (e: Exception) {
-                            Toast.makeText(this@DebtSummary, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
-                        }
-                        true
-                    }
                     R.id.action_edit_items -> {
                         val intent = Intent(this@DebtSummary, BillSplit::class.java)
                         startActivity(intent)
@@ -91,10 +82,10 @@ class DebtSummary : AppCompatActivity() {
                     }
                     else -> false
                 }
-            } // ปิด setOnMenuItemClickListener
+            }
             popupMenu.show()
-        } // ปิด btnMenu.setOnClickListener
-    } // ปิด onCreate
+        }
+    }
 
     private fun init() {
         btnBack = findViewById(R.id.imageView)

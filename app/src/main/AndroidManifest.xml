@@ -68,6 +68,9 @@
             android:exported="false" />
         <activity android:name=".CreateGroup"
             android:exported="false" />
+        <activity
+            android:name=".WhoPays"
+            android:exported="false" />
 
     </application>
 
