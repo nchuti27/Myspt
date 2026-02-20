@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F5F7FA">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:background="@android:color/white"
+        app:layout_constraintTop_toTopOf="parent">
+        <ImageButton
+            android:id="@+id/btnBack3"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_arrow_back"
+            android:contentDescription="Back"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:tint="@android:color/black" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Edit Profile"
+            android:textColor="@android:color/black"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:fillViewport="true"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/toolbar">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="24dp">
+
+            <FrameLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginBottom="30dp">
+                <androidx.cardview.widget.CardView
+                    android:layout_width="110dp"
+                    android:layout_height="110dp"
+                    app:cardCornerRadius="55dp"
+                    app:cardElevation="2dp">
+                    <ImageView
+                        android:id="@+id/imgProfile"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:scaleType="centerCrop"
+                        android:src="@drawable/ic_launcher_background"
+                        android:contentDescription="Profile Picture" />
+                </androidx.cardview.widget.CardView>
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/btnChangePhoto"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom|end"
+                    android:src="@android:drawable/ic_menu_camera"
+                    android:contentDescription="Change Photo"
+                    app:fabCustomSize="36dp"
+                    app:backgroundTint="#3d79ca"
+                    app:tint="@android:color/white" />
+            </FrameLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Username (Locked)"
+                android:textColor="#64748B"
+                android:layout_marginBottom="8dp" />
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@android:drawable/edit_text"
+                android:layout_marginBottom="20dp">
+                <EditText
+                    android:id="@+id/etUser"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="48dp"
+                    android:background="@android:color/transparent"
+                    android:enabled="false"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="40dp"
+                    android:textColor="#94A3B8" />
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_gravity="center_vertical|end"
+                    android:layout_marginEnd="12dp"
+                    android:src="@android:drawable/ic_lock_idle_lock"
+                    android:contentDescription="Locked"
+                    app:tint="#94A3B8" />
+            </FrameLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Full Name"
+                android:textColor="#64748B"
+                android:layout_marginBottom="8dp" />
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@android:drawable/edit_text"
+                android:layout_marginBottom="20dp">
+                <EditText
+                    android:id="@+id/etUName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="48dp"
+                    android:background="@android:color/transparent"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="40dp"
+                    android:inputType="textPersonName" />
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_gravity="center_vertical|end"
+                    android:layout_marginEnd="12dp"
+                    android:src="@android:drawable/ic_menu_edit"
+                    android:contentDescription="Edit Name"
+                    app:tint="#3d79ca" />
+            </FrameLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Email Address"
+                android:textColor="#64748B"
+                android:layout_marginBottom="8dp" />
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@android:drawable/edit_text"
+                android:layout_marginBottom="30dp">
+                <EditText
+                    android:id="@+id/etEmail"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="48dp"
+                    android:background="@android:color/transparent"
+                    android:enabled="false"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="40dp"
+                    android:textColor="#94A3B8" />
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_gravity="center_vertical|end"
+                    android:layout_marginEnd="12dp"
+                    android:src="@android:drawable/ic_lock_idle_lock"
+                    android:contentDescription="Locked Email"
+                    app:tint="#94A3B8" />
+            </FrameLayout>
+
+            <Button
+                android:id="@+id/btnSave"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:backgroundTint="#3d79ca"
+                android:text="Save Changes"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold"
+                app:cornerRadius="12dp" />
+
+        </LinearLayout>
+    </ScrollView>
+</androidx.constraintlayout.widget.ConstraintLayout>

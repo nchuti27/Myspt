@@ -1,70 +1,107 @@
 package com.example.myspt
 
-import android.content.Intent
-import android.graphics.Color
-import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
-import android.view.LayoutInflater
-import android.widget.Button
-import android.widget.ImageButton
-import android.widget.ImageView
-import android.widget.Toast
-import androidx.activity.enableEdgeToEdge
-import androidx.appcompat.app.AlertDialog
+import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
+import com.google.android.material.bottomsheet.BottomSheetDialog
+import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
 class EditProfile : AppCompatActivity() {
-    var btnBack3: ImageButton? = null
-    var btnLogout: Button? = null
+
+    private lateinit var etUser: EditText
+    private lateinit var etUName: EditText
+    private lateinit var etEmail: EditText
+    private lateinit var btnSave: Button
+    private lateinit var btnBack: ImageButton
+    private lateinit var btnChangePhoto: FloatingActionButton // เพิ่มปุ่มกล้อง
+
+    private val db = FirebaseFirestore.getInstance()
+    private val auth = FirebaseAuth.getInstance()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        setContentView(R.layout.activity_edit_profile)
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
-        }
-        init()
-        btnBack3?.setOnClickListener {
-            finish()
-        }
-        btnLogout?.setOnClickListener {
-            showLogoutDialog()
+        setContentView(R.layout.activity_editprofile)
+
+        // 1. ผูก View กับ ID ใน XML
+        etUser = findViewById(R.id.etUser)
+        etUName = findViewById(R.id.etUName)
+        etEmail = findViewById(R.id.etEmail)
+        btnSave = findViewById(R.id.btnSave)
+        btnBack = findViewById(R.id.btnBack3)
+        btnChangePhoto = findViewById(R.id.btnChangePhoto) //
+
+        // 2. ดึงข้อมูล User มาแสดง
+        loadUserData()
+
+        // 3. ตั้งค่าการกดปุ่ม
+        btnBack.setOnClickListener { finish() }
+
+        btnSave.setOnClickListener { saveUserProfile() }
+
+        // เมื่อกดปุ่มกล้อง ให้เด้งเมนูเลือกรูปภาพ
+        btnChangePhoto.setOnClickListener {
+            showPhotoOptionsDialog()
         }
     }
-        private fun init() {
-            btnBack3 = findViewById(R.id.btnBack3)
-            btnLogout = findViewById(R.id.btnLogout)
-        }
-    private fun showLogoutDialog() {
-        val view = LayoutInflater.from(this).inflate(R.layout.dialog_logout, null)
 
-        val builder = AlertDialog.Builder(this)
-        builder.setView(view)
+    private fun loadUserData() {
+        val uid = auth.currentUser?.uid ?: return
+        db.collection("users").document(uid).get()
+            .addOnSuccessListener { document ->
+                if (document != null && document.exists()) {
+                    etUser.setText(document.getString("username"))
+                    etUName.setText(document.getString("name"))
+                    etEmail.setText(document.getString("email"))
+                }
+            }
+            .addOnFailureListener { e ->
+                Toast.makeText(this, "Error loading data: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+    }
 
-        val dialog = builder.create()
+    private fun showPhotoOptionsDialog() {
+        val dialog = BottomSheetDialog(this)
+        // อย่าลืมสร้างไฟล์ layout_dialog_photo.xml ไว้ในโฟลเดอร์ layout นะครับ
+        val view = layoutInflater.inflate(R.layout.dialogphoto, null)
 
-        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-        val btnCancel = view.findViewById<Button>(R.id.btnCancel)
-        val btnConfirm = view.findViewById<Button>(R.id.btnConfirm)
+        val lnPhotoLibrary = view.findViewById<LinearLayout>(R.id.lnPhotoLibrary)
+        val lnTakePhoto = view.findViewById<LinearLayout>(R.id.lnTakePhoto)
 
-        btnCancel.setOnClickListener {
+        lnPhotoLibrary.setOnClickListener {
+            // TODO: โค้ดสำหรับเปิด Gallery เพื่อเลือกรูป
+            Toast.makeText(this, "Opening Photo Library...", Toast.LENGTH_SHORT).show()
             dialog.dismiss()
         }
 
-        btnConfirm.setOnClickListener {
+        lnTakePhoto.setOnClickListener {
+            // TODO: โค้ดสำหรับเปิดกล้องถ่ายรูป
+            Toast.makeText(this, "Opening Camera...", Toast.LENGTH_SHORT).show()
             dialog.dismiss()
-            Toast.makeText(this, "Logged Out Successfully", Toast.LENGTH_SHORT).show()
-            val intent = Intent(this, Login::class.java)
-
-            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-
-            startActivity(intent)
         }
 
+        dialog.setContentView(view)
         dialog.show()
+    }
+
+    private fun saveUserProfile() {
+        val uid = auth.currentUser?.uid ?: return
+        val newName = etUName.text.toString().trim()
+
+        if (newName.isEmpty()) {
+            etUName.error = "Name cannot be empty"
+            return
+        }
+
+        // อัปเดตเฉพาะชื่อใน Firestore
+        db.collection("users").document(uid).update("name", newName)
+            .addOnSuccessListener {
+                Toast.makeText(this, "Profile Updated Successfully!", Toast.LENGTH_SHORT).show()
+                finish()
+            }
+            .addOnFailureListener { e ->
+                Toast.makeText(this, "Update failed: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
     }
 }
