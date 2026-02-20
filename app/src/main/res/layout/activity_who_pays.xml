@@ -75,6 +75,7 @@
             android:textStyle="bold" />
 
         <TextView
+            android:id="@+id/Ptabfriend"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
@@ -246,7 +247,7 @@
             </LinearLayout>
 
             <androidx.appcompat.widget.AppCompatButton
-                android:id="@+id/btnConfirmPayment"
+                android:id="@+id/btnConfirm"
                 android:layout_width="match_parent"
                 android:layout_height="50dp"
                 android:background="@drawable/bg_fintech_button"
