@@ -37,8 +37,7 @@ class DebtSummary : AppCompatActivity() {
 
         tabFriends?.setOnClickListener {
             val intent = Intent(this, FriendOwe::class.java)
-            val options = android.app.ActivityOptions.makeCustomAnimation(this, 0, 0)
-            startActivity(intent, options.toBundle())
+            startActivity(intent)
             finish()
         }
 
