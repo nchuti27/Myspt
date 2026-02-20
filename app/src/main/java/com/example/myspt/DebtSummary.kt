@@ -32,12 +32,15 @@ class DebtSummary : AppCompatActivity() {
         init()
 
         btnBack?.setOnClickListener {
+            val intent = Intent(this, MainActivity::class.java)
+            startActivity(intent)
             finish()
         }
 
         tabFriends?.setOnClickListener {
             val intent = Intent(this, FriendOwe::class.java)
-            startActivity(intent)
+            val options = android.app.ActivityOptions.makeCustomAnimation(this, 0, 0)
+            startActivity(intent, options.toBundle())
             finish()
         }
 
