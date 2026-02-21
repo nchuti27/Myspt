@@ -4,16 +4,13 @@ import android.app.Dialog
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
-import android.widget.Button
-import android.widget.ImageButton
-import android.widget.ImageView
-import android.widget.PopupMenu
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
 class WhoPays : AppCompatActivity() {
 
@@ -23,10 +20,24 @@ class WhoPays : AppCompatActivity() {
     private var btnConfirm: Button? = null
     private var isConfirmed: Boolean = false
 
+    // เพิ่มตัวแปรสำหรับ Database และข้อมูลบิล [cite: 2026-02-13]
+    private lateinit var db: FirebaseFirestore
+    private lateinit var auth: FirebaseAuth
+    private var totalAmount: Double = 0.0
+    private var billName: String = "New Bill"
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_who_pays)
+
+        // เชื่อมต่อ Firebase [cite: 2026-01-18, 2026-02-13]
+        db = FirebaseFirestore.getInstance()
+        auth = FirebaseAuth.getInstance()
+
+        // รับข้อมูลจากหน้า BillSplit (ถ้ามี) [cite: 2026-02-13]
+        totalAmount = intent.getDoubleExtra("TOTAL_AMOUNT", 0.0)
+        billName = intent.getStringExtra("BILL_NAME") ?: "New Bill"
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -35,14 +46,23 @@ class WhoPays : AppCompatActivity() {
         }
 
         init()
+        setupClickListeners()
+    }
 
-        backButton?.setOnClickListener {
-            finish()
-        }
+    private fun init() {
+        backButton = findViewById(R.id.backButton)
+        btnMenu = findViewById(R.id.btnMenu)
+        Ptabfriend = findViewById(R.id.Ptabfriend)
+        btnConfirm = findViewById(R.id.btnConfirm)
+    }
+
+    private fun setupClickListeners() {
+        backButton?.setOnClickListener { finish() }
+
         btnConfirm?.setOnClickListener {
-            isConfirmed = true
-            Toast.makeText(this, "Payer Confirmed!", Toast.LENGTH_SHORT).show()
+            saveBillToDatabase() // เรียกฟังก์ชันบันทึกข้อมูล [cite: 2026-02-13]
         }
+
         Ptabfriend?.setOnClickListener {
             if (isConfirmed) {
                 val intent = Intent(this, FriendOwe::class.java)
@@ -53,22 +73,36 @@ class WhoPays : AppCompatActivity() {
             }
         }
 
-        btnMenu?.setOnClickListener { view ->
-            showMenu(view)
-        }
+        btnMenu?.setOnClickListener { view -> showMenu(view) }
     }
 
-    private fun init() {
-        backButton = findViewById(R.id.backButton)
-        btnMenu = findViewById(R.id.btnMenu)
-        Ptabfriend = findViewById(R.id.Ptabfriend)
-        btnConfirm = findViewById(R.id.btnConfirm)
+    // ฟังก์ชันสำหรับบันทึกบิลลง Firestore [cite: 2026-02-13]
+    private fun saveBillToDatabase() {
+        val myUid = auth.currentUser?.uid ?: return
+
+        val billData = hashMapOf(
+            "billName" to billName,
+            "totalAmount" to totalAmount,
+            "paidBy" to myUid,
+            "timestamp" to com.google.firebase.Timestamp.now(),
+            "status" to "pending"
+        )
+
+        db.collection("bills")
+            .add(billData)
+            .addOnSuccessListener {
+                isConfirmed = true
+                Toast.makeText(this, "Bill Saved Successfully!", Toast.LENGTH_SHORT).show()
+                // เมื่อบันทึกสำเร็จ สามารถกดไปหน้าถัดไปได้
+            }
+            .addOnFailureListener { e ->
+                Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
     }
 
     private fun showMenu(view: View) {
         val popupMenu = PopupMenu(this, view)
         popupMenu.menuInflater.inflate(R.menu.menu_group_options, popupMenu.menu)
-
         popupMenu.setOnMenuItemClickListener { menuItem ->
             when (menuItem.itemId) {
                 R.id.action_edit_items -> {
@@ -96,14 +130,10 @@ class WhoPays : AppCompatActivity() {
 
         tvMessage?.text = "Are you sure you want to\n leave this group?"
 
-        btnNo?.setOnClickListener {
-            dialog.dismiss()
-        }
-
+        btnNo?.setOnClickListener { dialog.dismiss() }
         btnYes?.setOnClickListener {
             dialog.dismiss()
             Toast.makeText(this, "You have left the group.", Toast.LENGTH_SHORT).show()
-
             val intent = Intent(this, MainActivity::class.java)
             intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
             startActivity(intent)
@@ -111,16 +141,13 @@ class WhoPays : AppCompatActivity() {
         }
         dialog.show()
     }
+
     private fun showPleaseConfirmDialog() {
         val dialog = Dialog(this)
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
         dialog.setContentView(R.layout.dialog_confirm_payer)
-
         val btnOk = dialog.findViewById<Button>(R.id.btnOk)
-
-        btnOk?.setOnClickListener {
-            dialog.dismiss()
-        }
+        btnOk?.setOnClickListener { dialog.dismiss() }
         dialog.show()
     }
 }
