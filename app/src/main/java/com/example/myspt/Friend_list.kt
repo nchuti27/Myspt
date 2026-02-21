@@ -7,12 +7,14 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.*
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 
 class Friend_list : AppCompatActivity() {
@@ -36,7 +38,7 @@ class Friend_list : AppCompatActivity() {
         }
 
         init()
-        loadFriendsFromFirestore() // เรียกใช้ฟังก์ชันดึงข้อมูลจริง
+        loadFriendsFromFirestore()
     }
 
     private fun init() {
@@ -52,7 +54,6 @@ class Friend_list : AppCompatActivity() {
             finish()
         }
 
-        // ตั้งค่า RecyclerView
         friendAdapter = FriendAdapter(friendList)
         rvFriendList.layoutManager = LinearLayoutManager(this)
         rvFriendList.adapter = friendAdapter
@@ -61,32 +62,28 @@ class Friend_list : AppCompatActivity() {
     private fun loadFriendsFromFirestore() {
         val myUid = auth.currentUser?.uid ?: return
 
-        // 1. เข้าไปดึงรายชื่อ UID เพื่อนจากตัวเราก่อน
         db.collection("users").document(myUid).get()
             .addOnSuccessListener { document ->
                 if (document != null && document.exists()) {
                     val friendsUids = document.get("friends") as? List<String> ?: emptyList()
-
                     if (friendsUids.isEmpty()) {
+                        friendList.clear()
+                        friendAdapter.notifyDataSetChanged()
                         Toast.makeText(this, "No friends found", Toast.LENGTH_SHORT).show()
                         return@addOnSuccessListener
                     }
-
-                    // 2. เอา UID ที่ได้ไปดึงข้อมูล ชื่อ/รายละเอียด ของเพื่อนแต่ละคนมาโชว์
                     fetchFriendsDetails(friendsUids)
                 }
             }
     }
 
     private fun fetchFriendsDetails(uids: List<String>) {
-        friendList.clear() // ล้างข้อมูลเก่า (Somchai/Somsak) ออกให้หมด
-
+        friendList.clear()
         for (uid in uids) {
             db.collection("users").document(uid).get()
                 .addOnSuccessListener { doc ->
                     val name = doc.getString("name") ?: "Unknown"
                     val username = doc.getString("username") ?: ""
-
                     friendList.add(FriendData(name, "Username: $username", uid))
                     friendAdapter.notifyDataSetChanged()
                 }
@@ -94,7 +91,6 @@ class Friend_list : AppCompatActivity() {
     }
 }
 
-// เพิ่ม uid เข้าไปใน Data Class เพื่อใช้ตอนลบเพื่อน
 data class FriendData(
     val name: String,
     val detail: String,
@@ -120,6 +116,11 @@ class FriendAdapter(private var friendList: ArrayList<FriendData>) :
 
     override fun onBindViewHolder(holder: FriendViewHolder, position: Int) {
         val currentItem = friendList[position]
+        val context = holder.itemView.context
+        val db = FirebaseFirestore.getInstance()
+        val auth = FirebaseAuth.getInstance()
+        val myUid = auth.currentUser?.uid
+
         holder.tvName.text = currentItem.name
         holder.layoutHidden.visibility = if (currentItem.isExpanded) View.VISIBLE else View.GONE
 
@@ -128,15 +129,40 @@ class FriendAdapter(private var friendList: ArrayList<FriendData>) :
             notifyItemChanged(position)
         }
 
+        // English version of Delete Confirmation System
         holder.btnDelete.setOnClickListener {
-            // โค้ดสำหรับลบเพื่อนจริงๆ ใน Firestore (ถ้าต้องการ) สามารถเขียนเพิ่มได้ที่นี่ครับ
-            friendList.removeAt(position)
-            notifyItemRemoved(position)
-            notifyItemRangeChanged(position, friendList.size)
+            AlertDialog.Builder(context)
+                .setTitle("Remove Friend")
+                .setMessage("Are you sure you want to remove ${currentItem.name} from your friend list?")
+                .setPositiveButton("Remove") { _, _ ->
+                    if (myUid != null) {
+                        // 1. Remove from our collection
+                        db.collection("users").document(myUid)
+                            .update("friends", FieldValue.arrayRemove(currentItem.uid))
+                            .addOnSuccessListener {
+                                // 2. Remove us from friend's collection
+                                db.collection("users").document(currentItem.uid)
+                                    .update("friends", FieldValue.arrayRemove(myUid))
+
+                                // 3. Update UI
+                                if (position < friendList.size) {
+                                    friendList.removeAt(position)
+                                    notifyItemRemoved(position)
+                                    notifyItemRangeChanged(position, friendList.size)
+                                    Toast.makeText(context, "Friend removed successfully", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                            .addOnFailureListener { e ->
+                                Toast.makeText(context, "Failed to remove: ${e.message}", Toast.LENGTH_SHORT).show()
+                            }
+                    }
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
         }
 
         holder.btnViewProfile.setOnClickListener {
-            Toast.makeText(holder.itemView.context, "Profile: ${currentItem.name}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Viewing Profile: ${currentItem.name}", Toast.LENGTH_SHORT).show()
         }
     }
 
