@@ -41,8 +41,6 @@
         <activity android:name=".FindUser" android:exported="false" />
         <activity android:name=".WhoPays" android:exported="false" />
 
-        <activity android:name=".Grouplist" android:exported="false" />
-
         <activity android:name=".CreateGroup" android:exported="false" />
 
     </application>
