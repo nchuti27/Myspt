@@ -23,7 +23,7 @@ class SelectFriend : AppCompatActivity() {
             finish()
         }
         tvNext?.setOnClickListener {
-            val intent = Intent(this, MainActivity::class.java)
+            val intent = Intent(this, CreateGroup::class.java)
             startActivity(intent)
             finish()
         }
