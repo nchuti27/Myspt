@@ -98,7 +98,6 @@ class EditProfile : AppCompatActivity() {
         db.collection("users").document(uid).update("name", newName)
             .addOnSuccessListener {
                 Toast.makeText(this, "Profile Updated Successfully!", Toast.LENGTH_SHORT).show()
-                finish()
             }
             .addOnFailureListener { e ->
                 Toast.makeText(this, "Update failed: ${e.message}", Toast.LENGTH_SHORT).show()
