@@ -76,7 +76,7 @@ class MainActivity : AppCompatActivity() {
         btnLogout = findViewById(R.id.btnLogout)
         rvFriends = findViewById(R.id.rvFriends)
         rvGroups = findViewById(R.id.rvGroups)
-        // ลบโค้ด rvGroupList.adapter ที่เกินมาตรงนี้ออกแล้วครับ
+
     }
 
     private fun setupClickListeners() {
@@ -85,7 +85,7 @@ class MainActivity : AppCompatActivity() {
         tvSeeMoreFriend?.setOnClickListener { startActivity(Intent(this, Friend_list::class.java)) }
         tvSeeMoreGroup?.setOnClickListener { startActivity(Intent(this, Grouplist::class.java)) }
         btnSplitBill?.setOnClickListener { startActivity(Intent(this, BillSplit::class.java)) }
-        btnRecentBill?.setOnClickListener { startActivity(Intent(this, BillDetail::class.java)) }
+        btnRecentBill?.setOnClickListener { startActivity(Intent(this, RecentBill::class.java)) }
         btnOwe?.setOnClickListener { startActivity(Intent(this, Owe::class.java)) }
         btnLogout?.setOnClickListener { showLogoutDialog() }
     }
