@@ -5,13 +5,15 @@
     android:layout_height="wrap_content"
     android:layout_marginEnd="16dp"
     android:gravity="center"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:padding="4dp">
 
     <androidx.cardview.widget.CardView
         android:layout_width="60dp"
         android:layout_height="60dp"
         app:cardCornerRadius="30dp"
-        app:cardElevation="0dp">
+        app:cardElevation="2dp"
+        app:cardBackgroundColor="#F0F0F0">
 
         <ImageView
             android:id="@+id/ivAvatar"
@@ -19,18 +21,19 @@
             android:layout_height="match_parent"
             android:scaleType="centerCrop"
             android:src="@drawable/ic_launcher_background"
-            android:contentDescription="User Avatar" />
+            android:contentDescription="Friend Profile Picture" />
     </androidx.cardview.widget.CardView>
 
     <TextView
         android:id="@+id/tvName"
-        android:layout_width="70dp"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
+        android:layout_marginTop="6dp"
+        android:maxWidth="75dp"
         android:ellipsize="end"
         android:gravity="center"
         android:maxLines="1"
         android:text="Name"
-        android:textColor="#000000"
+        android:textColor="#333333"
         android:textSize="12sp" />
 </LinearLayout>
