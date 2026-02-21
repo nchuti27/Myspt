@@ -1,9 +1,8 @@
 package com.example.myspt
 
 import android.os.Bundle
-import android.widget.EditText
-import android.widget.ImageView
-import android.widget.Toast
+import android.widget.ImageButton
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -14,86 +13,70 @@ class GroupDetail : AppCompatActivity() {
     private lateinit var db: FirebaseFirestore
     private var groupId: String? = null
 
-    private lateinit var etGroupName: EditText
-    private lateinit var imgGroup: ImageView
-    private lateinit var rvMembers: RecyclerView
+    private var tvGroupName: TextView? = null
+    private var rvMembers: RecyclerView? = null
+    private var btnBack: ImageButton? = null
+
+    private val memberList = ArrayList<CircleItem>()
+    private lateinit var memberAdapter: CircleAdapter // ใช้ Adapter วงกลมที่คุณมีอยู่แล้ว
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_groupdetail) // ตรวจสอบชื่อ XML ให้ตรงกับรูป
+        setContentView(R.layout.activity_groupdetail)
 
         db = FirebaseFirestore.getInstance()
+
+        // รับ ID กลุ่มที่ส่งมาจากหน้าหลัก [cite: 2026-02-21]
         groupId = intent.getStringExtra("GROUP_ID")
 
-        etGroupName = findViewById(R.id.editGroupName)
-        imgGroup = findViewById(R.id.ImageView)
+        init()
+        if (groupId != null) {
+            loadGroupData()
+        }
+    }
+
+    private fun init() {
+        tvGroupName = findViewById(R.id.tvGroupName)
         rvMembers = findViewById(R.id.rvMembers)
-        val btnBack = findViewById<ImageView>(R.id.backButton) // สมมติ ID ปุ่ม back
-        val btnAddMember = findViewById<ImageView>(R.id.btnAddMember) // ไอคอนบวกในรูป
-        val btnEditName = findViewById<ImageView>(R.id.btnEditName) // ไอคอนดินสอในรูป
+        btnBack = findViewById(R.id.backButton)
 
         btnBack?.setOnClickListener { finish() }
 
-        loadGroupData()
-
-        // Logic แก้ชื่อกลุ่ม
-        btnEditName?.setOnClickListener {
-            val newName = etGroupName.text.toString().trim()
-            if (newName.isNotEmpty()) {
-                updateGroupName(newName)
-            }
-        }
-
-        // Logic เพิ่มสมาชิก
-        btnAddMember?.setOnClickListener {
-            // ส่งไปหน้า FindUser หรือหน้าเลือกเพื่อนเพื่อเพิ่มเข้ากลุ่มนี้
-            // val intent = Intent(this, FindUser::class.java)
-            // intent.putExtra("GROUP_ID", groupId)
-            // startActivity(intent)
-        }
+        // ตั้งค่า RecyclerView [cite: 2026-02-21]
+        memberAdapter = CircleAdapter(memberList) { }
+        rvMembers?.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+        rvMembers?.adapter = memberAdapter
     }
 
     private fun loadGroupData() {
-        groupId?.let { id ->
-            db.collection("groups").document(id).get().addOnSuccessListener { doc ->
-                if (doc.exists()) {
-                    etGroupName.setText(doc.getString("groupName"))
-                    val memberUids = doc.get("members") as? List<String> ?: listOf()
-                    setupMembersList(memberUids)
-                }
+        // ดึงข้อมูลกลุ่มแบบ Real-time [cite: 2026-02-21]
+        db.collection("groups").document(groupId!!)
+            .addSnapshotListener { snapshot, e ->
+                if (e != null || snapshot == null) return@addSnapshotListener
+
+                val name = snapshot.getString("groupName") ?: "Unknown Group"
+                val membersUids = snapshot.get("members") as? List<String> ?: listOf()
+
+                tvGroupName?.text = name
+                fetchMemberDetails(membersUids) // ดึงรายละเอียดสมาชิกต่อ [cite: 2026-02-21]
             }
-        }
     }
 
-    private fun updateGroupName(newName: String) {
-        groupId?.let { id ->
-            db.collection("groups").document(id).update("groupName", newName)
-                .addOnSuccessListener {
-                    Toast.makeText(this, "อัปเดตชื่อกลุ่มแล้ว", Toast.LENGTH_SHORT).show()
-                }
-        }
-    }
-
-    private fun setupMembersList(uids: List<String>) {
-        val memberList = ArrayList<CircleItem>()
-        var count = 0
-
+    private fun fetchMemberDetails(uids: List<String>) {
         if (uids.isEmpty()) return
 
-        for (uid in uids) {
-            db.collection("users").document(uid).get().addOnSuccessListener { doc ->
-                val name = doc.getString("name") ?: "Unknown"
-                memberList.add(CircleItem(id = uid, name = name))
-                count++
-
-                if (count == uids.size) {
-                    rvMembers.layoutManager = LinearLayoutManager(this)
-                    // ใช้ Adapter สำหรับแสดงรายชื่อสมาชิก (ทำคล้าย HomeGroupAdapter แบบ list)
-                    rvMembers.adapter = HomeGroupAdapter(memberList, true) {
-                        // กดที่สมาชิกเพื่อดูโปรไฟล์หรือลบออก
-                    }
+        // แก้ปัญหา ANR: ใช้ whereIn เพื่อดึงข้อมูลสมาชิกทุกคนในครั้งเดียว [cite: 2026-02-21]
+        db.collection("users").whereIn(com.google.firebase.firestore.FieldPath.documentId(), uids.take(30))
+            .get()
+            .addOnSuccessListener { documents ->
+                memberList.clear()
+                for (doc in documents) {
+                    memberList.add(CircleItem(
+                        id = doc.id,
+                        name = doc.getString("name") ?: "Unknown"
+                    ))
                 }
+                memberAdapter.notifyDataSetChanged()
             }
-        }
     }
 }

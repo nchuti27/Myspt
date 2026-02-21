@@ -17,7 +17,7 @@
         app:layout_constraintTop_toTopOf="parent">
 
         <ImageView
-            android:id="@+id/btnBack"
+            android:id="@+id/backButton"
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:padding="12dp"
@@ -32,7 +32,7 @@
             android:id="@+id/tvTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Friend Name"
+            android:text="Owe Summary"
             android:textColor="#1A1A1A"
             android:textSize="18sp"
             android:textStyle="bold"
@@ -54,12 +54,24 @@
             app:tint="#1A1A1A" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 
+    <TextView
+        android:id="@+id/tvTotalBalance"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="0.00 ฿"
+        android:textSize="28sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:padding="20dp"
+        android:textColor="@color/black"
+        app:layout_constraintTop_toBottomOf="@id/headerContainer" />
+
     <LinearLayout
         android:id="@+id/tabContainer"
         android:layout_width="match_parent"
         android:layout_height="50dp"
         android:orientation="horizontal"
-        app:layout_constraintTop_toBottomOf="@id/headerContainer">
+        app:layout_constraintTop_toBottomOf="@id/tvTotalBalance">
 
         <TextView
             android:id="@+id/tabItems"
