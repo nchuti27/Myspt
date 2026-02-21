@@ -4,11 +4,16 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
 import android.widget.ImageButton
+import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 
@@ -16,6 +21,10 @@ class NotiGroup : AppCompatActivity() {
     private lateinit var db: FirebaseFirestore
     private lateinit var auth: FirebaseAuth
     private var groupNotiListener: ListenerRegistration? = null
+
+    private var rvGroupNoti: RecyclerView? = null
+    private var groupNotiList = ArrayList<DocumentSnapshot>()
+    private lateinit var groupAdapter: NotificationAdapter // ใช้ Adapter ตัวเดียวกับเพื่อนได้เลย
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -32,10 +41,12 @@ class NotiGroup : AppCompatActivity() {
         }
 
         init()
+        setupRecyclerView()
         listenToGroupInvites()
     }
 
     private fun init() {
+        rvGroupNoti = findViewById(R.id.rvGroupNoti) // ตรวจสอบ ID ใน activity_noti_group.xml
         findViewById<ImageButton>(R.id.backButton)?.setOnClickListener { finish() }
 
         findViewById<Button>(R.id.btnTabFriend)?.setOnClickListener {
@@ -43,20 +54,71 @@ class NotiGroup : AppCompatActivity() {
             intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
             startActivity(intent)
             overridePendingTransition(0, 0)
+            finish()
+        }
+    }
+
+    private fun setupRecyclerView() {
+        // ใช้ NotificationAdapter ตัวเดิม แต่เปลี่ยน Logic เป็นการเข้ากลุ่ม
+        groupAdapter = NotificationAdapter(groupNotiList,
+            onAccept = { doc -> joinGroup(doc) },
+            onDelete = { doc -> declineGroup(doc) }
+        )
+        rvGroupNoti?.apply {
+            layoutManager = LinearLayoutManager(this@NotiGroup)
+            adapter = groupAdapter
         }
     }
 
     private fun listenToGroupInvites() {
         val myUid = auth.currentUser?.uid ?: return
 
-        // คอยฟังคำเชิญเข้ากลุ่ม (สมมติว่าคุณเก็บในคอลเลกชัน group_invites) [cite: 2026-02-09]
+        // แก้ปัญหา ANR: ใช้ SnapshotListener ดึงข้อมูลคำเชิญเข้ากลุ่มแบบ Real-time
         groupNotiListener = db.collection("group_invites")
             .whereEqualTo("to_uid", myUid)
             .whereEqualTo("status", "pending")
             .addSnapshotListener { snapshots, e ->
+                if (e != null) return@addSnapshotListener
+
                 if (snapshots != null) {
-                    // อัปเดตข้อมูลกลุ่มที่นี่
+                    groupNotiList.clear()
+                    groupNotiList.addAll(snapshots.documents)
+                    groupAdapter.notifyDataSetChanged()
                 }
+            }
+    }
+
+    private fun joinGroup(doc: DocumentSnapshot) {
+        val myUid = auth.currentUser?.uid ?: return
+        val groupId = doc.getString("groupId") ?: return
+        val inviteId = doc.id
+
+        val batch = db.batch()
+
+        // 1. อัปเดตสถานะคำเชิญ
+        val inviteRef = db.collection("group_invites").document(inviteId)
+        batch.update(inviteRef, "status", "accepted")
+
+        // 2. เพิ่ม UID เราเข้าไปในสมาชิกของกลุ่ม (members)
+        val groupRef = db.collection("groups").document(groupId)
+        batch.update(groupRef, "members", FieldValue.arrayUnion(myUid))
+
+        // 3. เพิ่ม Group ID เข้าไปใน Profile ของเรา
+        val userRef = db.collection("users").document(myUid)
+        batch.update(userRef, "groups", FieldValue.arrayUnion(groupId))
+
+        batch.commit().addOnSuccessListener {
+            Toast.makeText(this, "Joined group!", Toast.LENGTH_SHORT).show()
+        }.addOnFailureListener { e ->
+            Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun declineGroup(doc: DocumentSnapshot) {
+        // ลบคำเชิญทิ้งเมื่อกด Delete
+        db.collection("group_invites").document(doc.id).delete()
+            .addOnSuccessListener {
+                Toast.makeText(this, "Invitation declined", Toast.LENGTH_SHORT).show()
             }
     }
 
