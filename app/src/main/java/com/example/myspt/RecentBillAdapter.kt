@@ -1,5 +1,6 @@
 package com.example.myspt
 
+import android.content.Intent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -30,7 +31,15 @@ class RecentBillAdapter(private val billList: ArrayList<BillItem>) :
         holder.tvBillName.text = currentItem.itemName
         holder.tvBillTotal.text = String.format("%.2f ฿", currentItem.price)
 
-        // ตั้งค่า PopupMenu สำหรับปุ่มจุด 3 จุด [cite: 2026-02-13]
+        // 🌟 1. กดที่ตัวกล่องบิล (ปิดปีกกาให้เรียบร้อยแล้ว)
+        holder.itemView.setOnClickListener { view ->
+            val intent = Intent(view.context, BillDetail::class.java)
+            intent.putExtra("BILL_NAME", currentItem.itemName)
+            intent.putExtra("BILL_TOTAL", currentItem.price)
+            view.context.startActivity(intent)
+        } // <--- จุดที่ 1: เติมปีกกาปิดตรงนี้ครับ
+
+        // 🌟 2. ตั้งค่า PopupMenu สำหรับปุ่มจุด 3 จุด
         holder.btnBillMenu.setOnClickListener { view ->
             val popup = PopupMenu(view.context, view)
             popup.menu.add("Delete").setOnMenuItemClickListener {
@@ -46,8 +55,6 @@ class RecentBillAdapter(private val billList: ArrayList<BillItem>) :
             .setTitle("Confirm Delete")
             .setMessage("Do you want to delete this bill history?")
             .setPositiveButton("Delete") { _, _ ->
-                // Logic การลบใน Firestore (ต้องมี ID ของเอกสาร) [cite: 2026-02-13]
-                // เมื่อลบสำเร็จ:
                 billList.removeAt(position)
                 notifyItemRemoved(position)
                 Toast.makeText(context, "Deleted", Toast.LENGTH_SHORT).show()

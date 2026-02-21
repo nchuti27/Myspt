@@ -36,7 +36,7 @@ class RecentBill : AppCompatActivity() {
 
         init()
         setupListeners()
-        loadRecentBillsFromFirestore()
+       // loadRecentBillsFromFirestore()
     }
 
     private fun init() {
@@ -44,6 +44,14 @@ class RecentBill : AppCompatActivity() {
         btnBack = findViewById(R.id.backButton)
 
         rvRecentBills.layoutManager = LinearLayoutManager(this)
+        // --- ใส่ข้อมูลบิลจำลอง (Dummy Data) ตรงนี้เลย โหลดปุ๊บโชว์ปั๊บ ---
+        billList.add(BillItem("หมูกระทะ", 1, 1590.00))
+        billList.add(BillItem("ชาบูตี๋น้อย", 1, 876.00))
+        billList.add(BillItem("ปาร์ตี้วันเกิด", 1, 3450.00))
+        billList.add(BillItem("ค่าแท็กซี่ไปเซ็นทรัล", 1, 150.00))
+        billList.add(BillItem("ทริปเที่ยวทะเล", 1, 5400.00))
+        billList.add(BillItem("ค่าไฟเดือนที่แล้ว", 1, 1420.50))
+        billList.add(BillItem("KFC มื้อดึก", 1, 455.00))
 
         // เชื่อมต่อ Adapter
         adapter = RecentBillAdapter(billList)
@@ -69,6 +77,8 @@ class RecentBill : AppCompatActivity() {
                     // หมายเหตุ: คุณอาจต้องเพิ่ม field 'id' ใน Data Class BillItem เพื่อใช้เก็บ doc.id
                     billList.add(item)
                 }
+
+
                 adapter.notifyDataSetChanged()
             }
             .addOnFailureListener { e ->
