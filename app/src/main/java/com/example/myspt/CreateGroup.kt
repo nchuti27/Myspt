@@ -2,6 +2,7 @@ package com.example.myspt
 
 import android.content.Intent
 import android.os.Bundle
+import android.widget.ImageButton
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.button.MaterialButton
@@ -13,7 +14,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 class CreateGroup : AppCompatActivity() {
 
     private lateinit var etGroupName: TextInputEditText
-    private lateinit var btnCreate: MaterialButton
+    private lateinit var btnCreate: ImageButton
     private lateinit var db: FirebaseFirestore
     private lateinit var auth: FirebaseAuth
 
