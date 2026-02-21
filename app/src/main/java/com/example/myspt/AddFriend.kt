@@ -14,15 +14,14 @@ import com.google.firebase.firestore.FirebaseFirestore
 
 class AddFriend : AppCompatActivity() {
 
-    private var etSearchUser: EditText? = null
-    private var btnAdd: Button? = null
+    private lateinit var etSearchUser: EditText
+    private lateinit var btnAdd: Button
     private lateinit var db: FirebaseFirestore
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_addfriend)
-
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -39,42 +38,36 @@ class AddFriend : AppCompatActivity() {
         btnAdd = findViewById(R.id.btnAdd)
         val btnBack = findViewById<ImageButton>(R.id.backButton)
 
-        btnBack.setOnClickListener {
-            finish()
-        }
+        btnBack.setOnClickListener { finish() }
 
-        btnAdd?.setOnClickListener {
-            val username = etSearchUser?.text.toString().trim()
-
+        btnAdd.setOnClickListener {
+            val username = etSearchUser.text.toString().trim()
             if (username.isEmpty()) {
-                etSearchUser?.error = "Please enter username"
+                etSearchUser.error = "Please enter username"
                 return@setOnClickListener
             }
-
             checkUserAndNavigate(username)
         }
     }
 
     private fun checkUserAndNavigate(username: String) {
-
         db.collection("users")
             .whereEqualTo("username", username)
             .get()
             .addOnSuccessListener { documents ->
                 if (!documents.isEmpty) {
+                    val document = documents.documents[0] // ดึงคนแรกที่หาเจอ
+                    val friendName = document.getString("name")
+                    val friendUid = document.id
+                    val friendUsername = document.getString("username")
 
-                    for (document in documents) {
-                        val friendName = document.getString("name")
-                        val friendUid = document.id
-
-                        val intent = Intent(this, FindUser::class.java)
-                        intent.putExtra("FRIEND_NAME", friendName)
-                        intent.putExtra("FRIEND_UID", friendUid)
-                        startActivity(intent)
-                    }
+                    val intent = Intent(this, FindUser::class.java)
+                    intent.putExtra("FRIEND_NAME", friendName)
+                    intent.putExtra("FRIEND_UID", friendUid)
+                    intent.putExtra("FRIEND_USERNAME", friendUsername) // ส่งเพิ่มเพื่อให้หน้าถัดไปโชว์ username ได้
+                    startActivity(intent)
                 } else {
-
-                    Toast.makeText(this, "Not found user", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "User not found", Toast.LENGTH_SHORT).show()
                 }
             }
             .addOnFailureListener { e ->

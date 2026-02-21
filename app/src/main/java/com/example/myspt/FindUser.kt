@@ -10,9 +10,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-// --- 1. เพิ่ม Import ที่จำเป็น ---
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 
 class FindUser : AppCompatActivity() {
@@ -38,7 +36,6 @@ class FindUser : AppCompatActivity() {
         }
         init()
 
-
         val receivedName = intent.getStringExtra("FRIEND_NAME")
         val friendUid = intent.getStringExtra("FRIEND_UID")
 
@@ -54,38 +51,44 @@ class FindUser : AppCompatActivity() {
 
         btnAddFriend!!.setOnClickListener {
             if (friendUid != null) {
-                addFriendToFirestore(friendUid)
+                sendFriendRequest(friendUid) // เปลี่ยนชื่อฟังก์ชันให้ชัดเจนขึ้น
             } else {
                 Toast.makeText(this, "Cannot add this user", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
-    private fun addFriendToFirestore(friendUid: String) {
-        val myUid = auth.currentUser?.uid
+    private fun sendFriendRequest(friendUid: String) {
+        val myUid = auth.currentUser?.uid ?: return
 
-        if (myUid != null) {
-            if (myUid == friendUid) {
-                Toast.makeText(this, "You cannot add yourself", Toast.LENGTH_SHORT).show()
-                return
-            }
-
-
-            db.collection("users").document(myUid)
-                .update("friends", FieldValue.arrayUnion(friendUid))
-                .addOnSuccessListener {
-                    Toast.makeText(this, "Friend added successfully!", Toast.LENGTH_LONG).show()
-
-
-                    val intent = Intent(this, MainActivity::class.java)
-                    intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
-                    startActivity(intent)
-                    finish()
-                }
-                .addOnFailureListener { e ->
-                    Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
-                }
+        if (myUid == friendUid) {
+            Toast.makeText(this, "You cannot add yourself", Toast.LENGTH_SHORT).show()
+            return
         }
+
+        // สร้างข้อมูลคำขอเพื่อน [cite: 2026-02-09]
+        val request = hashMapOf(
+            "from_uid" to myUid,
+            "to_uid" to friendUid,
+            "status" to "pending", // สถานะเริ่มต้นคือรอดำเนินการ [cite: 2026-02-09]
+            "timestamp" to com.google.firebase.Timestamp.now()
+        )
+
+        // บันทึกลงคอลเลกชัน friend_requests
+        db.collection("friend_requests")
+            .add(request)
+            .addOnSuccessListener {
+                Toast.makeText(this, "Friend request sent!", Toast.LENGTH_LONG).show()
+
+                // กลับไปหน้าหลัก
+                val intent = Intent(this, MainActivity::class.java)
+                intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
+                startActivity(intent)
+                finish()
+            }
+            .addOnFailureListener { e ->
+                Toast.makeText(this, "Failed to send request: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
     }
 
     private fun init() {
