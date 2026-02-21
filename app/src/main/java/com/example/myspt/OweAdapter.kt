@@ -17,7 +17,7 @@ class OweAdapter(private val oweList: List<OweItem>) :
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val view = LayoutInflater.from(parent.context).inflate(R.layout.item_friend_owe, parent, false)
+        val view = LayoutInflater.from(parent.context).inflate(R.layout.item_friends_owe, parent, false)
         return ViewHolder(view)
     }
 

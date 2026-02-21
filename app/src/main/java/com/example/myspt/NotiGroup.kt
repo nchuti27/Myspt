@@ -24,7 +24,7 @@ class NotiGroup : AppCompatActivity() {
 
     private var rvGroupNoti: RecyclerView? = null
     private var groupNotiList = ArrayList<DocumentSnapshot>()
-    private lateinit var groupAdapter: NotificationAdapter // ใช้ Adapter ตัวเดียวกับเพื่อนได้เลย
+    private lateinit var groupAdapter: NotificationAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,7 +46,7 @@ class NotiGroup : AppCompatActivity() {
     }
 
     private fun init() {
-        rvGroupNoti = findViewById(R.id.rvGroupNoti) // ตรวจสอบ ID ใน activity_noti_group.xml
+        rvGroupNoti = findViewById(R.id.rvGroupNoti) // ผูกไอดีให้ตรงกับ XML
         findViewById<ImageButton>(R.id.backButton)?.setOnClickListener { finish() }
 
         findViewById<Button>(R.id.btnTabFriend)?.setOnClickListener {
@@ -59,7 +59,7 @@ class NotiGroup : AppCompatActivity() {
     }
 
     private fun setupRecyclerView() {
-        // ใช้ NotificationAdapter ตัวเดิม แต่เปลี่ยน Logic เป็นการเข้ากลุ่ม
+        // ใช้ NotificationAdapter ตัวเดิม [cite: 2026-02-21]
         groupAdapter = NotificationAdapter(groupNotiList,
             onAccept = { doc -> joinGroup(doc) },
             onDelete = { doc -> declineGroup(doc) }
@@ -73,7 +73,7 @@ class NotiGroup : AppCompatActivity() {
     private fun listenToGroupInvites() {
         val myUid = auth.currentUser?.uid ?: return
 
-        // แก้ปัญหา ANR: ใช้ SnapshotListener ดึงข้อมูลคำเชิญเข้ากลุ่มแบบ Real-time
+        // แก้ปัญหา ANR: ใช้ SnapshotListener ดึงข้อมูลคำเชิญแบบ Real-time [cite: 2026-02-21]
         groupNotiListener = db.collection("group_invites")
             .whereEqualTo("to_uid", myUid)
             .whereEqualTo("status", "pending")
@@ -103,7 +103,7 @@ class NotiGroup : AppCompatActivity() {
         val groupRef = db.collection("groups").document(groupId)
         batch.update(groupRef, "members", FieldValue.arrayUnion(myUid))
 
-        // 3. เพิ่ม Group ID เข้าไปใน Profile ของเรา
+        // 3. เพิ่ม Group ID เข้าไปใน Profile ของเรา [cite: 2026-02-09]
         val userRef = db.collection("users").document(myUid)
         batch.update(userRef, "groups", FieldValue.arrayUnion(groupId))
 
@@ -115,7 +115,6 @@ class NotiGroup : AppCompatActivity() {
     }
 
     private fun declineGroup(doc: DocumentSnapshot) {
-        // ลบคำเชิญทิ้งเมื่อกด Delete
         db.collection("group_invites").document(doc.id).delete()
             .addOnSuccessListener {
                 Toast.makeText(this, "Invitation declined", Toast.LENGTH_SHORT).show()
@@ -124,6 +123,6 @@ class NotiGroup : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        groupNotiListener?.remove()
+        groupNotiListener?.remove() // ล้าง Listener ป้องกัน Memory Leak [cite: 2026-02-21]
     }
 }
