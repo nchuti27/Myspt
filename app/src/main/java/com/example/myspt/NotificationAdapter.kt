@@ -15,7 +15,6 @@ class NotificationAdapter(
 ) : RecyclerView.Adapter<NotificationAdapter.ViewHolder>() {
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        // ไอดีตรงกับใน item_notification.xml ที่เราแก้ไขล่าสุด [cite: 2026-02-21]
         val tvName: TextView = view.findViewById(R.id.tvFriendName)
         val btnAccept: Button = view.findViewById(R.id.btnAccept)
         val btnDelete: Button = view.findViewById(R.id.btnDelete)
@@ -29,14 +28,14 @@ class NotificationAdapter(
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val doc = notifications[position]
 
-        // ดึงชื่อผู้ส่งคำขอ: ลำดับความสำคัญคือ senderName -> username -> Unknown [cite: 2026-02-09]
-        val name = doc.getString("senderName")
-            ?: doc.getString("username")
+        // --- แก้ไขจุดนี้: เปลี่ยนมาดึงจากฟิลด์ from_name ที่เราบันทึกไว้ล่าสุด ---
+        val name = doc.getString("from_name")
+            ?: doc.getString("senderName") // กันเหนียวสำหรับข้อมูลเก่า
+            ?: doc.getString("username")   // กันเหนียวสำหรับข้อมูลเก่า
             ?: "Unknown User"
 
         holder.tvName.text = name
 
-        // ส่ง Document ของรายการนั้นๆ กลับไปให้ Activity จัดการผ่าน Callback
         holder.btnAccept.setOnClickListener {
             onAccept(doc)
         }
@@ -48,7 +47,6 @@ class NotificationAdapter(
 
     override fun getItemCount() = notifications.size
 
-    // ฟังก์ชันสำหรับอัปเดตข้อมูลเมื่อมีการเปลี่ยนแปลงใน Firestore [cite: 2026-02-21]
     fun updateData(newList: List<DocumentSnapshot>) {
         notifications = newList
         notifyDataSetChanged()

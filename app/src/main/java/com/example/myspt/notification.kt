@@ -99,19 +99,20 @@ class notification : AppCompatActivity() {
             }
     }
 
-    // ฟังก์ชันเมื่อกด Accept: อัปเดตทั้งเราและเพื่อน [cite: 2026-02-09]
+    // ฟังก์ชันเมื่อกด Accept: อัปเดตทั้งเราและเพื่อน
     private fun acceptFriend(doc: DocumentSnapshot) {
         val myUid = auth.currentUser?.uid ?: return
         val senderUid = doc.getString("from_uid") ?: return
+        val senderName = doc.getString("from_name") ?: "Unknown User" // ดึงชื่อจากฟิลด์ที่เราบันทึกไว้
         val requestId = doc.id
 
         val batch = db.batch()
 
-        // 1. เปลี่ยนสถานะคำขอเป็น accepted
+        // 1. ลบคำขอเพื่อนทิ้งหลังจากยอมรับ (แทนการเปลี่ยน status เพื่อไม่ให้เปลืองพื้นที่)
         val requestRef = db.collection("friend_requests").document(requestId)
-        batch.update(requestRef, "status", "accepted")
+        batch.delete(requestRef)
 
-        // 2. เพิ่มเพื่อนในรายการของเรา
+        // 2. เพิ่มเพื่อนในรายการของเรา (Array 'friends' ในคอลเลกชัน 'users')
         val myUserRef = db.collection("users").document(myUid)
         batch.update(myUserRef, "friends", FieldValue.arrayUnion(senderUid))
 
@@ -120,10 +121,11 @@ class notification : AppCompatActivity() {
         batch.update(senderUserRef, "friends", FieldValue.arrayUnion(myUid))
 
         batch.commit().addOnSuccessListener {
-            Toast.makeText(this, "Accepted friend request", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "You are now friends with $senderName", Toast.LENGTH_SHORT).show()
+        }.addOnFailureListener { e ->
+            Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
-
     // ฟังก์ชันเมื่อกด Delete: ลบรายการแจ้งเตือนออก
     private fun deleteRequest(doc: DocumentSnapshot) {
         db.collection("friend_requests").document(doc.id).delete()

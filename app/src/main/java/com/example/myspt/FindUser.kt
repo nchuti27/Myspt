@@ -66,28 +66,37 @@ class FindUser : AppCompatActivity() {
             return
         }
 
-        // สร้างข้อมูลคำขอเพื่อน [cite: 2026-02-09]
-        val request = hashMapOf(
-            "from_uid" to myUid,
-            "to_uid" to friendUid,
-            "status" to "pending", // สถานะเริ่มต้นคือรอดำเนินการ [cite: 2026-02-09]
-            "timestamp" to com.google.firebase.Timestamp.now()
-        )
+        // 1. ดึงข้อมูลชื่อของเรา (ผู้ส่ง) จาก Firestore ก่อนส่งคำขอ
+        db.collection("users").document(myUid).get()
+            .addOnSuccessListener { myDoc ->
+                // ดึงชื่อออกมา ถ้าไม่มีให้ใช้ "Someone" หรือ username
+                val myName = myDoc.getString("username") ?: "Someone"
 
-        // บันทึกลงคอลเลกชัน friend_requests
-        db.collection("friend_requests")
-            .add(request)
-            .addOnSuccessListener {
-                Toast.makeText(this, "Friend request sent!", Toast.LENGTH_LONG).show()
+                // 2. สร้างข้อมูลคำขอเพื่อนโดยใส่ชื่อผู้ส่งลงไปด้วย
+                val request = hashMapOf(
+                    "from_uid" to myUid,
+                    "from_name" to myName, // บันทึกชื่อผู้ส่งลงไปในคำขอเลยเพื่อให้ Notification แสดงผลได้ทันที
+                    "to_uid" to friendUid,
+                    "status" to "pending",
+                    "timestamp" to com.google.firebase.Timestamp.now()
+                )
 
-                // กลับไปหน้าหลัก
-                val intent = Intent(this, MainActivity::class.java)
-                intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
-                startActivity(intent)
-                finish()
+                db.collection("friend_requests")
+                    .add(request)
+                    .addOnSuccessListener {
+                        Toast.makeText(this, "Friend request sent!", Toast.LENGTH_LONG).show()
+
+                        val intent = Intent(this, MainActivity::class.java)
+                        intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
+                        startActivity(intent)
+                        finish()
+                    }
+                    .addOnFailureListener { e ->
+                        Toast.makeText(this, "Failed to send request: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
             }
-            .addOnFailureListener { e ->
-                Toast.makeText(this, "Failed to send request: ${e.message}", Toast.LENGTH_SHORT).show()
+            .addOnFailureListener {
+                Toast.makeText(this, "Error fetching user info", Toast.LENGTH_SHORT).show()
             }
     }
 
