@@ -57,7 +57,7 @@ class UploadQrActivity : AppCompatActivity() {
         ivQrPreview = findViewById(R.id.ivQrPreview)
         btnSelectQr = findViewById(R.id.btnSelectQr)
         btnUploadQr = findViewById(R.id.btnUploadQr)
-        btnBack = findViewById(R.id.btnBack3)
+        btnBack = findViewById(R.id.btnBack2edt)
     }
 
     private fun uploadImageToFirebase() {

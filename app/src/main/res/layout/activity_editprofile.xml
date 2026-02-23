@@ -14,7 +14,7 @@
         android:background="@android:color/white"
         app:layout_constraintTop_toTopOf="parent">
         <ImageButton
-            android:id="@+id/btnBack3"
+            android:id="@+id/btnBack2Main"
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"

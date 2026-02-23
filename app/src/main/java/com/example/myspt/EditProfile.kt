@@ -18,7 +18,7 @@ class EditProfile : AppCompatActivity() {
     private lateinit var btnBack: ImageButton
     private lateinit var btnChangePhoto: FloatingActionButton // เพิ่มปุ่มกล้อง
 
-    private lateinit var Savetxt: TextView
+    private lateinit var savetxt: TextView
 
     private val db = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
@@ -32,8 +32,8 @@ class EditProfile : AppCompatActivity() {
         etUName = findViewById(R.id.etUName)
         etEmail = findViewById(R.id.etEmail)
         btnQr = findViewById(R.id.btnQr)
-        Savetxt = findViewById(R.id.savetxt)
-        btnBack = findViewById(R.id.btnBack3)
+        savetxt = findViewById(R.id.savetxt)
+        btnBack = findViewById(R.id.btnBack2Main)
         btnChangePhoto = findViewById(R.id.btnChangePhoto) //
 
         // 2. ดึงข้อมูล User มาแสดง
@@ -42,15 +42,15 @@ class EditProfile : AppCompatActivity() {
         // 3. ตั้งค่าการกดปุ่ม
         btnBack.setOnClickListener { finish() }
 
-        Savetxt.setOnClickListener { saveUserProfile() }
+        savetxt.setOnClickListener { saveUserProfile() }
 
         // เมื่อกดปุ่มกล้อง ให้เด้งเมนูเลือกรูปภาพ
         btnChangePhoto.setOnClickListener {
             showPhotoOptionsDialog()
         }
-        btnQr!!.setOnClickListener {
-                val intent = Intent(this, UploadQrActivity::class.java)
-                startActivity(intent)
+        btnQr.setOnClickListener { // ลบ ? ออก
+            val intent = Intent(this, UploadQrActivity::class.java)
+            startActivity(intent)
         }
     }
 
@@ -72,7 +72,8 @@ class EditProfile : AppCompatActivity() {
     private fun showPhotoOptionsDialog() {
         val dialog = BottomSheetDialog(this)
         // อย่าลืมสร้างไฟล์ layout_dialog_photo.xml ไว้ในโฟลเดอร์ layout นะครับ
-        val view = layoutInflater.inflate(R.layout.dialogphoto, null)
+        // ใช้ findViewById(android.R.id.content) เป็น root แทน null ครับ [cite: 2026-02-23]
+        val view = layoutInflater.inflate(R.layout.dialogphoto, findViewById(android.R.id.content), false)
 
         val lnPhotoLibrary = view.findViewById<LinearLayout>(R.id.lnPhotoLibrary)
         val lnTakePhoto = view.findViewById<LinearLayout>(R.id.lnTakePhoto)
