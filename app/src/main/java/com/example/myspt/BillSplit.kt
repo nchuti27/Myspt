@@ -21,6 +21,8 @@ class BillSplit : AppCompatActivity() {
     private var btnAddItem: FloatingActionButton? = null
     private var tvGrandTotal: TextView? = null
 
+    private var selectedMembers = ArrayList<String>()
+
     private var billList = ArrayList<BillItem>()
     private var adapter: BillAdapter? = null
 
@@ -35,9 +37,15 @@ class BillSplit : AppCompatActivity() {
             insets
         }
 
+
         init()
         btnBack?.setOnClickListener {
             finish()
+        }
+
+        val members = intent.getStringArrayListExtra("SELECTED_MEMBERS")
+        if (members != null) {
+            selectedMembers = members
         }
 
         btnSplit?.setOnClickListener {
@@ -64,9 +72,11 @@ class BillSplit : AppCompatActivity() {
             billList.add(BillItem("", 1, 0.0))
         }
 
-        adapter = BillAdapter(billList) {
+        // แก้บรรทัดนี้: ส่ง selectedMembers (ที่คุณรับมาจาก Intent) เข้าไปด้วย
+        adapter = BillAdapter(billList, selectedMembers) {
             calculateGrandTotal()
         }
+
         rvBillItems?.layoutManager = LinearLayoutManager(this)
         rvBillItems?.adapter = adapter
     }
