@@ -1,5 +1,6 @@
 package com.example.myspt
 
+import android.content.Intent
 import android.os.Bundle
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
@@ -13,7 +14,7 @@ class EditProfile : AppCompatActivity() {
     private lateinit var etUser: EditText
     private lateinit var etUName: EditText
     private lateinit var etEmail: EditText
-    private lateinit var btnSave: Button
+    private lateinit var btnQr: Button
     private lateinit var btnBack: ImageButton
     private lateinit var btnChangePhoto: FloatingActionButton // เพิ่มปุ่มกล้อง
 
@@ -30,7 +31,7 @@ class EditProfile : AppCompatActivity() {
         etUser = findViewById(R.id.etUser)
         etUName = findViewById(R.id.etUName)
         etEmail = findViewById(R.id.etEmail)
-        btnSave = findViewById(R.id.btnQr)
+        btnQr = findViewById(R.id.btnQr)
         Savetxt = findViewById(R.id.savetxt)
         btnBack = findViewById(R.id.btnBack3)
         btnChangePhoto = findViewById(R.id.btnChangePhoto) //
@@ -46,6 +47,10 @@ class EditProfile : AppCompatActivity() {
         // เมื่อกดปุ่มกล้อง ให้เด้งเมนูเลือกรูปภาพ
         btnChangePhoto.setOnClickListener {
             showPhotoOptionsDialog()
+        }
+        btnQr!!.setOnClickListener {
+                val intent = Intent(this, UploadQrActivity::class.java)
+                startActivity(intent)
         }
     }
 
