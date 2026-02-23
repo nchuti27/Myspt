@@ -3,43 +3,39 @@ package com.example.myspt
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.imageview.ShapeableImageView
 
 class HomeGroupAdapter(
-    private val groupList: List<CircleItem>,
-    private val isListView: Boolean = false, // ถ้าส่ง true จะใช้ layout แบบรายชื่อ
+    private var groupList: List<CircleItem>, // เปลี่ยนเป็น var เพื่อให้เปลี่ยนข้อมูลตอน Search ได้
+    private val isListView: Boolean = false,
     private val onClick: (CircleItem) -> Unit
 ) : RecyclerView.Adapter<HomeGroupAdapter.ViewHolder>() {
 
-    class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        // ตรวจสอบให้แน่ใจว่าทั้ง item_circle และ item_group_list ใช้ ID เหล่านี้
-        val imgGroup: ShapeableImageView = itemView.findViewById(R.id.imgItem)
-        val tvGroupName: TextView = itemView.findViewById(R.id.tvName)
+    // ส่ง isListView เข้ามาใน ViewHolder ด้วย เพื่อให้ดึง ID ได้ถูกไฟล์
+    class ViewHolder(itemView: View, isListView: Boolean) : RecyclerView.ViewHolder(itemView) {
+        // ใช้ ImageView ธรรมดาเป็นตัวรับ เพื่อไม่ให้เกิด Error ตอนแปลงเป็น ShapeableImageView ในโหมด List
+        val imgGroup: ImageView = itemView.findViewById(if (isListView) R.id.ivGroupIcon else R.id.imgItem)
+        val tvGroupName: TextView = itemView.findViewById(if (isListView) R.id.tvGroupName else R.id.tvName)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        // เลือก Layout ตามโหมดที่สั่งมา
         val layout = if (isListView) R.layout.item_group_list else R.layout.item_circle
         val view = LayoutInflater.from(parent.context).inflate(layout, parent, false)
-        return ViewHolder(view)
+        return ViewHolder(view, isListView)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val currentItem = groupList[position]
 
         if (currentItem.isAddButton) {
-            // ตั้งค่าสำหรับปุ่มบวก (+)
             holder.tvGroupName.text = "Add"
             holder.imgGroup.setImageResource(android.R.drawable.ic_input_add)
             holder.imgGroup.setPadding(40, 40, 40, 40)
-            holder.imgGroup.strokeWidth = 0f
         } else {
-            // ตั้งค่าสำหรับข้อมูลกลุ่มปกติ
             holder.tvGroupName.text = currentItem.name
             holder.imgGroup.setPadding(0, 0, 0, 0)
-            holder.imgGroup.strokeWidth = 2f
             holder.imgGroup.setImageResource(R.drawable.ic_launcher_background)
         }
 
@@ -47,4 +43,10 @@ class HomeGroupAdapter(
     }
 
     override fun getItemCount(): Int = groupList.size
+
+    // เพิ่มฟังก์ชันนี้เพื่อให้หน้า Grouplist เรียกใช้ตอนพิมพ์ค้นหา (Search)
+    fun updateData(newList: List<CircleItem>) {
+        groupList = newList
+        notifyDataSetChanged()
+    }
 }
