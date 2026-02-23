@@ -17,6 +17,8 @@ class EditProfile : AppCompatActivity() {
     private lateinit var btnBack: ImageButton
     private lateinit var btnChangePhoto: FloatingActionButton // เพิ่มปุ่มกล้อง
 
+    private lateinit var Savetxt: TextView
+
     private val db = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
 
@@ -28,7 +30,8 @@ class EditProfile : AppCompatActivity() {
         etUser = findViewById(R.id.etUser)
         etUName = findViewById(R.id.etUName)
         etEmail = findViewById(R.id.etEmail)
-        btnSave = findViewById(R.id.btnSave)
+        btnSave = findViewById(R.id.btnQr)
+        Savetxt = findViewById(R.id.savetxt)
         btnBack = findViewById(R.id.btnBack3)
         btnChangePhoto = findViewById(R.id.btnChangePhoto) //
 
@@ -38,7 +41,7 @@ class EditProfile : AppCompatActivity() {
         // 3. ตั้งค่าการกดปุ่ม
         btnBack.setOnClickListener { finish() }
 
-        btnSave.setOnClickListener { saveUserProfile() }
+        Savetxt.setOnClickListener { saveUserProfile() }
 
         // เมื่อกดปุ่มกล้อง ให้เด้งเมนูเลือกรูปภาพ
         btnChangePhoto.setOnClickListener {

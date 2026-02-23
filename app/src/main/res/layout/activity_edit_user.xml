@@ -94,7 +94,7 @@
         app:layout_constraintTop_toBottomOf="@+id/ivQrCode" />
 
     <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/btnSave"
+        android:id="@+id/btnQr"
         android:layout_width="0dp"
         android:layout_height="50dp"
         android:layout_marginBottom="24dp"

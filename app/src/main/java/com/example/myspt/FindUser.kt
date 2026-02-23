@@ -42,7 +42,7 @@ class FindUser : AppCompatActivity() {
         val friendUid = intent.getStringExtra("FRIEND_UID")
 
         if (receivedName != null) {
-            tvFoundUserName?.text = "Found User: $receivedName"
+            tvFoundUserName?.text = "$receivedName"
         } else {
             tvFoundUserName?.text = "User not found"
         }

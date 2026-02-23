@@ -2,6 +2,7 @@
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#F5F7FA">
@@ -23,7 +24,9 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:tint="@android:color/black" />
+
         <TextView
+            android:id="@+id/textView4"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Edit Profile"
@@ -34,6 +37,21 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/savetxt"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="Save"
+            android:textSize="16sp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.954"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_bias="0.384" />
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <ScrollView
@@ -59,13 +77,14 @@
                     android:layout_height="110dp"
                     app:cardCornerRadius="55dp"
                     app:cardElevation="2dp">
+
                     <ImageView
                         android:id="@+id/imgProfile"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:contentDescription="Profile Picture"
                         android:scaleType="centerCrop"
-                        android:src="@drawable/ic_launcher_background"
-                        android:contentDescription="Profile Picture" />
+                        android:src="@drawable/ic_launcher_background" />
                 </androidx.cardview.widget.CardView>
                 <com.google.android.material.floatingactionbutton.FloatingActionButton
                     android:id="@+id/btnChangePhoto"
@@ -172,11 +191,11 @@
             </FrameLayout>
 
             <Button
-                android:id="@+id/btnSave"
+                android:id="@+id/btnQr"
                 android:layout_width="match_parent"
                 android:layout_height="60dp"
                 android:backgroundTint="#3d79ca"
-                android:text="Save Changes"
+                android:text="Upload QR Code"
                 android:textColor="#FFFFFF"
                 android:textStyle="bold"
                 app:cornerRadius="12dp" />
