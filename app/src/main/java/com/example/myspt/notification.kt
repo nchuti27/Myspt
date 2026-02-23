@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
 import android.widget.ImageButton
+import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
@@ -11,6 +12,8 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 
@@ -24,6 +27,10 @@ class notification : AppCompatActivity() {
     private var btnTabGroup: Button? = null
     private var rvFriendNoti: RecyclerView? = null
 
+    // รายการข้อมูลแจ้งเตือนและ Adapter
+    private var notiList = ArrayList<DocumentSnapshot>()
+    private lateinit var notiAdapter: NotificationAdapter
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -32,7 +39,6 @@ class notification : AppCompatActivity() {
         db = FirebaseFirestore.getInstance()
         auth = FirebaseAuth.getInstance()
 
-        // จัดการ Insets โดยอ้างอิงจาก ID 'main' ใน XML [cite: 2026-02-21]
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
@@ -40,21 +46,31 @@ class notification : AppCompatActivity() {
         }
 
         init()
+        setupRecyclerView()
         setupListeners()
-        listenToFriendRequests() // เริ่มดึงข้อมูลแบบ Real-time เพื่อลดปัญหา ANR [cite: 2026-02-21]
+        listenToFriendRequests()
     }
 
     private fun init() {
         btnBack = findViewById(R.id.backButton)
         btnTabGroup = findViewById(R.id.btnTabGroup)
         rvFriendNoti = findViewById(R.id.rvFriendNoti)
-        rvFriendNoti?.layoutManager = LinearLayoutManager(this)
+    }
+
+    private fun setupRecyclerView() {
+        // สร้าง Adapter พร้อมกำหนดสิ่งที่ต้องทำเมื่อกดปุ่ม Accept หรือ Delete [cite: 2026-02-21]
+        notiAdapter = NotificationAdapter(notiList,
+            onAccept = { doc -> acceptFriend(doc) },
+            onDelete = { doc -> deleteRequest(doc) }
+        )
+        rvFriendNoti?.apply {
+            layoutManager = LinearLayoutManager(this@notification)
+            adapter = notiAdapter
+        }
     }
 
     private fun setupListeners() {
-        btnBack?.setOnClickListener {
-            finish()
-        }
+        btnBack?.setOnClickListener { finish() }
 
         btnTabGroup?.setOnClickListener {
             val intent = Intent(this, NotiGroup::class.java)
@@ -68,23 +84,56 @@ class notification : AppCompatActivity() {
     private fun listenToFriendRequests() {
         val myUid = auth.currentUser?.uid ?: return
 
-        // ใช้ addSnapshotListener เพื่อให้แอปไม่ค้างและอัปเดตข้อมูลทันทีเมื่อมีการเปลี่ยนแปลง [cite: 2026-02-21]
+        // แก้ปัญหา ANR: ใช้ addSnapshotListener ดึงข้อมูลแบบ Real-time เฉพาะคำขอที่รอดำเนินการ [cite: 2026-02-21]
         notiListener = db.collection("friend_requests")
             .whereEqualTo("to_uid", myUid)
             .whereEqualTo("status", "pending")
             .addSnapshotListener { snapshots, e ->
                 if (e != null) return@addSnapshotListener
 
-                if (snapshots != null && !snapshots.isEmpty) {
-                    val requests = snapshots.documents
-
+                if (snapshots != null) {
+                    notiList.clear()
+                    notiList.addAll(snapshots.documents)
+                    notiAdapter.notifyDataSetChanged() // อัปเดตรายการบนหน้าจอทันที [cite: 2026-02-21]
                 }
+            }
+    }
+
+    // ฟังก์ชันเมื่อกด Accept: อัปเดตทั้งเราและเพื่อน [cite: 2026-02-09]
+    private fun acceptFriend(doc: DocumentSnapshot) {
+        val myUid = auth.currentUser?.uid ?: return
+        val senderUid = doc.getString("from_uid") ?: return
+        val requestId = doc.id
+
+        val batch = db.batch()
+
+        // 1. เปลี่ยนสถานะคำขอเป็น accepted
+        val requestRef = db.collection("friend_requests").document(requestId)
+        batch.update(requestRef, "status", "accepted")
+
+        // 2. เพิ่มเพื่อนในรายการของเรา
+        val myUserRef = db.collection("users").document(myUid)
+        batch.update(myUserRef, "friends", FieldValue.arrayUnion(senderUid))
+
+        // 3. เพิ่มเราในรายการของเพื่อน
+        val senderUserRef = db.collection("users").document(senderUid)
+        batch.update(senderUserRef, "friends", FieldValue.arrayUnion(myUid))
+
+        batch.commit().addOnSuccessListener {
+            Toast.makeText(this, "Accepted friend request", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    // ฟังก์ชันเมื่อกด Delete: ลบรายการแจ้งเตือนออก
+    private fun deleteRequest(doc: DocumentSnapshot) {
+        db.collection("friend_requests").document(doc.id).delete()
+            .addOnSuccessListener {
+                Toast.makeText(this, "Request deleted", Toast.LENGTH_SHORT).show()
             }
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        // สำคัญมาก: ต้องลบ Listener เมื่อปิดหน้าจอเพื่อป้องกัน Memory Leak [cite: 2026-02-21]
-        notiListener?.remove()
+        notiListener?.remove() // หยุดการทำงานของ Listener เพื่อป้องกันการรั่วไหลของหน่วยความจำ [cite: 2026-02-21]
     }
 }

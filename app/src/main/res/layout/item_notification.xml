@@ -5,44 +5,45 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="1dp"
-    android:background="@color/fintech_card_bg"
+    android:background="@color/white"
     android:padding="16dp">
 
-    <ImageView
-        android:id="@+id/ivNotiIcon"
+    <com.google.android.material.imageview.ShapeableImageView
+        android:id="@+id/ivFriendProfile"
         android:layout_width="48dp"
         android:layout_height="48dp"
-        android:src="@android:drawable/ic_menu_gallery"
-        app:tint="@color/fintech_blue_dark"
+        android:scaleType="centerCrop"
+        android:src="@drawable/ic_launcher_background"
+        app:shapeAppearanceOverlay="@style/CircleImageStyle"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
-        android:id="@+id/tvNotiMessage"
+        android:id="@+id/tvFriendName"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
         android:layout_marginEnd="8dp"
         android:ellipsize="end"
-        android:maxLines="2"
+        android:maxLines="1"
         android:textColor="@color/fintech_text_main"
-        android:textSize="14sp"
-        android:textStyle="normal"
-        tools:text="User A sent a friend request."
+        android:textSize="16sp"
+        android:textStyle="bold"
+        tools:text="Friend Name"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/ivNotiIcon"
-        app:layout_constraintTop_toTopOf="@+id/ivNotiIcon" />
+        app:layout_constraintStart_toEndOf="@+id/ivFriendProfile"
+        app:layout_constraintTop_toTopOf="@+id/ivFriendProfile" />
 
     <TextView
-        android:id="@+id/tvNotiTime"
-        android:layout_width="wrap_content"
+        android:id="@+id/tvNotiMessage"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
+        android:text="sent you a friend request."
         android:textColor="@color/fintech_text_sub"
-        android:textSize="11sp"
-        tools:text="2 min ago"
-        app:layout_constraintStart_toStartOf="@+id/tvNotiMessage"
-        app:layout_constraintTop_toBottomOf="@+id/tvNotiMessage" />
+        android:textSize="13sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="@+id/tvFriendName"
+        app:layout_constraintTop_toBottomOf="@+id/tvFriendName" />
 
     <LinearLayout
         android:id="@+id/layoutButtons"
@@ -51,11 +52,11 @@
         android:layout_marginTop="12dp"
         android:orientation="horizontal"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="@+id/tvNotiMessage"
-        app:layout_constraintTop_toBottomOf="@+id/tvNotiTime">
+        app:layout_constraintStart_toStartOf="@+id/tvFriendName"
+        app:layout_constraintTop_toBottomOf="@+id/tvNotiMessage">
 
         <Button
-            android:id="@+id/btnSecondary"
+            android:id="@+id/btnDelete"
             android:layout_width="0dp"
             android:layout_height="36dp"
             android:layout_marginEnd="8dp"
@@ -65,12 +66,10 @@
             android:textAllCaps="false"
             android:textColor="@color/fintech_text_sub"
             android:textSize="12sp"
-            app:cornerRadius="18dp"
-            app:elevation="0dp"
-            tools:ignore="TouchTargetSizeCheck" />
+            app:cornerRadius="18dp" />
 
         <Button
-            android:id="@+id/btnPrimary"
+            android:id="@+id/btnAccept"
             android:layout_width="0dp"
             android:layout_height="36dp"
             android:layout_weight="1"
@@ -79,9 +78,7 @@
             android:textAllCaps="false"
             android:textColor="@color/white"
             android:textSize="12sp"
-            app:cornerRadius="18dp"
-            app:elevation="2dp"
-            tools:ignore="TouchTargetSizeCheck" />
+            app:cornerRadius="18dp" />
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
