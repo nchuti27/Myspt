@@ -22,9 +22,14 @@ class NotiGroup : AppCompatActivity() {
     private lateinit var auth: FirebaseAuth
     private var groupNotiListener: ListenerRegistration? = null
 
-    private var rvGroupNoti: RecyclerView? = null
+    // ประกาศตัวแปรเป็นแบบ Nullable ตามที่คุณต้องการ
+    private var btnBack: ImageButton? = null
+    private var rvGroupNoti: RecyclerView? = null // 🌟 เปลี่ยนกลับเป็น RecyclerView ให้ตรงกับ XML
     private var groupNotiList = ArrayList<DocumentSnapshot>()
     private lateinit var groupAdapter: NotificationAdapter
+
+    private var btnTabFriend: Button? = null
+    private var btnTabRequest: Button? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,12 +51,31 @@ class NotiGroup : AppCompatActivity() {
     }
 
     private fun init() {
-        rvGroupNoti = findViewById(R.id.rvGroupNoti) // ผูกไอดีให้ตรงกับ XML
-        findViewById<ImageButton>(R.id.backButton)?.setOnClickListener { finish() }
+        // 🌟 ผูก ID ให้ตรงกับใน activity_noti_group.xml ที่เราเพิ่งแก้ไป
+        rvGroupNoti = findViewById(R.id.rvGroupNoti)
+        btnBack = findViewById(R.id.backButton)
+        btnTabFriend = findViewById(R.id.btnTabFriend)
+        btnTabRequest = findViewById(R.id.btnTabRequest)
 
-        findViewById<Button>(R.id.btnTabFriend)?.setOnClickListener {
+        // 🌟 ปุ่ม Back: กลับไปหน้า MainActivity (หน้าหลัก)
+        btnBack?.setOnClickListener {
+            val intent = Intent(this, MainActivity::class.java)
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            startActivity(intent)
+            finish()
+        }
+
+        // 🌟 ปุ่ม Friend: ไปหน้า notification
+        btnTabFriend?.setOnClickListener {
             val intent = Intent(this, notification::class.java)
-            intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
+            startActivity(intent)
+            overridePendingTransition(0, 0) // สลับหน้าแบบเนียนๆ
+            finish()
+        }
+
+        // 🌟 ปุ่ม Request: ไปหน้า NotiRequest
+        btnTabRequest?.setOnClickListener {
+            val intent = Intent(this, NotiRequest::class.java)
             startActivity(intent)
             overridePendingTransition(0, 0)
             finish()
@@ -59,21 +83,21 @@ class NotiGroup : AppCompatActivity() {
     }
 
     private fun setupRecyclerView() {
-        // ใช้ NotificationAdapter ตัวเดิม [cite: 2026-02-21]
+        // ใช้ NotificationAdapter ตัวเดิมที่คุณเขียนไว้
         groupAdapter = NotificationAdapter(groupNotiList,
             onAccept = { doc -> joinGroup(doc) },
             onDelete = { doc -> declineGroup(doc) }
         )
-        rvGroupNoti?.apply {
-            layoutManager = LinearLayoutManager(this@NotiGroup)
-            adapter = groupAdapter
-        }
+
+        // 🌟 ตั้งค่า RecyclerView
+        rvGroupNoti?.layoutManager = LinearLayoutManager(this)
+        rvGroupNoti?.adapter = groupAdapter
     }
 
     private fun listenToGroupInvites() {
         val myUid = auth.currentUser?.uid ?: return
 
-        // แก้ปัญหา ANR: ใช้ SnapshotListener ดึงข้อมูลคำเชิญแบบ Real-time [cite: 2026-02-21]
+        // ดึงข้อมูลคำเชิญกลุ่มที่สถานะเป็น pending
         groupNotiListener = db.collection("group_invites")
             .whereEqualTo("to_uid", myUid)
             .whereEqualTo("status", "pending")
@@ -99,11 +123,11 @@ class NotiGroup : AppCompatActivity() {
         val inviteRef = db.collection("group_invites").document(inviteId)
         batch.update(inviteRef, "status", "accepted")
 
-        // 2. เพิ่ม UID เราเข้าไปในสมาชิกของกลุ่ม (members)
+        // 2. เพิ่ม UID เราเข้าไปในสมาชิกของกลุ่ม
         val groupRef = db.collection("groups").document(groupId)
         batch.update(groupRef, "members", FieldValue.arrayUnion(myUid))
 
-        // 3. เพิ่ม Group ID เข้าไปใน Profile ของเรา [cite: 2026-02-09]
+        // 3. เพิ่ม Group ID เข้าไปในโปรไฟล์ของเรา
         val userRef = db.collection("users").document(myUid)
         batch.update(userRef, "groups", FieldValue.arrayUnion(groupId))
 
@@ -123,6 +147,6 @@ class NotiGroup : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        groupNotiListener?.remove() // ล้าง Listener ป้องกัน Memory Leak [cite: 2026-02-21]
+        groupNotiListener?.remove() // ล้าง Listener ป้องกันหน่วยความจำรั่ว
     }
 }

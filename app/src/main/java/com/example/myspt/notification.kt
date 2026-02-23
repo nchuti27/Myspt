@@ -27,6 +27,8 @@ class notification : AppCompatActivity() {
     private var btnTabGroup: Button? = null
     private var rvFriendNoti: RecyclerView? = null
 
+    private var btnTabRequest: Button? = null
+
     // รายการข้อมูลแจ้งเตือนและ Adapter
     private var notiList = ArrayList<DocumentSnapshot>()
     private lateinit var notiAdapter: NotificationAdapter
@@ -55,6 +57,7 @@ class notification : AppCompatActivity() {
         btnBack = findViewById(R.id.backButton)
         btnTabGroup = findViewById(R.id.btnTabGroup)
         rvFriendNoti = findViewById(R.id.rvFriendNoti)
+        btnTabRequest = findViewById(R.id.btnTabRequest)
     }
 
     private fun setupRecyclerView() {
@@ -70,11 +73,19 @@ class notification : AppCompatActivity() {
     }
 
     private fun setupListeners() {
-        btnBack?.setOnClickListener { finish() }
+        btnBack?.setOnClickListener {
+            finish()
+        }
 
         btnTabGroup?.setOnClickListener {
             val intent = Intent(this, NotiGroup::class.java)
-            intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
+            startActivity(intent)
+            overridePendingTransition(0, 0)
+            finish()
+        }
+
+        btnTabRequest?.setOnClickListener {
+            val intent = Intent(this, NotiRequest::class.java)
             startActivity(intent)
             overridePendingTransition(0, 0)
             finish()
