@@ -1,3 +1,5 @@
 # Default ignored files
 /shelf/
+# Firebase configuration
+app/google-services.json
 /workspace.xml
