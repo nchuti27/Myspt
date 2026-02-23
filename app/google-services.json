@@ -1,21 +1,21 @@
 {
   "project_info": {
-    "project_number": "607863048992",
-    "project_id": "myspt-8d77b",
-    "storage_bucket": "myspt-8d77b.firebasestorage.app"
+    "project_number": "913870309800",
+    "project_id": "splitbill-1ff2e",
+    "storage_bucket": "splitbill-1ff2e.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:607863048992:android:5a00cf97618273f3d86545",
+        "mobilesdk_app_id": "1:913870309800:android:55e8f8f745c41d3a45b59d",
         "android_client_info": {
-          "package_name": "com.example.myspt"
+          "package_name": "com.example.splitbill"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyAW7eF0f6Dl13VS4hi655OcxUK4Yfkj-VE"
+          "current_key": "AIzaSyAwdN0cJaYNd5e8RK-x6WMQSuFt66uGKJg"
         }
       ],
       "services": {

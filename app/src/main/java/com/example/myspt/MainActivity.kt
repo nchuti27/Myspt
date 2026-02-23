@@ -35,6 +35,12 @@ class MainActivity : AppCompatActivity() {
     private var rvFriends: RecyclerView? = null
     private var rvGroups: RecyclerView? = null
 
+    // ประกาศรายการข้อมูลและ Adapter ไว้ระดับคลาส
+    private val friendItems = ArrayList<CircleItem>()
+    private val groupItems = ArrayList<CircleItem>()
+    private lateinit var friendAdapter: CircleAdapter
+    private lateinit var groupAdapter: HomeGroupAdapter
+
     private lateinit var db: FirebaseFirestore
     private lateinit var auth: FirebaseAuth
 
@@ -77,6 +83,34 @@ class MainActivity : AppCompatActivity() {
         rvFriends = findViewById(R.id.rvFriends)
         rvGroups = findViewById(R.id.rvGroups)
 
+        // ตั้งค่า Adapter ให้ RecyclerView ทันทีตั้งแต่เริ่มหน้า
+        setupRecyclerViews()
+    }
+
+    private fun setupRecyclerViews() {
+        // เพื่อน
+        friendAdapter = CircleAdapter(friendItems) { item ->
+            if (item.isAddButton) {
+                startActivity(Intent(this, AddFriend::class.java))
+            } else {
+                Toast.makeText(this, "Friend: ${item.name}", Toast.LENGTH_SHORT).show()
+            }
+        }
+        rvFriends?.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+        rvFriends?.adapter = friendAdapter
+
+        // กลุ่ม
+        groupAdapter = HomeGroupAdapter(groupItems, false) { item ->
+            if (item.isAddButton) {
+                startActivity(Intent(this, CreateGroup::class.java))
+            } else {
+                val intent = Intent(this, GroupDetail::class.java)
+                intent.putExtra("GROUP_ID", item.id)
+                startActivity(intent)
+            }
+        }
+        rvGroups?.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+        rvGroups?.adapter = groupAdapter
     }
 
     private fun setupClickListeners() {
@@ -92,14 +126,14 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupFriendList() {
         val myUid = auth.currentUser?.uid ?: return
-        val friendItems = ArrayList<CircleItem>()
 
         db.collection("users").document(myUid).get().addOnSuccessListener { document ->
             val friendUids = document.get("friends") as? List<String> ?: listOf()
+            friendItems.clear()
 
             if (friendUids.isEmpty()) {
                 friendItems.add(CircleItem(name = "Add Friend", isAddButton = true))
-                updateFriendAdapter(friendItems)
+                friendAdapter.notifyDataSetChanged()
             } else {
                 var count = 0
                 for (fUid in friendUids) {
@@ -109,22 +143,9 @@ class MainActivity : AppCompatActivity() {
                         count++
                         if (count == friendUids.size) {
                             friendItems.add(CircleItem(name = "Add Friend", isAddButton = true))
-                            updateFriendAdapter(friendItems)
+                            friendAdapter.notifyDataSetChanged()
                         }
                     }
-                }
-            }
-        }
-    }
-
-    private fun updateFriendAdapter(items: List<CircleItem>) {
-        rvFriends?.apply {
-            layoutManager = LinearLayoutManager(this@MainActivity, LinearLayoutManager.HORIZONTAL, false)
-            adapter = CircleAdapter(items) { item ->
-                if (item.isAddButton) {
-                    startActivity(Intent(this@MainActivity, AddFriend::class.java))
-                } else {
-                    Toast.makeText(this@MainActivity, "Friend: ${item.name}", Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -134,11 +155,11 @@ class MainActivity : AppCompatActivity() {
         val myUid = auth.currentUser?.uid ?: return
         db.collection("users").document(myUid).get().addOnSuccessListener { document ->
             val groupIds = document.get("groups") as? List<String> ?: listOf()
-            val groupItems = ArrayList<CircleItem>()
+            groupItems.clear()
 
             if (groupIds.isEmpty()) {
                 groupItems.add(CircleItem(name = "Add", isAddButton = true))
-                updateGroupAdapter(groupItems)
+                groupAdapter.notifyDataSetChanged()
                 return@addOnSuccessListener
             }
 
@@ -150,28 +171,14 @@ class MainActivity : AppCompatActivity() {
                     loadedCount++
                     if (loadedCount == groupIds.size) {
                         groupItems.add(CircleItem(name = "Add", isAddButton = true))
-                        updateGroupAdapter(groupItems)
+                        groupAdapter.notifyDataSetChanged()
                     }
                 }
             }
         }.addOnFailureListener {
-            updateGroupAdapter(listOf(CircleItem(name = "Add", isAddButton = true)))
-        }
-    }
-
-    private fun updateGroupAdapter(items: List<CircleItem>) {
-        rvGroups?.apply {
-            layoutManager = LinearLayoutManager(this@MainActivity, LinearLayoutManager.HORIZONTAL, false)
-            adapter = HomeGroupAdapter(items, false) { item ->
-                if (item.isAddButton) {
-                    startActivity(Intent(this@MainActivity, CreateGroup::class.java))
-                } else {
-                    // แก้ไข: เมื่อคลิกกลุ่มปกติ ให้ไปหน้ารายละเอียดกลุ่มพร้อมส่ง ID ไปด้วย
-                    val intent = Intent(this@MainActivity, GroupDetail::class.java)
-                    intent.putExtra("GROUP_ID", item.id)
-                    startActivity(intent)
-                }
-            }
+            groupItems.clear()
+            groupItems.add(CircleItem(name = "Add", isAddButton = true))
+            groupAdapter.notifyDataSetChanged()
         }
     }
 
