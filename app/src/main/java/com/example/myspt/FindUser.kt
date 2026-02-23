@@ -1,6 +1,7 @@
 package com.example.myspt
 
 import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
 import android.widget.Button
 import android.widget.ImageButton
@@ -14,9 +15,9 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
 class FindUser : AppCompatActivity() {
-    var btnBack: ImageButton? = null
-    var tvFoundUserName: TextView? = null
-    var btnAddFriend: Button? = null
+    private var btnBack: ImageButton? = null
+    private var tvFoundUserName: TextView? = null
+    private var btnAddFriend: Button? = null
 
     private lateinit var db: FirebaseFirestore
     private lateinit var auth: FirebaseAuth
@@ -34,28 +35,62 @@ class FindUser : AppCompatActivity() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
+
         init()
 
         val receivedName = intent.getStringExtra("FRIEND_NAME")
         val friendUid = intent.getStringExtra("FRIEND_UID")
 
         if (receivedName != null) {
-            tvFoundUserName!!.text = "Found User: $receivedName"
+            tvFoundUserName?.text = "Found User: $receivedName"
         } else {
-            tvFoundUserName!!.text = "User not found"
+            tvFoundUserName?.text = "User not found"
         }
 
-        btnBack!!.setOnClickListener {
+        // ตรวจสอบสถานะเพื่อนทันทีเมื่อโหลดข้อมูลเสร็จ
+        if (friendUid != null && btnAddFriend != null) {
+            checkFriendStatus(friendUid, btnAddFriend!!)
+        }
+
+        btnBack?.setOnClickListener {
             finish()
         }
+    }
 
-        btnAddFriend!!.setOnClickListener {
-            if (friendUid != null) {
-                sendFriendRequest(friendUid) // เปลี่ยนชื่อฟังก์ชันให้ชัดเจนขึ้น
-            } else {
-                Toast.makeText(this, "Cannot add this user", Toast.LENGTH_SHORT).show()
+    private fun init() {
+        btnBack = findViewById(R.id.backButton)
+        tvFoundUserName = findViewById(R.id.tvFoundUserName)
+        btnAddFriend = findViewById(R.id.btnAddFriend)
+    }
+
+    // ฟังก์ชันเช็คสถานะเพื่อน: ตรวจสอบจากลิสต์เพื่อนของเราเองใน Firestore
+    private fun checkFriendStatus(targetUid: String, btnAddFriend: Button) {
+        val myUid = auth.currentUser?.uid ?: return
+
+        db.collection("users").document(myUid).get()
+            .addOnSuccessListener { document ->
+                if (document.exists()) {
+                    val myFriends = document.get("friends") as? List<String> ?: listOf()
+
+                    if (myFriends.contains(targetUid)) {
+                        // กรณีเป็นเพื่อนกันอยู่แล้ว
+                        btnAddFriend.text = "Already Friends"
+                        btnAddFriend.isEnabled = false
+                        btnAddFriend.setBackgroundColor(Color.GRAY)
+                    } else {
+                        // กรณีที่ยังไม่เป็นเพื่อนกัน
+                        btnAddFriend.text = "Add Friend"
+                        btnAddFriend.isEnabled = true
+                        btnAddFriend.setOnClickListener {
+                            sendFriendRequest(targetUid)
+                        }
+                    }
+                }
             }
-        }
+            .addOnFailureListener {
+                // หากดึงข้อมูลล้มเหลว ให้ตั้งเป็นปุ่ม Add Friend ปกติไว้ก่อน
+                btnAddFriend.setOnClickListener { sendFriendRequest(targetUid) }
+            }
     }
 
     private fun sendFriendRequest(friendUid: String) {
@@ -66,16 +101,14 @@ class FindUser : AppCompatActivity() {
             return
         }
 
-        // 1. ดึงข้อมูลชื่อของเรา (ผู้ส่ง) จาก Firestore ก่อนส่งคำขอ
+        // ดึงชื่อของเรา (ผู้ส่ง) เพื่อบันทึกลงในคำขอเพื่อน
         db.collection("users").document(myUid).get()
             .addOnSuccessListener { myDoc ->
-                // ดึงชื่อออกมา ถ้าไม่มีให้ใช้ "Someone" หรือ username
                 val myName = myDoc.getString("username") ?: "Someone"
 
-                // 2. สร้างข้อมูลคำขอเพื่อนโดยใส่ชื่อผู้ส่งลงไปด้วย
                 val request = hashMapOf(
                     "from_uid" to myUid,
-                    "from_name" to myName, // บันทึกชื่อผู้ส่งลงไปในคำขอเลยเพื่อให้ Notification แสดงผลได้ทันที
+                    "from_name" to myName, // ใส่ชื่อเพื่อให้ Notification โชว์ชื่อได้ทันที
                     "to_uid" to friendUid,
                     "status" to "pending",
                     "timestamp" to com.google.firebase.Timestamp.now()
@@ -85,24 +118,14 @@ class FindUser : AppCompatActivity() {
                     .add(request)
                     .addOnSuccessListener {
                         Toast.makeText(this, "Friend request sent!", Toast.LENGTH_LONG).show()
-
                         val intent = Intent(this, MainActivity::class.java)
                         intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
                         startActivity(intent)
                         finish()
                     }
                     .addOnFailureListener { e ->
-                        Toast.makeText(this, "Failed to send request: ${e.message}", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this, "Failed to send: ${e.message}", Toast.LENGTH_SHORT).show()
                     }
             }
-            .addOnFailureListener {
-                Toast.makeText(this, "Error fetching user info", Toast.LENGTH_SHORT).show()
-            }
-    }
-
-    private fun init() {
-        btnBack = findViewById(R.id.backButton)
-        tvFoundUserName = findViewById(R.id.tvFoundUserName)
-        btnAddFriend = findViewById(R.id.btnAddFriend)
     }
 }
