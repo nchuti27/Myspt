@@ -2,9 +2,11 @@ package com.example.myspt
 
 import android.content.Intent
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.widget.EditText
 import android.widget.ImageButton
-import android.widget.Toast
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -15,64 +17,89 @@ class Grouplist : AppCompatActivity() {
 
     private lateinit var rvGroupList: RecyclerView
     private lateinit var etSearch: EditText
+    private lateinit var backButton: ImageButton
+
+    // ใช้ HomeGroupAdapter ตัวเก่งของคุณได้เลย
+    private lateinit var adapter: HomeGroupAdapter
+    private val allGroups = ArrayList<CircleItem>()
     private lateinit var db: FirebaseFirestore
     private lateinit var auth: FirebaseAuth
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // ตรวจสอบชื่อไฟล์ XML ของคุณ (ถ้าในโปรเจกต์ชื่อ activity_grouplist ให้ใช้ชื่อนั้น)
+        enableEdgeToEdge()
+        // เปลี่ยนชื่อ Layout ให้ตรงกับไฟล์ XML ของคุณ (เช่น activity_grouplist)
         setContentView(R.layout.activity_grouplist)
 
         db = FirebaseFirestore.getInstance()
         auth = FirebaseAuth.getInstance()
 
-        val btnBack = findViewById<ImageButton>(R.id.backButton)
-        rvGroupList = findViewById(R.id.rvGroupList)
-        etSearch = findViewById(R.id.etSearch)
-
-        btnBack.setOnClickListener { finish() }
-
-        fetchUserGroups()
+        initViews()
+        setupRecyclerView()
+        fetchGroupList()
+        setupSearch()
     }
 
-    private fun fetchUserGroups() {
-        val myUid = auth.currentUser?.uid ?: return
-        val groupList = ArrayList<CircleItem>()
+    private fun initViews() {
+        rvGroupList = findViewById(R.id.rvGroupList)
+        etSearch = findViewById(R.id.etSearch)
+        backButton = findViewById(R.id.backButton)
 
-        // ดึงข้อมูลรายชื่อกลุ่มที่ User คนนี้สังกัดอยู่
+        backButton.setOnClickListener { finish() }
+    }
+
+    private fun setupRecyclerView() {
+        // กำหนด isListView = true เพื่อให้มันแสดงผลเป็นแนวยาว
+        adapter = HomeGroupAdapter(allGroups, isListView = true) { group ->
+            // เมื่อกดที่กลุ่ม ให้ไปหน้า GroupDetail
+            val intent = Intent(this, GroupDetail::class.java)
+            intent.putExtra("GROUP_ID", group.id)
+            startActivity(intent)
+        }
+
+        rvGroupList.layoutManager = LinearLayoutManager(this)
+        rvGroupList.adapter = adapter
+    }
+
+    private fun fetchGroupList() {
+        val myUid = auth.currentUser?.uid ?: return
+
         db.collection("users").document(myUid).get().addOnSuccessListener { document ->
             val groupIds = document.get("groups") as? List<String> ?: listOf()
+            allGroups.clear()
 
             if (groupIds.isEmpty()) {
-                // ถ้าไม่มีกลุ่มเลย ให้แสดง RecyclerView ว่างๆ (หรือใส่ปุ่ม Create Group ก็ได้)
-                setupRecyclerView(groupList)
+                adapter.notifyDataSetChanged()
                 return@addOnSuccessListener
             }
 
-            var count = 0
+            var loadedCount = 0
             for (gId in groupIds) {
                 db.collection("groups").document(gId).get().addOnSuccessListener { gDoc ->
-                    val name = gDoc.getString("groupName") ?: "Unknown Group"
-                    groupList.add(CircleItem(id = gId, name = name))
-                    count++
+                    val name = gDoc.getString("groupName") ?: "Unknown"
+                    // เอาปุ่ม Add ออกในหน้า See More เพราะเน้นดูรายชื่อ
+                    allGroups.add(CircleItem(id = gId, name = name, isAddButton = false))
+                    loadedCount++
 
-                    // เมื่อดึงข้อมูลชื่อกลุ่มครบตามจำนวน ID แล้วจึงแสดงผล
-                    if (count == groupIds.size) {
-                        setupRecyclerView(groupList)
+                    if (loadedCount == groupIds.size) {
+                        adapter.notifyDataSetChanged()
                     }
                 }
             }
-        }.addOnFailureListener {
-            Toast.makeText(this, "เกิดข้อผิดพลาดในการดึงข้อมูล", Toast.LENGTH_SHORT).show()
         }
     }
 
-    private fun setupRecyclerView(list: List<CircleItem>) {
-        rvGroupList.layoutManager = LinearLayoutManager(this)
-        rvGroupList.adapter = HomeGroupAdapter(list, true) { item ->
-            val intent = Intent(this, GroupDetail::class.java)
-            intent.putExtra("GROUP_ID", item.id) // ส่ง ID กลุ่มไปที่หน้า GroupDetail
-            startActivity(intent)
-        }
+    private fun setupSearch() {
+        etSearch.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                val keyword = s.toString().trim()
+                val filteredList = allGroups.filter {
+                    it.name.contains(keyword, ignoreCase = true)
+                }
+                adapter.updateData(filteredList)
+            }
+            override fun afterTextChanged(s: Editable?) {}
+        })
     }
 }
