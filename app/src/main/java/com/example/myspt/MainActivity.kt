@@ -31,6 +31,7 @@ class MainActivity : AppCompatActivity() {
     private var btnRecentBill: LinearLayout? = null
     private var btnOwe: LinearLayout? = null
     private var btnLogout: ImageView? = null
+
     private var rvFriends: RecyclerView? = null
     private var rvGroups: RecyclerView? = null
 
@@ -39,6 +40,7 @@ class MainActivity : AppCompatActivity() {
     private val groupItems = ArrayList<CircleItem>()
     private lateinit var friendAdapter: CircleAdapter
     private lateinit var groupAdapter: HomeGroupAdapter
+
     private lateinit var db: FirebaseFirestore
     private lateinit var auth: FirebaseAuth
 
@@ -87,7 +89,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupRecyclerViews() {
-        // 1. ส่วนของ Friend Adapter
+        // เพื่อน
         friendAdapter = CircleAdapter(friendItems) { item ->
             if (item.isAddButton) {
                 startActivity(Intent(this, AddFriend::class.java))
@@ -98,7 +100,7 @@ class MainActivity : AppCompatActivity() {
         rvFriends?.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
         rvFriends?.adapter = friendAdapter
 
-        // 2. ส่วนของ Group Adapter (ระบุ Parameter ให้ครบเพื่อป้องกัน Error)
+        // กลุ่ม (แก้ไขพารามิเตอร์ให้ครบ 4 ตัว เพื่อป้องกัน Error 'No value passed for parameter')
         groupAdapter = HomeGroupAdapter(
             groupList = groupItems,
             isListView = false, // หน้า Main แสดงเป็นวงกลม (Horizontal)
@@ -123,7 +125,11 @@ class MainActivity : AppCompatActivity() {
         btnNotification?.setOnClickListener { startActivity(Intent(this, notification::class.java)) }
         tvSeeMoreFriend?.setOnClickListener { startActivity(Intent(this, Friend_list::class.java)) }
         tvSeeMoreGroup?.setOnClickListener { startActivity(Intent(this, Grouplist::class.java)) }
-        btnSplitBill?.setOnClickListener { startActivity(Intent(this, BillSplit::class.java)) }
+
+        // ⚠️ แก้ไขจุดที่ตั้งค่า btnSplitBill ซ้ำซ้อน
+        // btnSplitBill?.setOnClickListener { startActivity(Intent(this, BillSplit::class.java)) }
+        btnSplitBill?.setOnClickListener { startActivity(Intent(this, SelectGroupActivity::class.java)) }
+
         btnRecentBill?.setOnClickListener { startActivity(Intent(this, RecentBill::class.java)) }
         btnOwe?.setOnClickListener { startActivity(Intent(this, Owe::class.java)) }
         btnLogout?.setOnClickListener { showLogoutDialog() }
