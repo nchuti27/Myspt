@@ -31,7 +31,6 @@ class MainActivity : AppCompatActivity() {
     private var btnRecentBill: LinearLayout? = null
     private var btnOwe: LinearLayout? = null
     private var btnLogout: ImageView? = null
-
     private var rvFriends: RecyclerView? = null
     private var rvGroups: RecyclerView? = null
 
@@ -40,7 +39,6 @@ class MainActivity : AppCompatActivity() {
     private val groupItems = ArrayList<CircleItem>()
     private lateinit var friendAdapter: CircleAdapter
     private lateinit var groupAdapter: HomeGroupAdapter
-
     private lateinit var db: FirebaseFirestore
     private lateinit var auth: FirebaseAuth
 
@@ -65,6 +63,7 @@ class MainActivity : AppCompatActivity() {
         setupClickListeners()
     }
 
+    // ทำงานทุกครั้งที่ผู้ใช้กลับมาที่หน้า Home (เพื่ออัปเดตข้อมูลให้เป็นปัจจุบันเสมอ)
     override fun onResume() {
         super.onResume()
         setupFriendList()
@@ -88,7 +87,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupRecyclerViews() {
-        // เพื่อน
+        // 1. ส่วนของ Friend Adapter
         friendAdapter = CircleAdapter(friendItems) { item ->
             if (item.isAddButton) {
                 startActivity(Intent(this, AddFriend::class.java))
@@ -99,16 +98,22 @@ class MainActivity : AppCompatActivity() {
         rvFriends?.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
         rvFriends?.adapter = friendAdapter
 
-        // กลุ่ม
-        groupAdapter = HomeGroupAdapter(groupItems, false) { item ->
-            if (item.isAddButton) {
-                startActivity(Intent(this, CreateGroup::class.java))
-            } else {
-                val intent = Intent(this, GroupDetail::class.java)
-                intent.putExtra("GROUP_ID", item.id)
-                startActivity(intent)
-            }
-        }
+        // 2. ส่วนของ Group Adapter (ระบุ Parameter ให้ครบเพื่อป้องกัน Error)
+        groupAdapter = HomeGroupAdapter(
+            groupList = groupItems,
+            isListView = false, // หน้า Main แสดงเป็นวงกลม (Horizontal)
+            onClick = { item ->
+                if (item.isAddButton) {
+                    startActivity(Intent(this, CreateGroup::class.java))
+                } else {
+                    val intent = Intent(this, GroupDetail::class.java)
+                    intent.putExtra("GROUP_ID", item.id)
+                    startActivity(intent)
+                }
+            },
+            onLeaveClick = null // หน้า Main ไม่ต้องใช้ปุ่ม Leave
+        )
+
         rvGroups?.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
         rvGroups?.adapter = groupAdapter
     }
@@ -118,7 +123,7 @@ class MainActivity : AppCompatActivity() {
         btnNotification?.setOnClickListener { startActivity(Intent(this, notification::class.java)) }
         tvSeeMoreFriend?.setOnClickListener { startActivity(Intent(this, Friend_list::class.java)) }
         tvSeeMoreGroup?.setOnClickListener { startActivity(Intent(this, Grouplist::class.java)) }
-        btnSplitBill?.setOnClickListener { startActivity(Intent(this, SelectGroupActivity::class.java)) }
+        btnSplitBill?.setOnClickListener { startActivity(Intent(this, BillSplit::class.java)) }
         btnRecentBill?.setOnClickListener { startActivity(Intent(this, RecentBill::class.java)) }
         btnOwe?.setOnClickListener { startActivity(Intent(this, Owe::class.java)) }
         btnLogout?.setOnClickListener { showLogoutDialog() }
