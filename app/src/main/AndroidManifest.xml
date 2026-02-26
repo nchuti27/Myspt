@@ -89,6 +89,9 @@
         <activity
             android:name=".CreateGroup"
             android:exported="false" />
+        <activity
+            android:name=".GroupDetail"
+            android:exported="false" />
     </application>
 
 </manifest>

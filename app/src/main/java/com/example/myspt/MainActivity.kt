@@ -99,16 +99,22 @@ class MainActivity : AppCompatActivity() {
             rvFriends?.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
             rvFriends?.adapter = friendAdapter
 
-            // กลุ่ม
-            groupAdapter = HomeGroupAdapter(groupItems, false) { item ->
-                if (item.isAddButton) {
-                    startActivity(Intent(this, CreateGroup::class.java))
-                } else {
-                    val intent = Intent(this, GroupDetail::class.java)
-                    intent.putExtra("GROUP_ID", item.id)
-                    startActivity(intent)
-                }
-            }
+            // กลุ่ม (แก้ตรงนี้ให้ระบุชื่อ Parameter ชัดเจนและเพิ่ม onLeaveClick)
+            groupAdapter = HomeGroupAdapter(
+                groupList = groupItems,
+                isListView = false,
+                onClick = { item ->
+                    if (item.isAddButton) {
+                        startActivity(Intent(this, CreateGroup::class.java))
+                    } else {
+                        val intent = Intent(this, GroupDetail::class.java)
+                        intent.putExtra("GROUP_ID", item.id)
+                        startActivity(intent)
+                    }
+                },
+                onLeaveClick = null // <--- จุดสำคัญที่ทำให้หาย Error
+            )
+
             rvGroups?.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
             rvGroups?.adapter = groupAdapter
         }
