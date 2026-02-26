@@ -38,6 +38,10 @@ class Grouplist : AppCompatActivity() {
         fetchGroupList()
         setupSearch()
     }
+    override fun onResume() {
+        super.onResume()
+        fetchGroupList()
+    }
 
     private fun initViews() {
         rvGroupList = findViewById(R.id.rvGroupList)

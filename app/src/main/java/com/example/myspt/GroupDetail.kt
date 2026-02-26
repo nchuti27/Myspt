@@ -52,35 +52,18 @@ class GroupDetail : AppCompatActivity() {
         btnAddMember = findViewById(R.id.btnAddMember)
         rvMembers = findViewById(R.id.rvMembers)
         backButton = findViewById(R.id.backButton)
-
-        // 2. ผูก ID ของปุ่ม Save
         btnSave = findViewById(R.id.btnSave)
 
+        // ปุ่มย้อนกลับ
         backButton.setOnClickListener { finish() }
 
-        // ให้รูปดินสอทำหน้าที่โฟกัสกล่องข้อความ (ให้คีย์บอร์ดเด้งขึ้นมาพิมพ์)
+        // 1. ไอคอนรูปดินสอ: กดปุ๊บให้เคอร์เซอร์ไปโผล่ที่กล่องข้อความเพื่อเตรียมพิมพ์
         btnEditName.setOnClickListener {
             editGroupName.requestFocus()
+            Toast.makeText(this, "พิมพ์แก้ไขชื่อกลุ่มได้เลย", Toast.LENGTH_SHORT).show()
         }
 
-        // 3. ย้ายคำสั่งบันทึกชื่อกลุ่มมาไว้ที่ปุ่ม Save แทน
-        btnSave.setOnClickListener {
-            val newName = editGroupName.text.toString().trim()
-            if (newName.isNotEmpty() && groupId != null) {
-                db.collection("groups").document(groupId!!).update("groupName", newName)
-                    .addOnSuccessListener {
-                        Toast.makeText(this, "บันทึกข้อมูลเรียบร้อย", Toast.LENGTH_SHORT).show()
-                        finish() // กด Save เสร็จแล้วจะปิดหน้าต่างกลับไปหน้าเดิมให้อัตโนมัติ
-                    }
-                    .addOnFailureListener {
-                        Toast.makeText(this, "เกิดข้อผิดพลาดในการบันทึก", Toast.LENGTH_SHORT).show()
-                    }
-            } else {
-                Toast.makeText(this, "กรุณาพิมพ์ชื่อกลุ่มก่อนบันทึก", Toast.LENGTH_SHORT).show()
-            }
-        }
-
-        // ปุ่มเพิ่มเพื่อนเข้ากลุ่ม (ส่งไปหน้า SelectFriend)
+        // 2. ปุ่มเพิ่มเพื่อนเข้ากลุ่ม: ส่งไปหน้า SelectFriend พร้อมแนบ GROUP_ID
         btnAddMember.setOnClickListener {
             if (groupId != null) {
                 val intent = Intent(this, SelectFriend::class.java)
@@ -89,6 +72,28 @@ class GroupDetail : AppCompatActivity() {
             }
         }
 
+        // 3. ปุ่ม Save ด้านล่างสุด: ทำหน้าที่บันทึกชื่อกลุ่มใหม่ลงฐานข้อมูล
+        btnSave.setOnClickListener {
+            val newName = editGroupName.text.toString().trim()
+
+            if (newName.isNotEmpty() && groupId != null) {
+                // อัปเดตชื่อกลุ่มลง Firebase
+                db.collection("groups").document(groupId!!).update("groupName", newName)
+                    .addOnSuccessListener {
+                        Toast.makeText(this, "บันทึกการแก้ไขเรียบร้อย", Toast.LENGTH_SHORT).show()
+                        finish() // กด Save สำเร็จ ให้ปิดหน้านี้แล้วเด้งกลับไปหน้า Grouplist
+                    }
+                    .addOnFailureListener { e ->
+                        Toast.makeText(this, "เกิดข้อผิดพลาด: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
+            } else {
+                // ดักไว้เผื่อผู้ใช้เผลอลบชื่อกลุ่มจนว่างเปล่าแล้วกด Save
+                Toast.makeText(this, "กรุณากรอกชื่อกลุ่ม", Toast.LENGTH_SHORT).show()
+                editGroupName.requestFocus()
+            }
+        }
+
+        // ตั้งค่า RecyclerView สำหรับรายชื่อสมาชิก
         memberAdapter = MemberListAdapter(memberList)
         rvMembers.layoutManager = LinearLayoutManager(this)
         rvMembers.adapter = memberAdapter
