@@ -31,7 +31,6 @@ class MainActivity : AppCompatActivity() {
         private var btnRecentBill: LinearLayout? = null
         private var btnOwe: LinearLayout? = null
         private var btnLogout: ImageView? = null
-
         private var rvFriends: RecyclerView? = null
         private var rvGroups: RecyclerView? = null
 
@@ -40,7 +39,6 @@ class MainActivity : AppCompatActivity() {
         private val groupItems = ArrayList<CircleItem>()
         private lateinit var friendAdapter: CircleAdapter
         private lateinit var groupAdapter: HomeGroupAdapter
-
         private lateinit var db: FirebaseFirestore
         private lateinit var auth: FirebaseAuth
 
@@ -87,32 +85,38 @@ class MainActivity : AppCompatActivity() {
             setupRecyclerViews()
         }
 
-        private fun setupRecyclerViews() {
-            // เพื่อน
-            friendAdapter = CircleAdapter(friendItems) { item ->
-                if (item.isAddButton) {
-                    startActivity(Intent(this, AddFriend::class.java))
-                } else {
-                    Toast.makeText(this, "Friend: ${item.name}", Toast.LENGTH_SHORT).show()
-                }
+    private fun setupRecyclerViews() {
+        // 1. ส่วนของ Friend Adapter
+        friendAdapter = CircleAdapter(friendItems) { item ->
+            if (item.isAddButton) {
+                startActivity(Intent(this, AddFriend::class.java))
+            } else {
+                Toast.makeText(this, "Friend: ${item.name}", Toast.LENGTH_SHORT).show()
             }
-            rvFriends?.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
-            rvFriends?.adapter = friendAdapter
+        }
+        rvFriends?.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+        rvFriends?.adapter = friendAdapter
 
-            // กลุ่ม
-            groupAdapter = HomeGroupAdapter(groupItems, false) { item ->
+        // 2. ส่วนของ Group Adapter (รองรับ 4 Parameters)
+        groupAdapter = HomeGroupAdapter(
+            groupList = groupItems,
+            isListView = false, // หน้าแรกแสดงแบบวงกลมแนวนอน
+            onClick = { item ->
                 if (item.isAddButton) {
+                    // แก้ไข Context ตรงนี้ให้เป็น 'this'
                     startActivity(Intent(this, CreateGroup::class.java))
                 } else {
                     val intent = Intent(this, GroupDetail::class.java)
                     intent.putExtra("GROUP_ID", item.id)
                     startActivity(intent)
                 }
-            }
-            rvGroups?.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
-            rvGroups?.adapter = groupAdapter
-        }
+            },
+            onLeaveClick = null // หน้าแรกไม่ต้องมีปุ่ม Leave
+        )
 
+        rvGroups?.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+        rvGroups?.adapter = groupAdapter
+    }
         private fun setupClickListeners() {
             imgUserProfile?.setOnClickListener { startActivity(Intent(this, EditProfile::class.java)) }
             btnNotification?.setOnClickListener { startActivity(Intent(this, notification::class.java)) }

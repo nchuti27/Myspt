@@ -5,5 +5,6 @@ data class CircleItem(
     val id: String = "",
     val name: String = "",
     val imageUrl: String = "",
-    val isAddButton: Boolean = false
+    val isAddButton: Boolean = false,
+    var isExpanded: Boolean = false
 )
