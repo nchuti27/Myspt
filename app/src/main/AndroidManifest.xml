@@ -12,6 +12,12 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.MyApplication">
         <activity
+            android:name=".NewBillActivity"
+            android:exported="false" />
+        <activity
+            android:name=".SelectGroupActivity"
+            android:exported="false" />
+        <activity
             android:name=".UploadQrActivity"
             android:exported="false" />
         <activity
