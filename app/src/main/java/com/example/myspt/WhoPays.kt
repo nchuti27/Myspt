@@ -3,12 +3,16 @@ package com.example.myspt
 import android.app.Dialog
 import android.content.Intent
 import android.os.Bundle
+import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import android.widget.*
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
@@ -20,7 +24,19 @@ class WhoPays : AppCompatActivity() {
     private var btnConfirm: Button? = null
     private var isConfirmed: Boolean = false
 
-    // เพิ่มตัวแปรสำหรับ Database และข้อมูลบิล [cite: 2026-02-13]
+    private var rvSummaryItems: RecyclerView? = null
+    private var tvTotalAmount: TextView? = null
+    private var etPaidAmount: EditText? = null
+    private var spinnerPayer: Spinner? = null
+
+    // ตัวแปรรับข้อมูล
+    private var amountPerPerson = HashMap<String, Double>()
+    private var memberNames = HashMap<String, String>()
+    private var uidList = ArrayList<String>()
+
+    // 🌟 ตัวแปรเก็บรายการอาหารที่รับมาจากหน้าบิล
+    private var billItems = ArrayList<BillItem>()
+
     private lateinit var db: FirebaseFirestore
     private lateinit var auth: FirebaseAuth
     private var totalAmount: Double = 0.0
@@ -31,12 +47,9 @@ class WhoPays : AppCompatActivity() {
         enableEdgeToEdge()
         setContentView(R.layout.activity_who_pays)
 
-        // เชื่อมต่อ Firebase [cite: 2026-01-18, 2026-02-13]
         db = FirebaseFirestore.getInstance()
         auth = FirebaseAuth.getInstance()
 
-        // รับข้อมูลจากหน้า BillSplit (ถ้ามี) [cite: 2026-02-13]
-        totalAmount = intent.getDoubleExtra("TOTAL_AMOUNT", 0.0)
         billName = intent.getStringExtra("BILL_NAME") ?: "New Bill"
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
@@ -46,6 +59,7 @@ class WhoPays : AppCompatActivity() {
         }
 
         init()
+        setupData()
         setupClickListeners()
     }
 
@@ -54,14 +68,48 @@ class WhoPays : AppCompatActivity() {
         btnMenu = findViewById(R.id.btnMenu)
         Ptabfriend = findViewById(R.id.Ptabfriend)
         btnConfirm = findViewById(R.id.btnConfirm)
+
+        rvSummaryItems = findViewById(R.id.rvSummaryItems)
+        tvTotalAmount = findViewById(R.id.tvTotalAmount)
+        etPaidAmount = findViewById(R.id.etPaidAmount)
+        spinnerPayer = findViewById(R.id.spinnerPayer)
+    }
+
+    private fun setupData() {
+        val splitResult = intent.getSerializableExtra("SPLIT_RESULT") as? HashMap<String, Double>
+        val namesMap = intent.getSerializableExtra("MEMBER_NAMES") as? HashMap<String, String>
+
+        // 🌟 รับรายการอาหารจาก Intent
+        val itemsList = intent.getSerializableExtra("BILL_ITEMS") as? ArrayList<BillItem>
+
+        if (splitResult != null) amountPerPerson.putAll(splitResult)
+        if (namesMap != null) memberNames.putAll(namesMap)
+
+        if (itemsList != null) {
+            // กรองเอาเฉพาะรายการที่มีการพิมพ์ชื่อเมนู และราคามากกว่า 0
+            val validItems = itemsList.filter { it.itemName.isNotBlank() && it.price > 0 }
+            billItems.addAll(validItems)
+        }
+
+        totalAmount = amountPerPerson.values.sum()
+        tvTotalAmount?.text = String.format("%.2f ฿", totalAmount)
+        etPaidAmount?.setText(totalAmount.toString())
+
+        uidList.addAll(memberNames.keys)
+        val nameList = uidList.map { memberNames[it] ?: "Unknown" }
+
+        val spinnerAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, nameList)
+        spinnerPayer?.adapter = spinnerAdapter
+
+        // 🌟 นำรายการอาหาร (billItems) เข้า Adapter ใหม่
+        rvSummaryItems?.layoutManager = LinearLayoutManager(this)
+        rvSummaryItems?.adapter = ItemSummaryAdapter(billItems)
     }
 
     private fun setupClickListeners() {
         backButton?.setOnClickListener { finish() }
 
-        btnConfirm?.setOnClickListener {
-            saveBillToDatabase() // เรียกฟังก์ชันบันทึกข้อมูล [cite: 2026-02-13]
-        }
+        btnConfirm?.setOnClickListener { saveBillToDatabase() }
 
         Ptabfriend?.setOnClickListener {
             if (isConfirmed) {
@@ -76,24 +124,25 @@ class WhoPays : AppCompatActivity() {
         btnMenu?.setOnClickListener { view -> showMenu(view) }
     }
 
-    // ฟังก์ชันสำหรับบันทึกบิลลง Firestore [cite: 2026-02-13]
     private fun saveBillToDatabase() {
         val myUid = auth.currentUser?.uid ?: return
+        val selectedPayerIndex = spinnerPayer?.selectedItemPosition ?: 0
+        val actualPayerUid = if (uidList.isNotEmpty()) uidList[selectedPayerIndex] else myUid
 
         val billData = hashMapOf(
             "billName" to billName,
             "totalAmount" to totalAmount,
-            "paidBy" to myUid,
+            "paidBy" to actualPayerUid,
             "timestamp" to com.google.firebase.Timestamp.now(),
-            "status" to "pending"
+            "status" to "pending",
+            "splitDetails" to amountPerPerson,
+            "items" to billItems // 🌟 บันทึกรายการอาหารทั้งหมดลงฐานข้อมูลด้วย!
         )
 
-        db.collection("bills")
-            .add(billData)
+        db.collection("bills").add(billData)
             .addOnSuccessListener {
                 isConfirmed = true
                 Toast.makeText(this, "Bill Saved Successfully!", Toast.LENGTH_SHORT).show()
-                // เมื่อบันทึกสำเร็จ สามารถกดไปหน้าถัดไปได้
             }
             .addOnFailureListener { e ->
                 Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
@@ -105,14 +154,8 @@ class WhoPays : AppCompatActivity() {
         popupMenu.menuInflater.inflate(R.menu.menu_group_options, popupMenu.menu)
         popupMenu.setOnMenuItemClickListener { menuItem ->
             when (menuItem.itemId) {
-                R.id.action_edit_items -> {
-                    startActivity(Intent(this, BillSplit::class.java))
-                    true
-                }
-                R.id.action_leave_group -> {
-                    showLeaveDialog()
-                    true
-                }
+                R.id.action_edit_items -> { finish(); true }
+                R.id.action_leave_group -> { showLeaveDialog(); true }
                 else -> false
             }
         }
@@ -149,5 +192,34 @@ class WhoPays : AppCompatActivity() {
         val btnOk = dialog.findViewById<Button>(R.id.btnOk)
         btnOk?.setOnClickListener { dialog.dismiss() }
         dialog.show()
+    }
+
+    // ==========================================
+    // 🌟 Adapter ใหม่สำหรับแสดง "รายการอาหาร" โดยเฉพาะ
+    // ==========================================
+    class ItemSummaryAdapter(private val items: List<BillItem>) : RecyclerView.Adapter<ItemSummaryAdapter.ViewHolder>() {
+
+        class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+            val tvItemName: TextView = view.findViewById(R.id.tvItemName)
+            val tvQuantity: TextView = view.findViewById(R.id.tvQuantity)
+            val tvPrice: TextView = view.findViewById(R.id.tvPrice)
+        }
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+            // โยงกับไฟล์ XML ใหม่ที่เพิ่งสร้าง
+            val view = LayoutInflater.from(parent.context).inflate(R.layout.item_summary_row, parent, false)
+            return ViewHolder(view)
+        }
+
+        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+            val item = items[position]
+            holder.tvItemName.text = item.itemName
+            holder.tvQuantity.text = item.quantity.toString()
+
+            // แสดงราคา (ถ้ารวมราคาคูณจำนวนแล้ว ให้ใช้ item.price * item.quantity)
+            holder.tvPrice.text = String.format("%.2f ฿", item.price * item.quantity)
+        }
+
+        override fun getItemCount() = items.size
     }
 }

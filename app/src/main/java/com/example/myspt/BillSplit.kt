@@ -119,6 +119,7 @@ class BillSplit : AppCompatActivity() {
                 val intent = Intent(this@BillSplit, WhoPays::class.java)
                 intent.putExtra("SPLIT_RESULT", amountPerPerson)
                 intent.putExtra("MEMBER_NAMES", nameMap)
+                intent.putExtra("BILL_ITEMS", billList)
                 startActivity(intent)
 
                 dialog.dismiss()
