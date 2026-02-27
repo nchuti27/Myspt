@@ -56,9 +56,75 @@ class BillSplit : AppCompatActivity() {
 
         btnBack?.setOnClickListener { finish() }
 
+        // ==========================================
+        // ส่วนที่แก้ไข: เพิ่ม Popup ยืนยันก่อนไปหน้า WhoPays
+        // ==========================================
         btnSplit?.setOnClickListener {
-            val intent = Intent(this, WhoPays::class.java)
-            startActivity(intent)
+            // 1. คำนวณยอดเงินที่แต่ละคนต้องจ่าย
+            val amountPerPerson = HashMap<String, Double>()
+
+            for (item in billList) {
+                val itemTotal = item.price * item.quantity
+                val sharedBy = item.selectedUsers
+
+                if (sharedBy.isNotEmpty() && itemTotal > 0) {
+                    val costPerPerson = itemTotal / sharedBy.size
+
+                    for (uid in sharedBy) {
+                        val currentAmount = amountPerPerson[uid] ?: 0.0
+                        amountPerPerson[uid] = currentAmount + costPerPerson
+                    }
+                }
+            }
+
+            // ถ้าไม่ได้ระบุราคาหรือเลือกคนเลย
+            if (amountPerPerson.isEmpty()) {
+                Toast.makeText(this@BillSplit, "กรุณาระบุราคาและเลือกผู้ที่ต้องหารบิล", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            // 🌟 2. ดึง UID ของตัวเราเอง และหายอดที่เราต้องจ่าย
+            val myUid = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
+            val myAmount = if (myUid != null) amountPerPerson[myUid] ?: 0.0 else 0.0
+
+            // 3. ดึงหน้าตา Dialog จากไฟล์ layout_dialog_payment.xml
+            val dialogView = layoutInflater.inflate(R.layout.layout_dialog_payment, null)
+            val dialogBuilder = androidx.appcompat.app.AlertDialog.Builder(this@BillSplit)
+            dialogBuilder.setView(dialogView)
+
+            val dialog = dialogBuilder.create()
+            dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
+
+            val tvPaymentMessage = dialogView.findViewById<TextView>(R.id.tvPaymentMessage)
+            val btnCancelDialog = dialogView.findViewById<androidx.appcompat.widget.AppCompatButton>(R.id.backButton)
+            val btnOkDialog = dialogView.findViewById<androidx.appcompat.widget.AppCompatButton>(R.id.btnOk)
+
+            // 🌟 อัปเดตข้อความใน Popup ให้แสดงเฉพาะยอดที่ "เรา" ต้องจ่าย
+            tvPaymentMessage?.text = String.format("You need to pay\n%.2f ฿", myAmount)
+
+            // 4. กด Back ปิด Popup
+            btnCancelDialog?.setOnClickListener {
+                dialog.dismiss()
+            }
+
+            // 5. กด OK ส่งข้อมูลไปหน้า WhoPays
+            btnOkDialog?.setOnClickListener {
+                val nameMap = HashMap<String, String>()
+                for (i in groupMemberUids.indices) {
+                    if (i < groupMemberNames.size) {
+                        nameMap[groupMemberUids[i]] = groupMemberNames[i]
+                    }
+                }
+
+                val intent = Intent(this@BillSplit, WhoPays::class.java)
+                intent.putExtra("SPLIT_RESULT", amountPerPerson)
+                intent.putExtra("MEMBER_NAMES", nameMap)
+                startActivity(intent)
+
+                dialog.dismiss()
+            }
+
+            dialog.show()
         }
 
         btnAddItem?.setOnClickListener {
