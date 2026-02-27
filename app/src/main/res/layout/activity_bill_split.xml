@@ -107,7 +107,9 @@
         android:paddingBottom="100dp"
         app:layout_constraintBottom_toTopOf="@id/bottomSheetContainer"
         app:layout_constraintTop_toBottomOf="@id/tableHeader"
+        app:layout_constraintVertical_bias="0.0"
         tools:itemCount="3"
+        tools:layout_editor_absoluteX="0dp"
         tools:listitem="@layout/item_bill_row" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
