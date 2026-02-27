@@ -15,6 +15,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import android.content.res.ColorStateList
 import android.graphics.Color
+import androidx.appcompat.app.AlertDialog
 
 class notification : AppCompatActivity() {
 
@@ -31,6 +32,9 @@ class notification : AppCompatActivity() {
     private var notiList = ArrayList<DocumentSnapshot>()
     private lateinit var notiAdapter: NotificationAdapter
 
+    // Track current tab to handle button logic in Adapter
+    private var currentTab = "REQUEST"
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -43,7 +47,7 @@ class notification : AppCompatActivity() {
         setupRecyclerView()
         setupTabListeners()
 
-        // เริ่มต้นให้แสดงหน้า Request เป็นหน้าแรกตามที่คุณต้องการ
+        // Default to Request Tab (Sent Requests) [cite: 2026-02-27]
         loadRequestTab()
     }
 
@@ -58,14 +62,21 @@ class notification : AppCompatActivity() {
     }
 
     private fun setupRecyclerView() {
-        // ผูก Adapter เข้ากับข้อมูลและกำหนด Action ปุ่ม Accept/Delete
         notiAdapter = NotificationAdapter(notiList,
             onAccept = { doc -> acceptFriend(doc) },
-            onDelete = { doc -> deleteRequest(doc) }
+            onDelete = { doc ->
+                if (currentTab == "REQUEST") {
+                    // Show confirmation before canceling sent request [cite: 2026-02-27]
+                    showCancelConfirmation(doc)
+                } else {
+                    // Decline incoming request
+                    deleteRequest(doc)
+                }
+            }
         )
         rvFriendNoti.apply {
             layoutManager = LinearLayoutManager(this@notification)
-            adapter = notiAdapter // เชื่อมต่อ Adapter กับ RecyclerView
+            adapter = notiAdapter
         }
     }
 
@@ -75,75 +86,84 @@ class notification : AppCompatActivity() {
         btnTabFriend.setOnClickListener { loadFriendTab() }
     }
 
+    // Tab 1: Requests you sent to others [cite: 2026-02-27]
     private fun loadRequestTab() {
+        currentTab = "REQUEST"
         updateTabUI(btnTabRequest)
-        listenToFriendRequests() // ดึงข้อมูลคำขอเป็นเพื่อน
+        val myUid = auth.currentUser?.uid ?: return
+        notiListener?.remove()
+
+        notiListener = db.collection("friend_requests")
+            .whereEqualTo("from_uid", myUid) // You are the sender
+            .whereEqualTo("status", "pending")
+            .addSnapshotListener { snapshots, e ->
+                if (e != null) return@addSnapshotListener
+                notiList.clear()
+                snapshots?.let { notiList.addAll(it.documents) }
+                notiAdapter.notifyDataSetChanged()
+            }
     }
 
-    private fun loadGroupTab() {
-        updateTabUI(btnTabGroup) // เปลี่ยนสีปุ่มเป็นสีฟ้า
+    // Tab 2: Friend requests sent to you [cite: 2026-02-27]
+    private fun loadFriendTab() {
+        currentTab = "FRIEND"
+        updateTabUI(btnTabFriend)
         val myUid = auth.currentUser?.uid ?: return
-        notiListener?.remove() // ล้าง Listener เก่าก่อนป้องกันข้อมูลซ้อน
+        notiListener?.remove()
 
-        // ดึงข้อมูลแจ้งเตือนกลุ่ม (การเชิญเข้ากลุ่ม) [cite: 2026-02-23]
+        notiListener = db.collection("friend_requests")
+            .whereEqualTo("to_uid", myUid) // You are the receiver
+            .whereEqualTo("status", "pending")
+            .addSnapshotListener { snapshots, e ->
+                if (e != null) return@addSnapshotListener
+                notiList.clear()
+                snapshots?.let { notiList.addAll(it.documents) }
+                notiAdapter.notifyDataSetChanged()
+            }
+    }
+
+    // Tab 3: Group invitations
+    private fun loadGroupTab() {
+        currentTab = "GROUP"
+        updateTabUI(btnTabGroup)
+        val myUid = auth.currentUser?.uid ?: return
+        notiListener?.remove()
+
         notiListener = db.collection("notifications")
             .whereEqualTo("receiverId", myUid)
             .whereEqualTo("type", "GROUP_INVITE")
             .addSnapshotListener { snapshots, e ->
                 if (e != null) return@addSnapshotListener
-
                 notiList.clear()
-                if (snapshots != null) {
-                    notiList.addAll(snapshots.documents)
-                }
+                snapshots?.let { notiList.addAll(it.documents) }
                 notiAdapter.notifyDataSetChanged()
             }
     }
 
-    private fun loadFriendTab() {
-        updateTabUI(btnTabFriend)
-        // สำหรับแสดงประวัติเพื่อนที่ตอบรับแล้ว
-        notiList.clear()
-        notiAdapter.notifyDataSetChanged()
+    private fun showCancelConfirmation(doc: DocumentSnapshot) {
+        val targetName = doc.getString("to_name") ?: "this user"
+        AlertDialog.Builder(this)
+            .setTitle("Cancel Request")
+            .setMessage("Are you sure you want to cancel the request sent to $targetName?")
+            .setPositiveButton("Yes") { _, _ ->
+                deleteRequest(doc)
+                Toast.makeText(this, "Request cancelled", Toast.LENGTH_SHORT).show()
+            }
+            .setNegativeButton("No", null)
+            .show()
     }
 
     private fun updateTabUI(activeButton: Button) {
         val buttons = listOf(btnTabRequest, btnTabGroup, btnTabFriend)
-
         buttons.forEach { button ->
             if (button == activeButton) {
-                // เปลี่ยนเป็นสีฟ้าสำหรับแท็บที่เลือก [cite: 2026-02-27]
                 button.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#3D79CA"))
                 button.setTextColor(Color.WHITE)
             } else {
-                // เปลี่ยนเป็นสีเทาสำหรับแท็บที่ไม่ได้เลือก [cite: 2026-02-27]
                 button.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#E2E8F0"))
                 button.setTextColor(Color.parseColor("#64748B"))
             }
         }
-    }
-
-    private fun listenToFriendRequests() {
-        val myUid = auth.currentUser?.uid ?: return
-
-        // ✅ มั่นใจว่าลบ Listener ตัวเก่าออกก่อนเสมอ เพื่อลดภาระเครื่อง
-        notiListener?.remove()
-
-        notiListener = db.collection("friend_requests")
-            .whereEqualTo("to_uid", myUid)
-            .whereEqualTo("status", "pending")
-            .addSnapshotListener { snapshots, e ->
-                if (e != null) {
-                    // หากเกิด SecurityException จะมาโชว์ที่นี่
-                    return@addSnapshotListener
-                }
-
-                if (snapshots != null) {
-                    notiList.clear()
-                    notiList.addAll(snapshots.documents)
-                    notiAdapter.notifyDataSetChanged()
-                }
-            }
     }
 
     private fun acceptFriend(doc: DocumentSnapshot) {
@@ -162,7 +182,6 @@ class notification : AppCompatActivity() {
     }
 
     private fun deleteRequest(doc: DocumentSnapshot) {
-        // ลบแจ้งเตือนออกจากฐานข้อมูล
         val collection = if (doc.reference.path.contains("friend_requests")) "friend_requests" else "notifications"
         db.collection(collection).document(doc.id).delete()
     }

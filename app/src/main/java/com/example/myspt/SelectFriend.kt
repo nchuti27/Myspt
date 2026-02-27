@@ -24,7 +24,6 @@ class SelectFriend : AppCompatActivity() {
     private var friendList = ArrayList<FriendData>()
     private lateinit var adapter: SelectFriendAdapter
 
-    // ตัวแปรสำหรับรับค่า GROUP_ID
     private var groupId: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -34,7 +33,6 @@ class SelectFriend : AppCompatActivity() {
         db = FirebaseFirestore.getInstance()
         auth = FirebaseAuth.getInstance()
 
-        // รับค่าจากหน้าที่ส่งมา
         groupId = intent.getStringExtra("GROUP_ID")
 
         init()
@@ -57,10 +55,10 @@ class SelectFriend : AppCompatActivity() {
             }
 
             if (groupId != null) {
-                // กรณี 1: มีการส่ง GROUP_ID มา (หมายถึง กดมาจากหน้า GroupDetail เพื่อเพิ่มสมาชิก)
+                // กรณีเพิ่มเข้ากลุ่มที่มีอยู่แล้ว พร้อมส่งแจ้งเตือน
                 addMembersToExistingGroup(groupId!!, selectedUids)
             } else {
-                // กรณี 2: ไม่มี GROUP_ID ส่งมา (หมายถึง กดมาจากหน้าสร้างกลุ่มใหม่ CreateGroup แบบเดิม)
+                // กรณีสร้างกลุ่มใหม่
                 val intent = Intent(this, CreateGroup::class.java)
                 intent.putStringArrayListExtra("SELECTED_FRIENDS", ArrayList(selectedUids))
                 startActivity(intent)
@@ -69,30 +67,48 @@ class SelectFriend : AppCompatActivity() {
         }
     }
 
-    // ฟังก์ชันสำหรับบันทึกสมาชิกลงกลุ่มที่มีอยู่แล้ว
     private fun addMembersToExistingGroup(gId: String, newMembers: List<String>) {
         val groupRef = db.collection("groups").document(gId)
+        val myUid = auth.currentUser?.uid ?: return
 
-        // 1. นำ UIDs ที่เลือก เพิ่มเข้าไปใน Array "members" ของกลุ่ม
-        // การใช้ arrayUnion จะช่วยป้องกันไม่ให้มีสมาชิกซ้ำกันในกลุ่ม
-        groupRef.update("members", FieldValue.arrayUnion(*newMembers.toTypedArray()))
-            .addOnSuccessListener {
+        // 1. ดึงชื่อกลุ่มปัจจุบันมาก่อนเพื่อนำไปใส่ใน Notification
+        groupRef.get().addOnSuccessListener { groupDoc ->
+            val groupName = groupDoc.getString("groupName") ?: "Unknown Group"
 
-                // 2. ใช้ Batch เขียนข้อมูล อัปเดตรายชื่อกลุ่มไปที่โปรไฟล์ของเพื่อนแต่ละคนด้วย (เพื่อนจะได้เห็นกลุ่มนี้)
-                val batch = db.batch()
-                for (uid in newMembers) {
-                    val userRef = db.collection("users").document(uid)
-                    batch.update(userRef, "groups", FieldValue.arrayUnion(gId))
+            // 2. อัปเดตรายชื่อสมาชิกในกลุ่ม
+            groupRef.update("members", FieldValue.arrayUnion(*newMembers.toTypedArray()))
+                .addOnSuccessListener {
+
+                    val batch = db.batch()
+
+                    for (uid in newMembers) {
+                        // 3. อัปเดตรายชื่อกลุ่มในโปรไฟล์ของเพื่อนแต่ละคน
+                        val userRef = db.collection("users").document(uid)
+                        batch.update(userRef, "groups", FieldValue.arrayUnion(gId))
+
+                        // 4. สร้าง Notification ส่งหาเพื่อน (ให้ไปโผล่ที่แท็บ Group)
+                        val notiRef = db.collection("notifications").document()
+                        val inviteData = hashMapOf(
+                            "receiverId" to uid,
+                            "senderId" to myUid,
+                            "groupId" to gId,
+                            "groupName" to groupName,
+                            "from_name" to groupName, // ชื่อกลุ่มที่จะแสดงในหน้าแจ้งเตือน
+                            "type" to "GROUP_INVITE",  // ประเภทแจ้งเตือน [cite: 2026-02-23]
+                            "timestamp" to com.google.firebase.Timestamp.now()
+                        )
+                        batch.set(notiRef, inviteData)
+                    }
+
+                    // 5. รัน Batch ทั้งหมดพร้อมกัน
+                    batch.commit().addOnSuccessListener {
+                        Toast.makeText(this, "Members added and notifications sent", Toast.LENGTH_SHORT).show()
+                        finish()
+                    }
                 }
-
-                batch.commit().addOnSuccessListener {
-                    Toast.makeText(this, "เพิ่มสมาชิกสำเร็จ", Toast.LENGTH_SHORT).show()
-                    finish() // เสร็จแล้วปิดหน้านี้กลับไปหน้า GroupDetail อัตโนมัติ
-                }
-            }
-            .addOnFailureListener { e ->
-                Toast.makeText(this, "เกิดข้อผิดพลาด: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
+        }.addOnFailureListener { e ->
+            Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun setupRecyclerView() {
@@ -111,6 +127,9 @@ class SelectFriend : AppCompatActivity() {
                 val friendsUids = snapshot?.get("friends") as? List<String> ?: listOf()
                 if (friendsUids.isNotEmpty()) {
                     fetchFriendDetails(friendsUids)
+                } else {
+                    friendList.clear()
+                    adapter.notifyDataSetChanged()
                 }
             }
     }

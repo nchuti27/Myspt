@@ -3,6 +3,7 @@ package com.example.myspt
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
+import android.view.View
 import android.widget.Button
 import android.widget.ImageButton
 import android.widget.TextView
@@ -42,19 +43,17 @@ class FindUser : AppCompatActivity() {
         val friendUid = intent.getStringExtra("FRIEND_UID")
 
         if (receivedName != null) {
-            tvFoundUserName?.text = "$receivedName"
+            tvFoundUserName?.text = receivedName
         } else {
             tvFoundUserName?.text = "User not found"
         }
 
         // ตรวจสอบสถานะเพื่อนทันทีเมื่อโหลดข้อมูลเสร็จ
         if (friendUid != null && btnAddFriend != null) {
-            checkFriendStatus(friendUid, btnAddFriend!!)
+            checkFriendStatus(friendUid, receivedName ?: "Unknown User")
         }
 
-        btnBack?.setOnClickListener {
-            finish()
-        }
+        btnBack?.setOnClickListener { finish() }
     }
 
     private fun init() {
@@ -63,9 +62,14 @@ class FindUser : AppCompatActivity() {
         btnAddFriend = findViewById(R.id.btnAddFriend)
     }
 
-    // ฟังก์ชันเช็คสถานะเพื่อน: ตรวจสอบจากลิสต์เพื่อนของเราเองใน Firestore
-    private fun checkFriendStatus(targetUid: String, btnAddFriend: Button) {
+    private fun checkFriendStatus(targetUid: String, targetName: String) {
         val myUid = auth.currentUser?.uid ?: return
+
+        // ป้องกันการแอดตัวเอง [cite: 2026-02-27]
+        if (myUid == targetUid) {
+            btnAddFriend?.visibility = View.GONE
+            return
+        }
 
         db.collection("users").document(myUid).get()
             .addOnSuccessListener { document ->
@@ -73,55 +77,44 @@ class FindUser : AppCompatActivity() {
                     val myFriends = document.get("friends") as? List<String> ?: listOf()
 
                     if (myFriends.contains(targetUid)) {
-                        // กรณีเป็นเพื่อนกันอยู่แล้ว
-                        btnAddFriend.text = "Already Friends"
-                        btnAddFriend.isEnabled = false
-                        btnAddFriend.setBackgroundColor(Color.GRAY)
+                        btnAddFriend?.text = "Already Friends"
+                        btnAddFriend?.isEnabled = false
+                        btnAddFriend?.alpha = 0.5f // ทำให้ปุ่มดูจางลง
                     } else {
-                        // กรณีที่ยังไม่เป็นเพื่อนกัน
-                        btnAddFriend.text = "Add Friend"
-                        btnAddFriend.isEnabled = true
-                        btnAddFriend.setOnClickListener {
-                            sendFriendRequest(targetUid)
+                        btnAddFriend?.text = "Add Friend"
+                        btnAddFriend?.isEnabled = true
+                        btnAddFriend?.setOnClickListener {
+                            sendFriendRequest(targetUid, targetName)
                         }
                     }
                 }
             }
-            .addOnFailureListener {
-                // หากดึงข้อมูลล้มเหลว ให้ตั้งเป็นปุ่ม Add Friend ปกติไว้ก่อน
-                btnAddFriend.setOnClickListener { sendFriendRequest(targetUid) }
-            }
     }
 
-    private fun sendFriendRequest(friendUid: String) {
+    private fun sendFriendRequest(friendUid: String, friendName: String) {
         val myUid = auth.currentUser?.uid ?: return
 
-        if (myUid == friendUid) {
-            Toast.makeText(this, "You cannot add yourself", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        // ดึงชื่อของเรา (ผู้ส่ง) เพื่อบันทึกลงในคำขอเพื่อน
+        // 1. ดึงข้อมูลโปรไฟล์ของเราเองก่อน
         db.collection("users").document(myUid).get()
             .addOnSuccessListener { myDoc ->
                 val myName = myDoc.getString("username") ?: "Someone"
 
+                // 2. สร้างข้อมูลคำขอเพื่อน (เพิ่ม to_name เพื่อใช้ใน Tab Request) [cite: 2026-02-27]
                 val request = hashMapOf(
                     "from_uid" to myUid,
-                    "from_name" to myName, // ใส่ชื่อเพื่อให้ Notification โชว์ชื่อได้ทันที
+                    "from_name" to myName,      // ชื่อเรา (ใช้โชว์ในแท็บ Friend ของเพื่อน)
                     "to_uid" to friendUid,
+                    "to_name" to friendName,    // ชื่อเพื่อน (ใช้โชว์ในแท็บ Request ของเรา) [cite: 2026-02-27]
                     "status" to "pending",
                     "timestamp" to com.google.firebase.Timestamp.now()
                 )
 
+                // 3. บันทึกลง Firestore
                 db.collection("friend_requests")
                     .add(request)
                     .addOnSuccessListener {
-                        Toast.makeText(this, "Friend request sent!", Toast.LENGTH_LONG).show()
-                        val intent = Intent(this, MainActivity::class.java)
-                        intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
-                        startActivity(intent)
-                        finish()
+                        Toast.makeText(this, "Friend request sent to $friendName!", Toast.LENGTH_LONG).show()
+                        finish() // กลับไปหน้าค้นหา
                     }
                     .addOnFailureListener { e ->
                         Toast.makeText(this, "Failed to send: ${e.message}", Toast.LENGTH_SHORT).show()
