@@ -74,11 +74,9 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            app:backgroundTint="#3d79ca"
+            app:backgroundTint="#3D79CA"
             android:text="Request"
-            android:textAllCaps="false"
             android:textColor="#FFFFFF"
-            android:textSize="14sp"
             app:cornerRadius="20dp" />
     </LinearLayout>
 
