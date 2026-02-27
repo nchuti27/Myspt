@@ -35,47 +35,45 @@ class Grouplist : AppCompatActivity() {
 
         initViews()
         setupRecyclerView()
+        // เรียกดึงข้อมูลครั้งแรกครั้งเดียวพอ
         fetchGroupList()
         setupSearch()
     }
+
+    // ลบ fetchGroupList ออกจาก onResume เพื่อป้องกันการเรียกซ้ำซ้อนขณะเปิดแอป
     override fun onResume() {
         super.onResume()
-        fetchGroupList()
     }
 
     private fun initViews() {
         rvGroupList = findViewById(R.id.rvGroupList)
         etSearch = findViewById(R.id.etSearch)
         backButton = findViewById(R.id.backButton)
-
-        backButton.setOnClickListener {
-            finish()
-        }
+        backButton.setOnClickListener { finish() }
     }
 
     private fun setupRecyclerView() {
-        // ต้องส่ง parameter ให้ครบตามลำดับของ Constructor ใน Adapter
         adapter = HomeGroupAdapter(
-            allGroups,       // 1. groupList
-            true,            // 2. isListView
-            { group ->       // 3. onClick (จัดการกดเข้าหน้า Detail)
+            allGroups,
+            true,
+            { group ->
                 val intent = Intent(this, GroupDetail::class.java)
                 intent.putExtra("GROUP_ID", group.id)
                 startActivity(intent)
             },
-            { group ->       // 4. onLeaveClick (จัดการกดปุ่ม Leave สีแดง)
-                showLeaveGroupDialog(group)
-            }
+            { group -> showLeaveGroupDialog(group) }
         )
-
         rvGroupList.layoutManager = LinearLayoutManager(this)
         rvGroupList.adapter = adapter
     }
+
     private fun fetchGroupList() {
         val myUid = auth.currentUser?.uid ?: return
 
         db.collection("users").document(myUid).get().addOnSuccessListener { document ->
             val groupIds = document.get("groups") as? List<String> ?: listOf()
+
+            // เคลียร์รายการทิ้งทันทีเมื่อเริ่มโหลดใหม่
             allGroups.clear()
 
             if (groupIds.isEmpty()) {
@@ -83,19 +81,19 @@ class Grouplist : AppCompatActivity() {
                 return@addOnSuccessListener
             }
 
-            var loadedCount = 0
-            for (gId in groupIds) {
-                db.collection("groups").document(gId).get().addOnSuccessListener { gDoc ->
-                    val name = gDoc.getString("groupName") ?: "Unknown"
-                    // เอาปุ่ม Add ออกในหน้า See More เพราะเน้นดูรายชื่อ
-                    allGroups.add(CircleItem(id = gId, name = name, isAddButton = false))
-                    loadedCount++
-
-                    if (loadedCount == groupIds.size) {
-                        adapter.notifyDataSetChanged()
+            // ✅ วิธีแก้ที่หายเบิ้ลแน่นอน: ดึงข้อมูลทุกกลุ่มด้วยคำสั่ง whereIn ทีเดียวจบ
+            // ไม่ใช้ลูป for ดึงทีละตัว เพื่อป้องกันข้อมูลแย่งกันมาปรากฏซ้ำ
+            db.collection("groups")
+                .whereIn(com.google.firebase.firestore.FieldPath.documentId(), groupIds)
+                .get()
+                .addOnSuccessListener { documents ->
+                    allGroups.clear() // เคลียร์อีกรอบเพื่อความชัวร์ก่อนรับค่าใหม่
+                    for (gDoc in documents) {
+                        val name = gDoc.getString("groupName") ?: "Unknown"
+                        allGroups.add(CircleItem(id = gDoc.id, name = name, isAddButton = false))
                     }
+                    adapter.notifyDataSetChanged()
                 }
-            }
         }
     }
 
@@ -107,47 +105,37 @@ class Grouplist : AppCompatActivity() {
                 val filteredList = allGroups.filter {
                     it.name.contains(keyword, ignoreCase = true)
                 }
+                // ต้องมั่นใจว่าใน Adapter ฟังก์ชัน updateData ใช้การ "แทนที่" ลิสต์เดิม ไม่ใช่ add ต่อท้าย
                 adapter.updateData(filteredList)
             }
             override fun afterTextChanged(s: Editable?) {}
         })
     }
+
     private fun showLeaveGroupDialog(group: CircleItem) {
         AlertDialog.Builder(this)
             .setTitle("Leave Group")
             .setMessage("Are you sure you want to leave ${group.name}?")
-            .setPositiveButton("Leave") { dialogInterface, _ -> // เปลี่ยนชื่อเป็น dialogInterface เพื่อความชัดเจน
+            .setPositiveButton("Leave") { dialog, _ ->
                 leaveGroupInFirebase(group)
-                dialogInterface.dismiss()
+                dialog.dismiss()
             }
-            .setNegativeButton("Cancel") { dialogInterface, _ ->
-                dialogInterface.dismiss()
-            }
+            .setNegativeButton("Cancel") { dialog, _ -> dialog.dismiss() }
             .show()
     }
+
     private fun leaveGroupInFirebase(group: CircleItem) {
         val myUid = auth.currentUser?.uid ?: return
-        val groupId = group.id
-
         val userRef = db.collection("users").document(myUid)
-        val groupRef = db.collection("groups").document(groupId)
+        val groupRef = db.collection("groups").document(group.id)
 
-        // ลบกลุ่มออกจาก User
-        userRef.update("groups", FieldValue.arrayRemove(groupId))
+        userRef.update("groups", FieldValue.arrayRemove(group.id))
             .addOnSuccessListener {
-                // ลบ User ออกจาก Group (เช็คชื่อฟิลด์ 'members' ให้ตรงกับใน Firebase ของคุณด้วยนะครับ)
                 groupRef.update("members", FieldValue.arrayRemove(myUid))
                     .addOnSuccessListener {
                         Toast.makeText(this, "You left ${group.name}", Toast.LENGTH_SHORT).show()
-                        fetchGroupList()
+                        fetchGroupList() // โหลดข้อมูลใหม่หลังจากออกกลุ่ม
                     }
-                    .addOnFailureListener {
-                        Toast.makeText(this, "Updated your profile, but group member list remains.", Toast.LENGTH_SHORT).show()
-                        fetchGroupList()
-                    }
-            }
-            .addOnFailureListener { e ->
-                Toast.makeText(this, "Failed: ${e.message}", Toast.LENGTH_SHORT).show()
             }
     }
 }
