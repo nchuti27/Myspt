@@ -38,7 +38,7 @@
         android:id="@+id/tvNotiMessage"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="You sent a friend request."
+        android:text="sent you a friend request."
         android:textColor="@color/fintech_text_sub"
         android:textSize="13sp"
         app:layout_constraintEnd_toEndOf="parent"
