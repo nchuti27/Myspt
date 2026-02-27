@@ -28,27 +28,19 @@ class NotificationAdapter(
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val doc = notifications[position]
 
-        // --- แก้ไขจุดนี้: เปลี่ยนมาดึงจากฟิลด์ from_name ที่เราบันทึกไว้ล่าสุด ---
-        val name = doc.getString("from_name")
-            ?: doc.getString("senderName") // กันเหนียวสำหรับข้อมูลเก่า
-            ?: doc.getString("username")   // กันเหนียวสำหรับข้อมูลเก่า
-            ?: "Unknown User"
-
+        // ดึงชื่อผู้ส่ง
+        val name = doc.getString("from_name") ?: "Unknown User"
         holder.tvName.text = name
 
-        holder.btnAccept.setOnClickListener {
-            onAccept(doc)
-        }
-
-        holder.btnDelete.setOnClickListener {
-            onDelete(doc)
-        }
+        // จัดการเหตุการณ์กดปุ่ม
+        holder.btnAccept.setOnClickListener { onAccept(doc) }
+        holder.btnDelete.setOnClickListener { onDelete(doc) }
     }
 
     override fun getItemCount() = notifications.size
 
     fun updateData(newList: List<DocumentSnapshot>) {
-        notifications = newList
+        this.notifications = newList
         notifyDataSetChanged()
     }
 }

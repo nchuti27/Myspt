@@ -39,8 +39,6 @@ class Grouplist : AppCompatActivity() {
         fetchGroupList()
         setupSearch()
     }
-
-    // ลบ fetchGroupList ออกจาก onResume เพื่อป้องกันการเรียกซ้ำซ้อนขณะเปิดแอป
     override fun onResume() {
         super.onResume()
     }
@@ -81,8 +79,6 @@ class Grouplist : AppCompatActivity() {
                 return@addOnSuccessListener
             }
 
-            // ✅ วิธีแก้ที่หายเบิ้ลแน่นอน: ดึงข้อมูลทุกกลุ่มด้วยคำสั่ง whereIn ทีเดียวจบ
-            // ไม่ใช้ลูป for ดึงทีละตัว เพื่อป้องกันข้อมูลแย่งกันมาปรากฏซ้ำ
             db.collection("groups")
                 .whereIn(com.google.firebase.firestore.FieldPath.documentId(), groupIds)
                 .get()
@@ -105,7 +101,6 @@ class Grouplist : AppCompatActivity() {
                 val filteredList = allGroups.filter {
                     it.name.contains(keyword, ignoreCase = true)
                 }
-                // ต้องมั่นใจว่าใน Adapter ฟังก์ชัน updateData ใช้การ "แทนที่" ลิสต์เดิม ไม่ใช่ add ต่อท้าย
                 adapter.updateData(filteredList)
             }
             override fun afterTextChanged(s: Editable?) {}
@@ -134,7 +129,7 @@ class Grouplist : AppCompatActivity() {
                 groupRef.update("members", FieldValue.arrayRemove(myUid))
                     .addOnSuccessListener {
                         Toast.makeText(this, "You left ${group.name}", Toast.LENGTH_SHORT).show()
-                        fetchGroupList() // โหลดข้อมูลใหม่หลังจากออกกลุ่ม
+                        fetchGroupList()
                     }
             }
     }
