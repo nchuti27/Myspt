@@ -29,6 +29,7 @@ class WhoPays : AppCompatActivity() {
     private var etPaidAmount: EditText? = null
     private var spinnerPayer: Spinner? = null
 
+
     // ตัวแปรรับข้อมูล
     private var amountPerPerson = HashMap<String, Double>()
     private var memberNames = HashMap<String, String>()
@@ -73,6 +74,10 @@ class WhoPays : AppCompatActivity() {
         tvTotalAmount = findViewById(R.id.tvTotalAmount)
         etPaidAmount = findViewById(R.id.etPaidAmount)
         spinnerPayer = findViewById(R.id.spinnerPayer)
+        val tabItems = findViewById<TextView>(R.id.tabItems)
+        tabItems?.setOnClickListener {
+            finish()
+        }
     }
 
     private fun setupData() {
@@ -94,7 +99,7 @@ class WhoPays : AppCompatActivity() {
 
         totalAmount = amountPerPerson.values.sum()
         tvTotalAmount?.text = String.format("%.2f ฿", totalAmount)
-        etPaidAmount?.setText(totalAmount.toString())
+        etPaidAmount?.setText(String.format("%.2f", totalAmount))
 
         uidList.addAll(memberNames.keys)
         val nameList = uidList.map { memberNames[it] ?: "Unknown" }
@@ -113,10 +118,22 @@ class WhoPays : AppCompatActivity() {
         btnConfirm?.setOnClickListener { saveBillToDatabase() }
 
         Ptabfriend?.setOnClickListener {
+            // ลองเช็คค่า isConfirmed ผ่านข้อความแจ้งเตือน
+            Toast.makeText(this, "isConfirmed = $isConfirmed", Toast.LENGTH_SHORT).show()
+
             if (isConfirmed) {
                 val intent = Intent(this, FriendOwe::class.java)
+
+                val myUid = auth.currentUser?.uid ?: ""
+                val selectedPayerIndex = spinnerPayer?.selectedItemPosition ?: 0
+                val actualPayerUid = if (uidList.isNotEmpty()) uidList[selectedPayerIndex] else myUid
+
+                intent.putExtra("PAYER_UID", actualPayerUid)
+                intent.putExtra("SPLIT_RESULT", amountPerPerson)
+                intent.putExtra("MEMBER_NAMES", memberNames)
+
                 startActivity(intent)
-                finish()
+                //finish()
             } else {
                 showPleaseConfirmDialog()
             }
@@ -149,6 +166,7 @@ class WhoPays : AppCompatActivity() {
                 Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
             }
     }
+
 
     private fun showMenu(view: View) {
         val popupMenu = PopupMenu(this, view)
