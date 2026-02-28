@@ -1,18 +1,19 @@
 package com.example.myspt
 
+import android.content.Intent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import coil.load
 
-// ใช้ข้อมูลจาก FriendData class ที่เราสร้างไว้ก่อนหน้า
 class HomeFriendAdapter(private val friendList: ArrayList<FriendData>) :
     RecyclerView.Adapter<HomeFriendAdapter.HomeFriendViewHolder>() {
 
     class HomeFriendViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        // ตรวจสอบ ID ในไฟล์ item_contact.xml ให้ตรงกันนะครับ
+        // ตรวจสอบ ID ในไฟล์ item_contact.xml ให้ตรงกัน
         val ivAvatar: ImageView = itemView.findViewById(R.id.ivAvatar)
         val tvName: TextView = itemView.findViewById(R.id.tvName)
     }
@@ -25,11 +26,29 @@ class HomeFriendAdapter(private val friendList: ArrayList<FriendData>) :
 
     override fun onBindViewHolder(holder: HomeFriendViewHolder, position: Int) {
         val currentItem = friendList[position]
+        val context = holder.itemView.context
 
-        // แสดงชื่อเพื่อนที่ดึงมาจาก Firestore
+        // 1. แสดงชื่อเพื่อน
         holder.tvName.text = currentItem.name
 
-        // หากในอนาคตมี URL รูปภาพโปรไฟล์ สามารถใช้ Glide หรือ Coil โหลดรูปเข้า ivAvatar ได้ที่นี่
+        // 2. โหลดรูปภาพโปรไฟล์ (ถ้าใน FriendData มี field imageUrl)
+        // ถ้ายังไม่มี URL ระบบจะใช้รูป ic_launcher_background เป็นรูปเริ่มต้น
+        // holder.ivAvatar.load("URL_ของรูปภาพ") {
+        //     placeholder(R.drawable.ic_launcher_background)
+        //     crossfade(true)
+        // }
+
+        // 3. ตั้งค่าการคลิกเพื่อไปหน้า FriendProfile
+        holder.itemView.setOnClickListener {
+            val intent = Intent(context, FriendProfile::class.java).apply {
+                // ส่งข้อมูลสำคัญไปยังหน้าโปรไฟล์
+                putExtra("FRIEND_UID", currentItem.uid)
+                putExtra("FRIEND_NAME", currentItem.name)
+                // ตรวจสอบว่า FriendData ของคุณมี field username หรือไม่
+                // putExtra("FRIEND_USERNAME", currentItem.username)
+            }
+            context.startActivity(intent)
+        }
     }
 
     override fun getItemCount(): Int {

@@ -2,6 +2,8 @@ package com.example.myspt
 
 import android.content.Intent
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -21,7 +23,9 @@ class Friend_list : AppCompatActivity() {
 
     private lateinit var rvFriendList: RecyclerView
     private lateinit var friendAdapter: FriendAdapter
-    private var friendList = ArrayList<FriendData>()
+    private lateinit var etSearch: EditText
+
+    private var fullFriendList = ArrayList<FriendData>() // เก็บข้อมูลทั้งหมดจาก DB
 
     private val db = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
@@ -45,6 +49,7 @@ class Friend_list : AppCompatActivity() {
         val btnAddFriendPage = findViewById<ImageButton>(R.id.btnAddFriendPage)
         val btnBack = findViewById<ImageButton>(R.id.backButton)
         rvFriendList = findViewById(R.id.rvFriendList)
+        etSearch = findViewById(R.id.etSearch)
 
         btnAddFriendPage.setOnClickListener {
             startActivity(Intent(this, AddFriend::class.java))
@@ -54,9 +59,19 @@ class Friend_list : AppCompatActivity() {
             finish()
         }
 
-        friendAdapter = FriendAdapter(friendList)
+        // ตั้งค่า Adapter
+        friendAdapter = FriendAdapter(fullFriendList)
         rvFriendList.layoutManager = LinearLayoutManager(this)
         rvFriendList.adapter = friendAdapter
+
+        // ระบบค้นหา (Search Filter)
+        etSearch.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                friendAdapter.filter(s.toString())
+            }
+            override fun afterTextChanged(s: Editable?) {}
+        })
     }
 
     private fun loadFriendsFromFirestore() {
@@ -67,9 +82,8 @@ class Friend_list : AppCompatActivity() {
                 if (document != null && document.exists()) {
                     val friendsUids = document.get("friends") as? List<String> ?: emptyList()
                     if (friendsUids.isEmpty()) {
-                        friendList.clear()
-                        friendAdapter.notifyDataSetChanged()
-                        Toast.makeText(this, "No friends found", Toast.LENGTH_SHORT).show()
+                        fullFriendList.clear()
+                        friendAdapter.updateData(fullFriendList)
                         return@addOnSuccessListener
                     }
                     fetchFriendsDetails(friendsUids)
@@ -78,28 +92,34 @@ class Friend_list : AppCompatActivity() {
     }
 
     private fun fetchFriendsDetails(uids: List<String>) {
-        friendList.clear()
-        for (uid in uids) {
-            db.collection("users").document(uid).get()
-                .addOnSuccessListener { doc ->
+        // ใช้ whereIn เพื่อดึงข้อมูลครั้งเดียวแทนการวน Loop .get() ทีละคน (ประสิทธิภาพดีกว่า)
+        db.collection("users").whereIn("__name__", uids).get()
+            .addOnSuccessListener { querySnapshot ->
+                fullFriendList.clear()
+                for (doc in querySnapshot.documents) {
                     val name = doc.getString("name") ?: "Unknown"
                     val username = doc.getString("username") ?: ""
-                    friendList.add(FriendData(name, "Username: $username", uid))
-                    friendAdapter.notifyDataSetChanged()
+                    val uid = doc.id
+                    fullFriendList.add(FriendData(name, username, uid))
                 }
-        }
+                friendAdapter.updateData(fullFriendList)
+            }
     }
 }
 
+// --- Model Data ---
 data class FriendData(
     val name: String,
-    val detail: String,
+    val username: String,
     val uid: String,
     var isExpanded: Boolean = false
 )
 
-class FriendAdapter(private var friendList: ArrayList<FriendData>) :
+// --- Adapter ---
+class FriendAdapter(private var originalList: ArrayList<FriendData>) :
     RecyclerView.Adapter<FriendAdapter.FriendViewHolder>() {
+
+    private var filteredList = ArrayList<FriendData>(originalList)
 
     class FriendViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val tvName: TextView = itemView.findViewById(R.id.tvName)
@@ -115,56 +135,72 @@ class FriendAdapter(private var friendList: ArrayList<FriendData>) :
     }
 
     override fun onBindViewHolder(holder: FriendViewHolder, position: Int) {
-        val currentItem = friendList[position]
+        val currentItem = filteredList[position]
         val context = holder.itemView.context
-        val db = FirebaseFirestore.getInstance()
-        val auth = FirebaseAuth.getInstance()
-        val myUid = auth.currentUser?.uid
 
         holder.tvName.text = currentItem.name
         holder.layoutHidden.visibility = if (currentItem.isExpanded) View.VISIBLE else View.GONE
 
+        // คลิกเพื่อกาง/หุบเมนู
         holder.btnExpand.setOnClickListener {
             currentItem.isExpanded = !currentItem.isExpanded
-            notifyItemChanged(position)
+            notifyItemChanged(holder.bindingAdapterPosition)
         }
 
-        // English version of Delete Confirmation System
+        // คลิกไปหน้าโปรไฟล์
+        holder.btnViewProfile.setOnClickListener {
+            val intent = Intent(context, FriendProfile::class.java).apply {
+                putExtra("FRIEND_UID", currentItem.uid)
+                putExtra("FRIEND_NAME", currentItem.name)
+            }
+            context.startActivity(intent)
+        }
+
+        // ลบเพื่อน
         holder.btnDelete.setOnClickListener {
             AlertDialog.Builder(context)
                 .setTitle("Remove Friend")
-                .setMessage("Are you sure you want to remove ${currentItem.name} from your friend list?")
+                .setMessage("Remove ${currentItem.name} from friend list?")
                 .setPositiveButton("Remove") { _, _ ->
-                    if (myUid != null) {
-                        // 1. Remove from our collection
-                        db.collection("users").document(myUid)
-                            .update("friends", FieldValue.arrayRemove(currentItem.uid))
-                            .addOnSuccessListener {
-                                // 2. Remove us from friend's collection
-                                db.collection("users").document(currentItem.uid)
-                                    .update("friends", FieldValue.arrayRemove(myUid))
+                    val myUid = FirebaseAuth.getInstance().currentUser?.uid ?: return@setPositiveButton
+                    val db = FirebaseFirestore.getInstance()
 
-                                // 3. Update UI
-                                if (position < friendList.size) {
-                                    friendList.removeAt(position)
-                                    notifyItemRemoved(position)
-                                    notifyItemRangeChanged(position, friendList.size)
-                                    Toast.makeText(context, "Friend removed successfully", Toast.LENGTH_SHORT).show()
-                                }
-                            }
-                            .addOnFailureListener { e ->
-                                Toast.makeText(context, "Failed to remove: ${e.message}", Toast.LENGTH_SHORT).show()
-                            }
-                    }
+                    db.collection("users").document(myUid)
+                        .update("friends", FieldValue.arrayRemove(currentItem.uid))
+                        .addOnSuccessListener {
+                            // ลบออกจากทั้ง Original และ Filtered list
+                            originalList.removeAll { it.uid == currentItem.uid }
+                            val pos = holder.bindingAdapterPosition
+                            filteredList.removeAt(pos)
+                            notifyItemRemoved(pos)
+                            Toast.makeText(context, "Removed", Toast.LENGTH_SHORT).show()
+                        }
                 }
                 .setNegativeButton("Cancel", null)
                 .show()
         }
-
-        holder.btnViewProfile.setOnClickListener {
-            Toast.makeText(context, "Viewing Profile: ${currentItem.name}", Toast.LENGTH_SHORT).show()
-        }
     }
 
-    override fun getItemCount(): Int = friendList.size
+    override fun getItemCount(): Int = filteredList.size
+
+    // ฟังก์ชันสำหรับ Search Filter
+    fun filter(query: String) {
+        val searchText = query.lowercase().trim()
+        filteredList = if (searchText.isEmpty()) {
+            ArrayList(originalList)
+        } else {
+            val result = originalList.filter {
+                it.name.lowercase().contains(searchText) || it.username.lowercase().contains(searchText)
+            }
+            ArrayList(result)
+        }
+        notifyDataSetChanged()
+    }
+
+    // ฟังก์ชันอัปเดตข้อมูลเมื่อโหลดเสร็จ
+    fun updateData(newList: ArrayList<FriendData>) {
+        originalList = newList
+        filteredList = ArrayList(newList)
+        notifyDataSetChanged()
+    }
 }
