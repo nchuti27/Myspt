@@ -86,9 +86,10 @@ class WhoPays : AppCompatActivity() {
         if (namesMap != null) memberNames.putAll(namesMap)
 
         if (itemsList != null) {
-            // กรองเอาเฉพาะรายการที่มีการพิมพ์ชื่อเมนู และราคามากกว่า 0
-            val validItems = itemsList.filter { it.itemName.isNotBlank() && it.price > 0 }
-            billItems.addAll(validItems)
+            // 🌟 แก้ไขตรงนี้: ดึงรายการทั้งหมดที่มีการพิมพ์ "ชื่อเมนู" มาแสดง
+            // ไม่ต้องสนใจว่าราคาจะว่างเปล่า เป็น 0 หรือมีคนหารหรือไม่
+            val allEnteredItems = itemsList.filter { it.itemName.isNotBlank() }
+            billItems.addAll(allEnteredItems)
         }
 
         totalAmount = amountPerPerson.values.sum()
