@@ -15,7 +15,8 @@
         android:background="@android:color/white"
         android:elevation="4dp"
         android:padding="16dp"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toTopOf="parent"
+        tools:layout_editor_absoluteX="-48dp">
 
         <ImageButton
             android:id="@+id/backButton"
@@ -29,18 +30,18 @@
             app:layout_constraintTop_toTopOf="parent"
             app:tint="#1A1A1A" />
 
-        <TextView
-            android:id="@+id/tvTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="40dp"
-            android:fontFamily="sans-serif-medium"
-            android:text="New Bill"
-            android:textColor="#1A1A1A"
-            android:textSize="20sp"
+        <EditText
+            android:id="@+id/etBillName"
+            android:layout_width="289dp"
+            android:layout_height="50dp"
+            android:layout_marginHorizontal="16dp"
+            android:background="@null"
+            android:gravity="center"
+            android:hint="Enter bill name"
+            android:textSize="18sp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@id/backButton"
+            app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 
