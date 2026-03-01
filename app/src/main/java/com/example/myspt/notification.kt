@@ -4,7 +4,6 @@ import android.os.Bundle
 import android.widget.Button
 import android.widget.ImageButton
 import android.widget.ImageView
-import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -29,12 +28,12 @@ class notification : AppCompatActivity() {
     private lateinit var btnTabGroup: Button
     private lateinit var btnTabFriend: Button
     private lateinit var btnTabRequest: Button
-    private lateinit var btnClearAll: ImageView // ✅ เพิ่มปุ่มล้างทั้งหมด
-    private lateinit var rvNoti: RecyclerView // ✅ เปลี่ยน ID ให้ตรงกับ XML ล่าสุด
+    private lateinit var btnClearAll: ImageView
+    private lateinit var rvNoti: RecyclerView
 
     private var notiList = ArrayList<DocumentSnapshot>()
     private lateinit var notiAdapter: NotificationAdapter
-    private var currentTab = "FRIEND" // เริ่มต้นที่ Tab Friend ตามความเหมาะสม
+    private var currentTab = "FRIEND"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -48,7 +47,6 @@ class notification : AppCompatActivity() {
         setupRecyclerView()
         setupTabListeners()
 
-        // เริ่มโหลดข้อมูลหน้าแรก
         loadFriendTab()
     }
 
@@ -61,14 +59,15 @@ class notification : AppCompatActivity() {
         rvNoti = findViewById(R.id.rvNoti)
 
         btnBack.setOnClickListener { finish() }
-
-        // ✅ Logic ปุ่ม Clear All ลบตาม Tab ที่เลือก
         btnClearAll.setOnClickListener { confirmClearAll() }
     }
 
     private fun setupRecyclerView() {
+        // ✅ ส่ง currentTab เข้าไปด้วยเพื่อให้ Adapter รู้ว่าควรโชว์ข้อความแบบไหน
         notiAdapter = NotificationAdapter(notiList,
-            onAccept = { doc -> acceptFriend(doc) },
+            onAccept = { doc ->
+                if (currentTab == "GROUP") acceptGroupInvite(doc) else acceptFriend(doc)
+            },
             onDelete = { doc -> deleteRequest(doc) }
         )
         rvNoti.apply {
@@ -92,7 +91,8 @@ class notification : AppCompatActivity() {
     private fun loadGroupTab() {
         currentTab = "GROUP"
         updateTabUI(btnTabGroup)
-        fetchData("notifications", "receiverId", auth.currentUser?.uid ?: "")
+        // ✅ ดึงจาก group_invites เพื่อจัดการคำเชิญเข้ากลุ่มโดยเฉพาะ
+        fetchData("group_invites", "to_uid", auth.currentUser?.uid ?: "")
     }
 
     private fun loadRequestTab() {
@@ -110,19 +110,9 @@ class notification : AppCompatActivity() {
                 if (e != null) return@addSnapshotListener
                 notiList.clear()
                 snapshots?.let { notiList.addAll(it.documents) }
-                notiAdapter.notifyDataSetChanged()
+                // ✅ แจ้ง Adapter ว่า Tab เปลี่ยนไปแล้วนะ
+                notiAdapter.updateData(notiList, currentTab)
             }
-    }
-
-    private fun confirmClearAll() {
-        AlertDialog.Builder(this)
-            .setTitle("Clear All Notifications")
-            .setMessage("Are you sure you want to clear all $currentTab notifications?")
-            .setPositiveButton("Clear") { _, _ ->
-                for (doc in notiList) deleteRequest(doc)
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
     }
 
     private fun acceptFriend(doc: DocumentSnapshot) {
@@ -140,8 +130,34 @@ class notification : AppCompatActivity() {
         }
     }
 
+    private fun acceptGroupInvite(doc: DocumentSnapshot) {
+        val myUid = auth.currentUser?.uid ?: return
+        val groupId = doc.getString("groupId") ?: return
+        val groupName = doc.getString("groupName") ?: "Group"
+
+        val batch = db.batch()
+        batch.update(db.collection("group_invites").document(doc.id), "status", "accepted")
+        batch.update(db.collection("groups").document(groupId), "members", FieldValue.arrayUnion(myUid))
+        batch.update(db.collection("users").document(myUid), "groups", FieldValue.arrayUnion(groupId))
+
+        batch.commit().addOnSuccessListener {
+            Toast.makeText(this, "Joined $groupName!", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     private fun deleteRequest(doc: DocumentSnapshot) {
         db.document(doc.reference.path).delete()
+    }
+
+    private fun confirmClearAll() {
+        AlertDialog.Builder(this)
+            .setTitle("Clear All")
+            .setMessage("Clear all $currentTab items?")
+            .setPositiveButton("Clear") { _, _ ->
+                for (doc in notiList) deleteRequest(doc)
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
     private fun updateTabUI(activeButton: Button) {

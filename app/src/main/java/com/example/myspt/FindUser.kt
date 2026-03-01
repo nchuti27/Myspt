@@ -94,17 +94,20 @@ class FindUser : AppCompatActivity() {
     private fun sendFriendRequest(friendUid: String, friendName: String) {
         val myUid = auth.currentUser?.uid ?: return
 
-        // 1. ดึงข้อมูลโปรไฟล์ของเราเองก่อน
+        // 1. ดึงข้อมูลโปรไฟล์ของเราเอง (คนส่ง) เพื่อเอาชื่อและรูปไปโชว์ในหน้า Noti เพื่อน
         db.collection("users").document(myUid).get()
             .addOnSuccessListener { myDoc ->
-                val myName = myDoc.getString("username") ?: "Someone"
+                // 🌟 เปลี่ยนจาก "username" เป็น "name" ให้ตรงกับหน้าอื่นๆ ของพี่
+                val myName = myDoc.getString("name") ?: "Someone"
+                val myProfileUrl = myDoc.getString("profileUrl")
 
-                // 2. สร้างข้อมูลคำขอเพื่อน (เพิ่ม to_name เพื่อใช้ใน Tab Request) [cite: 2026-02-27]
+                // 2. สร้างข้อมูลคำขอเพื่อน
                 val request = hashMapOf(
                     "from_uid" to myUid,
-                    "from_name" to myName,      // ชื่อเรา (ใช้โชว์ในแท็บ Friend ของเพื่อน)
+                    "from_name" to myName,      // ✅ ชื่อเรา (ไปโชว์ที่ Tab Friend ของเพื่อน)
+                    "from_profileUrl" to myProfileUrl, // 🌟 เพิ่มรูปเราไปด้วย
                     "to_uid" to friendUid,
-                    "to_name" to friendName,    // ชื่อเพื่อน (ใช้โชว์ในแท็บ Request ของเรา) [cite: 2026-02-27]
+                    "to_name" to friendName,    // ✅ ชื่อเพื่อน (ไปโชว์ที่ Tab Request ของเรา)
                     "status" to "pending",
                     "timestamp" to com.google.firebase.Timestamp.now()
                 )
@@ -114,10 +117,10 @@ class FindUser : AppCompatActivity() {
                     .add(request)
                     .addOnSuccessListener {
                         Toast.makeText(this, "Friend request sent to $friendName!", Toast.LENGTH_LONG).show()
-                        finish() // กลับไปหน้าค้นหา
+                        finish()
                     }
                     .addOnFailureListener { e ->
-                        Toast.makeText(this, "Failed to send: ${e.message}", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
                     }
             }
     }

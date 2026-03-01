@@ -24,11 +24,9 @@ class CreateGroup : AppCompatActivity() {
 
     private var btnCreate: View? = null
     private var btnAddParticipant: View? = null
-    private var rvMembers: RecyclerView? = null // เพิ่มตัวแปร RecyclerView
+    private var rvMembers: RecyclerView? = null
 
     private var selectedMemberUids = ArrayList<String>()
-
-    // เพิ่มตัวแปรจัดการ Adapter
     private var participantList = mutableListOf<ParticipantData>()
     private lateinit var adapter: ParticipantAdapter
 
@@ -39,8 +37,6 @@ class CreateGroup : AppCompatActivity() {
             val selected = result.data?.getStringArrayListExtra("SELECTED_FRIENDS")
             if (selected != null) {
                 selectedMemberUids = selected
-
-                // สั่งอัปเดต UI ตรงนี้!
                 updateParticipantUI()
             }
         }
@@ -54,15 +50,14 @@ class CreateGroup : AppCompatActivity() {
         auth = FirebaseAuth.getInstance()
 
         init()
-        setupRecyclerView() // เรียกใช้การตั้งค่า RecyclerView
+        setupRecyclerView()
     }
 
     private fun init() {
         etGroupName = findViewById(R.id.etGroupName)
         btnCreate = findViewById(R.id.btnCreateGroup)
         btnAddParticipant = findViewById(R.id.btnAddParticipant)
-        rvMembers =
-            findViewById(R.id.rvMembers) // อย่าลืมใส่ id นี้ใน activity_creategroup.xml นะครับ
+        rvMembers = findViewById(R.id.rvMembers)
         val btnBack = findViewById<ImageButton>(R.id.backButton)
 
         btnBack?.setOnClickListener { finish() }
@@ -75,25 +70,23 @@ class CreateGroup : AppCompatActivity() {
         btnCreate?.setOnClickListener {
             val name = etGroupName.text.toString().trim()
             if (name.isNotEmpty()) {
-                createNewGroup(name)
+                // 🌟 ดึงชื่อเราเองจาก Firestore ก่อน เพื่อให้ชื่อคนส่งเชิญถูกต้อง
+                fetchMyInfoAndCreateGroup(name)
             } else {
                 etGroupName.error = "Please input your group name"
             }
         }
     }
 
-    // ฟังก์ชันตั้งค่า RecyclerView
     private fun setupRecyclerView() {
         adapter = ParticipantAdapter(participantList) { uidToRemove ->
-            // เมื่อกดกากบาทลบเพื่อน
             selectedMemberUids.remove(uidToRemove)
-            updateParticipantUI() // โหลด UI ใหม่
+            updateParticipantUI()
         }
         rvMembers?.layoutManager = LinearLayoutManager(this)
         rvMembers?.adapter = adapter
     }
 
-    // ฟังก์ชันอัปเดต UI และดึงชื่อเพื่อนจาก Firestore
     private fun updateParticipantUI() {
         if (selectedMemberUids.isEmpty()) {
             participantList.clear()
@@ -101,20 +94,17 @@ class CreateGroup : AppCompatActivity() {
             return
         }
 
-        // ดึงรายชื่อจากตาราง users ตาม UID ที่เราเลือกมา (ป้องกันจำกัด 10 คนเผื่อไว้ก่อน)
         db.collection("users")
             .whereIn(FieldPath.documentId(), selectedMemberUids.take(10))
             .get()
             .addOnSuccessListener { documents ->
                 participantList.clear()
-                // ใน CreateGroup.kt
                 for (doc in documents) {
                     val uid = doc.id
                     val name = doc.getString("name") ?: "Unknown"
-                    val pUrl = doc.getString("profileUrl") // 🌟 ดึง URL มาจาก Firestore
-                    participantList.add(ParticipantData(uid, name, pUrl)) // ✅ ส่งค่าให้ครบ
+                    val pUrl = doc.getString("profileUrl")
+                    participantList.add(ParticipantData(uid, name, pUrl))
                 }
-                // สั่งให้ RecyclerView วาดหน้าจอใหม่
                 adapter.notifyDataSetChanged()
             }
             .addOnFailureListener {
@@ -122,16 +112,27 @@ class CreateGroup : AppCompatActivity() {
             }
     }
 
-    private fun createNewGroup(groupName: String) {
+    // 🌟 ดึงข้อมูลชื่อและรูปของเราเองจาก Firestore ก่อนบันทึกกลุ่ม
+    private fun fetchMyInfoAndCreateGroup(groupName: String) {
         val myUid = auth.currentUser?.uid ?: return
-        val senderName = auth.currentUser?.displayName ?: "Your Friend"
         btnCreate?.isEnabled = false
 
-        // 🌟 1. สร้างกลุ่มโดยมีสมาชิกแค่ "ตัวเอง" (Admin) คนเดียวเท่านั้น
+        db.collection("users").document(myUid).get().addOnSuccessListener { doc ->
+            val myName = doc.getString("name") ?: "Your Friend"
+            val myProfileUrl = doc.getString("profileUrl")
+            createNewGroup(groupName, myName, myProfileUrl)
+        }.addOnFailureListener {
+            createNewGroup(groupName, "Your Friend", null)
+        }
+    }
+
+    private fun createNewGroup(groupName: String, senderName: String, senderProfileUrl: String?) {
+        val myUid = auth.currentUser?.uid ?: return
+
         val groupData = hashMapOf(
             "groupName" to groupName,
             "admin" to myUid,
-            "members" to arrayListOf(myUid), // ✅ มีแค่เราคนเดียว เพื่อนยังไม่เข้า
+            "members" to arrayListOf(myUid),
             "createdAt" to com.google.firebase.Timestamp.now()
         )
 
@@ -139,25 +140,23 @@ class CreateGroup : AppCompatActivity() {
             val groupId = ref.id
             val batch = db.batch()
 
-            // 2. อัปเดตรายชื่อกลุ่มให้ตัวเอง (Admin)
             val myUserRef = db.collection("users").document(myUid)
             batch.update(myUserRef, "groups", FieldValue.arrayUnion(groupId))
 
-            // 🌟 3. ส่งคำเชิญ (Invitation) แบบ Pending ให้เพื่อนที่เลือกไว้ทุกคน
             for (uid in selectedMemberUids) {
-                // สร้างเอกสารใน group_invites เพื่อให้โชว์ใน Tab Group ของเพื่อน
+                // 🌟 ส่งข้อมูลชื่อคนเชิญและรูปไปในคำเชิญด้วย
                 val inviteRef = db.collection("group_invites").document()
                 batch.set(inviteRef, hashMapOf(
                     "from_uid" to myUid,
-                    "from_name" to senderName,
+                    "from_name" to senderName,       // ✅ ชื่อจริงเรา
+                    "from_profileUrl" to senderProfileUrl, // ✅ รูปเรา
                     "to_uid" to uid,
                     "groupId" to groupId,
                     "groupName" to groupName,
-                    "status" to "pending", // 🌟 หัวใจสำคัญ: เพื่อนต้องกดตกลงเอง
+                    "status" to "pending",
                     "timestamp" to FieldValue.serverTimestamp()
                 ))
 
-                // ส่งแจ้งเตือนทั่วไปใน notifications
                 val notiRef = db.collection("notifications").document()
                 batch.set(notiRef, hashMapOf(
                     "receiverId" to uid,
@@ -170,7 +169,6 @@ class CreateGroup : AppCompatActivity() {
 
             batch.commit().addOnSuccessListener {
                 Toast.makeText(this, "Group Created & Invitations Sent!", Toast.LENGTH_SHORT).show()
-
                 val intent = Intent(this, MainActivity::class.java)
                 intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
                 startActivity(intent)

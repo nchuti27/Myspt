@@ -30,8 +30,6 @@ class GroupDetail : AppCompatActivity() {
 
     private val memberList = ArrayList<CircleItem>()
     private lateinit var memberAdapter: MemberListAdapter
-
-    // 🌟 เพิ่มตัวแปรสำหรับเก็บ UIDs เพื่อนที่รอส่งคำขอ (Pending)
     private var pendingSelectedUids = ArrayList<String>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -67,7 +65,6 @@ class GroupDetail : AppCompatActivity() {
             Toast.makeText(this, "Edit group name now", Toast.LENGTH_SHORT).show()
         }
 
-        // 🌟 ส่งไปเลือกเพื่อน (ใช้ startActivityForResult เพื่อเอาค่ากลับมาส่ง Invite ทีหลัง)
         btnAddMember.setOnClickListener {
             if (groupId != null) {
                 val intent = Intent(this, SelectFriend::class.java)
@@ -76,15 +73,14 @@ class GroupDetail : AppCompatActivity() {
             }
         }
 
-        // 🌟 ปุ่ม Save: บันทึกชื่อกลุ่ม + ส่งคำเชิญพร้อมกัน
         btnSave.setOnClickListener {
             val newName = editGroupName.text.toString().trim()
             if (newName.isEmpty()) {
                 Toast.makeText(this, "Please enter group name", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-
-            saveChangesAndSendInvites(newName)
+            // 🌟 เริ่มต้นขั้นตอนดึงชื่อจริงจาก Firestore
+            fetchMyNameAndSave(newName)
         }
 
         memberAdapter = MemberListAdapter(memberList)
@@ -92,7 +88,25 @@ class GroupDetail : AppCompatActivity() {
         rvMembers.adapter = memberAdapter
     }
 
-    // 🌟 รับรายชื่อเพื่อนกลับมาจากหน้า SelectFriend
+    // 🌟 ดึงชื่อเราเองจาก Firestore ก่อน เพื่อให้ชื่อคนส่งเชิญไม่เป็น Your Friend
+    private fun fetchMyNameAndSave(newName: String) {
+        val myUid = auth.currentUser?.uid ?: return
+
+        // ตัวอย่าง Logic ที่ถูกต้องก่อนส่งเข้า Firestore
+        db.collection("users").document(myUid).get().addOnSuccessListener { doc ->
+            val myName = doc.getString("name") ?: "Unknown" // ✅ ดึงชื่อจริง
+            val myProfileUrl = doc.getString("profileUrl") // ✅ ดึงรูปโปรไฟล์
+
+            // บันทึกลง group_invites หรือ friend_requests
+            val data = hashMapOf(
+                "from_name" to myName,
+                "from_profileUrl" to myProfileUrl,
+                // ... field อื่นๆ
+            )
+            db.collection("group_invites").add(data)
+        }
+    }
+
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == 100 && resultCode == Activity.RESULT_OK) {
@@ -104,24 +118,23 @@ class GroupDetail : AppCompatActivity() {
         }
     }
 
-    private fun saveChangesAndSendInvites(newName: String) {
+    // ✅ ปรับ Parameter ให้รับ 3 ค่า (ชื่อกลุ่ม, ชื่อคนส่ง, รูปคนส่ง)
+    private fun saveChangesAndSendInvites(newName: String, senderName: String, senderProfileUrl: String?) {
         val gId = groupId ?: return
         val myUid = auth.currentUser?.uid ?: return
-        val senderName = auth.currentUser?.displayName ?: "Your Friend"
 
         val batch = db.batch()
         val groupRef = db.collection("groups").document(gId)
 
-        // 1. อัปเดตชื่อกลุ่ม
         batch.update(groupRef, "groupName", newName)
 
-        // 2. ส่งคำเชิญให้เพื่อนที่รออยู่ (ถ้ามี)
         if (pendingSelectedUids.isNotEmpty()) {
             for (uid in pendingSelectedUids) {
                 val inviteRef = db.collection("group_invites").document()
                 val inviteData = hashMapOf(
                     "from_uid" to myUid,
-                    "from_name" to senderName,
+                    "from_name" to senderName, // ✅ ใช้ชื่อจริงที่ดึงมาแล้ว
+                    "from_profileUrl" to senderProfileUrl, // ✅ ใส่รูปคนเชิญไปด้วย
                     "to_uid" to uid,
                     "groupId" to gId,
                     "groupName" to newName,
@@ -130,7 +143,6 @@ class GroupDetail : AppCompatActivity() {
                 )
                 batch.set(inviteRef, inviteData)
 
-                // แจ้งเตือนทั่วไป
                 val notiRef = db.collection("notifications").document()
                 batch.set(notiRef, hashMapOf(
                     "receiverId" to uid,
