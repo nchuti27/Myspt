@@ -34,7 +34,7 @@
         android:layout_width="48dp"
         android:layout_height="48dp"
         android:background="?attr/selectableItemBackgroundBorderless"
-        android:src="@android:drawable/ic_menu_more"
+        android:src="@drawable/ic_more_vert"
         app:layout_constraintBottom_toBottomOf="@+id/ivGroupIcon"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="@+id/ivGroupIcon" />

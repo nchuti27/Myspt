@@ -108,5 +108,3 @@ class SelectGroupActivity : AppCompatActivity() {
     }
 }
 
-// Data Class สำหรับเก็บข้อมูลกลุ่ม
-data class Group(val name: String, val members: ArrayList<String>)
