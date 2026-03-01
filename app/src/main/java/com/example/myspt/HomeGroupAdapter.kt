@@ -9,6 +9,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide // ✅ ใช้ Glide สำหรับรูปภาพ [cite: 2026-02-23]
 
 class HomeGroupAdapter(
     private var groupList: List<CircleItem>,
@@ -18,15 +19,12 @@ class HomeGroupAdapter(
 ) : RecyclerView.Adapter<HomeGroupAdapter.ViewHolder>() {
 
     class ViewHolder(itemView: View, isListView: Boolean) : RecyclerView.ViewHolder(itemView) {
-        // ใช้รหัสที่ปลอดภัยขึ้นในการหา View
         val imgGroup: ImageView? = if (isListView)
             itemView.findViewById(R.id.ivGroupIcon) else itemView.findViewById(R.id.imgItem)
 
-        // 2. ตรวจสอบ ID ของชื่อกลุ่ม
         val tvGroupName: TextView? = if (isListView)
             itemView.findViewById(R.id.tvGroupName) else itemView.findViewById(R.id.tvName)
 
-        // กำหนดให้เป็น Optional (ใส่ ?) ทั้งหมดเพื่อป้องกันแอปเด้งหากหา ID ไม่เจอ
         val btnMore: ImageButton? = itemView.findViewById(R.id.btnMore)
         val layoutExpandOptions: LinearLayout? = itemView.findViewById(R.id.layoutExpandOptions)
         val btnGroupDetail: Button? = itemView.findViewById(R.id.btnGroupDetail)
@@ -34,7 +32,6 @@ class HomeGroupAdapter(
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        // ตรวจสอบว่าไฟล์ XML ทั้งสองใบมี ID ครบถ้วนตามที่เรียกด้านบน
         val layout = if (isListView) R.layout.item_group_list else R.layout.item_circle
         val view = LayoutInflater.from(parent.context).inflate(layout, parent, false)
         return ViewHolder(view, isListView)
@@ -43,19 +40,25 @@ class HomeGroupAdapter(
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val currentItem = groupList[position]
 
-        // ใช้ safe call ?. เพื่อป้องกัน NullPointerException
         holder.tvGroupName?.text = if (currentItem.isAddButton) "Add" else currentItem.name
 
+        // ✅ โหลดรูปภาพกลุ่ม/โปรไฟล์
         if (currentItem.isAddButton) {
             holder.imgGroup?.setImageResource(android.R.drawable.ic_input_add)
             holder.imgGroup?.setPadding(40, 40, 40, 40)
         } else {
-            holder.imgGroup?.setImageResource(R.drawable.ic_launcher_background)
+            // ใช้ Glide โหลดรูปภาพ ถ้าไม่มีให้ใช้รูปพื้นฐาน [cite: 2026-02-23]
+            holder.imgGroup?.let {
+                Glide.with(holder.itemView.context)
+                    .load(currentItem.profileUrl ?: R.drawable.ic_launcher_background)
+                    .placeholder(R.drawable.ic_launcher_background)
+                    .circleCrop()
+                    .into(it)
+            }
             holder.imgGroup?.setPadding(0, 0, 0, 0)
         }
 
         if (isListView) {
-            // จัดการแสดงผลส่วนขยาย
             holder.layoutExpandOptions?.visibility = if (currentItem.isExpanded) View.VISIBLE else View.GONE
 
             holder.btnMore?.setOnClickListener {
@@ -65,13 +68,11 @@ class HomeGroupAdapter(
 
             holder.btnGroupDetail?.setOnClickListener {
                 currentItem.isExpanded = false
-                notifyItemChanged(position)
                 onClick(currentItem)
             }
 
             holder.btnLeaveGroup?.setOnClickListener {
                 currentItem.isExpanded = false
-                notifyItemChanged(position)
                 onLeaveClick?.invoke(currentItem)
             }
         } else {
@@ -82,7 +83,6 @@ class HomeGroupAdapter(
     override fun getItemCount(): Int = groupList.size
 
     fun updateData(newList: List<CircleItem>) {
-        // ล้างข้อมูลเก่าและแทนที่ด้วยข้อมูลใหม่เพื่อแก้ปัญหา "ข้อมูลเบิ้ล"
         this.groupList = newList
         notifyDataSetChanged()
     }

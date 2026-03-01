@@ -55,4 +55,5 @@ dependencies {
     implementation("com.google.firebase:firebase-firestore-ktx")
     implementation("com.google.firebase:firebase-storage-ktx")
     implementation("io.coil-kt:coil:2.5.0")
+    implementation("com.github.bumptech.glide:glide:4.15.1")
 }

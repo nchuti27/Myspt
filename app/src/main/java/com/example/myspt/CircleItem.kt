@@ -4,7 +4,7 @@ package com.example.myspt
 data class CircleItem(
     val id: String = "",
     val name: String = "",
-    val imageUrl: String = "",
-    val isAddButton: Boolean = false,
-    var isExpanded: Boolean = false
+    val profileUrl: String? = null, // 🌟 เพิ่มบรรทัดนี้เพื่อให้หายแดงครับ!
+    var isExpanded: Boolean = false,
+    val isAddButton: Boolean = false
 )

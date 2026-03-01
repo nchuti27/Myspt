@@ -6,13 +6,18 @@ import android.view.ViewGroup
 import android.widget.CheckBox
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
+import com.google.android.material.imageview.ShapeableImageView
 
-class SelectFriendAdapter(private val friends: List<FriendData>) :
+// ✅ เปลี่ยนจาก FriendData เป็น FriendItem ให้ตรงกับไฟล์ที่พี่มี
+class SelectFriendAdapter(private val friends: List<FriendItem>) :
     RecyclerView.Adapter<SelectFriendAdapter.ViewHolder>() {
 
     private val selectedUids = mutableSetOf<String>()
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        // ✅ แมตช์ ID ให้ตรงกับ XML (imgAvatar)
+        val imgAvatar: ShapeableImageView = view.findViewById(R.id.imgAvatar)
         val tvName: TextView = view.findViewById(R.id.tvName)
         val cbSelect: CheckBox = view.findViewById(R.id.cbSelect)
     }
@@ -24,22 +29,28 @@ class SelectFriendAdapter(private val friends: List<FriendData>) :
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val friend = friends[position]
-        holder.tvName.text = friend.name // แสดงชื่อจาก FriendData
+        holder.tvName.text = friend.name
 
-        // 1. ล้าง Listener เก่าออกก่อนเพื่อป้องกันสถานะ CheckBox รวน
+        // 1. แก้ไขจุดที่แดง: ใส่ 'friend.' หน้า profileUrl และเติมจุดหน้า load/into
+        Glide.with(holder.itemView.context)
+            .load(friend.profileUrl ?: R.drawable.ic_launcher_background)
+            .placeholder(R.drawable.ic_launcher_background)
+            .into(holder.imgAvatar)
+
+        // 2. ล้าง Listener เก่าป้องกัน CheckBox รวน
         holder.cbSelect.setOnCheckedChangeListener(null)
 
-        // 2. ตั้งค่าสถานะ CheckBox ตามลิสต์ที่เราเลือกไว้
+        // 3. ตั้งค่าสถานะ CheckBox
         holder.cbSelect.isChecked = selectedUids.contains(friend.uid)
 
-        // 3. จัดการการเลือกเมื่อกดที่ตัว CheckBox
+        // 4. จัดการการเลือกผ่าน CheckBox
         holder.cbSelect.setOnCheckedChangeListener { _, isChecked ->
             toggleSelection(friend.uid, isChecked)
         }
 
-        // 4. เพิ่มความสะดวก: กดที่ชื่อเพื่อนแล้วให้ติ๊ก CheckBox ด้วย
+        // 5. กดที่ CardView แล้วให้สลับสถานะติ๊กถูก
         holder.itemView.setOnClickListener {
-            holder.cbSelect.toggle() // สลับสถานะติ๊กถูก
+            holder.cbSelect.toggle()
         }
     }
 
@@ -53,6 +64,5 @@ class SelectFriendAdapter(private val friends: List<FriendData>) :
 
     override fun getItemCount() = friends.size
 
-    // ดึง UIDs ของเพื่อนที่ถูกเลือกทั้งหมดส่งกลับไปที่หน้า SelectFriend
     fun getSelectedFriendUids(): List<String> = selectedUids.toList()
 }
