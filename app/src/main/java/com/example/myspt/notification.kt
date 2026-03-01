@@ -3,6 +3,8 @@ package com.example.myspt
 import android.os.Bundle
 import android.widget.Button
 import android.widget.ImageButton
+import android.widget.ImageView
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -27,13 +29,12 @@ class notification : AppCompatActivity() {
     private lateinit var btnTabGroup: Button
     private lateinit var btnTabFriend: Button
     private lateinit var btnTabRequest: Button
-    private lateinit var rvFriendNoti: RecyclerView
+    private lateinit var btnClearAll: ImageView // ✅ เพิ่มปุ่มล้างทั้งหมด
+    private lateinit var rvNoti: RecyclerView // ✅ เปลี่ยน ID ให้ตรงกับ XML ล่าสุด
 
     private var notiList = ArrayList<DocumentSnapshot>()
     private lateinit var notiAdapter: NotificationAdapter
-
-    // Track current tab to handle button logic in Adapter
-    private var currentTab = "REQUEST"
+    private var currentTab = "FRIEND" // เริ่มต้นที่ Tab Friend ตามความเหมาะสม
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,8 +48,8 @@ class notification : AppCompatActivity() {
         setupRecyclerView()
         setupTabListeners()
 
-        // Default to Request Tab (Sent Requests) [cite: 2026-02-27]
-        loadRequestTab()
+        // เริ่มโหลดข้อมูลหน้าแรก
+        loadFriendTab()
     }
 
     private fun initViews() {
@@ -56,63 +57,54 @@ class notification : AppCompatActivity() {
         btnTabGroup = findViewById(R.id.btnTabGroup)
         btnTabFriend = findViewById(R.id.btnTabFriend)
         btnTabRequest = findViewById(R.id.btnTabRequest)
-        rvFriendNoti = findViewById(R.id.rvFriendNoti)
+        btnClearAll = findViewById(R.id.btnClearAll)
+        rvNoti = findViewById(R.id.rvNoti)
 
         btnBack.setOnClickListener { finish() }
+
+        // ✅ Logic ปุ่ม Clear All ลบตาม Tab ที่เลือก
+        btnClearAll.setOnClickListener { confirmClearAll() }
     }
 
     private fun setupRecyclerView() {
         notiAdapter = NotificationAdapter(notiList,
             onAccept = { doc -> acceptFriend(doc) },
-            onDelete = { doc ->
-                if (currentTab == "REQUEST") {
-                    // Show confirmation before canceling sent request [cite: 2026-02-27]
-                    showCancelConfirmation(doc)
-                } else {
-                    // Decline incoming request
-                    deleteRequest(doc)
-                }
-            }
+            onDelete = { doc -> deleteRequest(doc) }
         )
-        rvFriendNoti.apply {
+        rvNoti.apply {
             layoutManager = LinearLayoutManager(this@notification)
             adapter = notiAdapter
         }
     }
 
     private fun setupTabListeners() {
-        btnTabRequest.setOnClickListener { loadRequestTab() }
-        btnTabGroup.setOnClickListener { loadGroupTab() }
         btnTabFriend.setOnClickListener { loadFriendTab() }
+        btnTabGroup.setOnClickListener { loadGroupTab() }
+        btnTabRequest.setOnClickListener { loadRequestTab() }
     }
 
-    // Tab 1: Requests you sent to others [cite: 2026-02-27]
-    private fun loadRequestTab() {
-        currentTab = "REQUEST"
-        updateTabUI(btnTabRequest)
-        val myUid = auth.currentUser?.uid ?: return
-        notiListener?.remove()
-
-        notiListener = db.collection("friend_requests")
-            .whereEqualTo("from_uid", myUid) // You are the sender
-            .whereEqualTo("status", "pending")
-            .addSnapshotListener { snapshots, e ->
-                if (e != null) return@addSnapshotListener
-                notiList.clear()
-                snapshots?.let { notiList.addAll(it.documents) }
-                notiAdapter.notifyDataSetChanged()
-            }
-    }
-
-    // Tab 2: Friend requests sent to you [cite: 2026-02-27]
     private fun loadFriendTab() {
         currentTab = "FRIEND"
         updateTabUI(btnTabFriend)
-        val myUid = auth.currentUser?.uid ?: return
-        notiListener?.remove()
+        fetchData("friend_requests", "to_uid", auth.currentUser?.uid ?: "")
+    }
 
-        notiListener = db.collection("friend_requests")
-            .whereEqualTo("to_uid", myUid) // You are the receiver
+    private fun loadGroupTab() {
+        currentTab = "GROUP"
+        updateTabUI(btnTabGroup)
+        fetchData("notifications", "receiverId", auth.currentUser?.uid ?: "")
+    }
+
+    private fun loadRequestTab() {
+        currentTab = "REQUEST"
+        updateTabUI(btnTabRequest)
+        fetchData("friend_requests", "from_uid", auth.currentUser?.uid ?: "")
+    }
+
+    private fun fetchData(collection: String, field: String, uid: String) {
+        notiListener?.remove()
+        notiListener = db.collection(collection)
+            .whereEqualTo(field, uid)
             .whereEqualTo("status", "pending")
             .addSnapshotListener { snapshots, e ->
                 if (e != null) return@addSnapshotListener
@@ -122,39 +114,38 @@ class notification : AppCompatActivity() {
             }
     }
 
-    // Tab 3: Group invitations
-    private fun loadGroupTab() {
-        currentTab = "GROUP"
-        updateTabUI(btnTabGroup)
-        val myUid = auth.currentUser?.uid ?: return
-        notiListener?.remove()
-
-        notiListener = db.collection("notifications")
-            .whereEqualTo("receiverId", myUid)
-            .whereEqualTo("type", "GROUP_INVITE")
-            .addSnapshotListener { snapshots, e ->
-                if (e != null) return@addSnapshotListener
-                notiList.clear()
-                snapshots?.let { notiList.addAll(it.documents) }
-                notiAdapter.notifyDataSetChanged()
-            }
-    }
-
-    private fun showCancelConfirmation(doc: DocumentSnapshot) {
-        val targetName = doc.getString("to_name") ?: "this user"
+    private fun confirmClearAll() {
         AlertDialog.Builder(this)
-            .setTitle("Cancel Request")
-            .setMessage("Are you sure you want to cancel the request sent to $targetName?")
-            .setPositiveButton("Yes") { _, _ ->
-                deleteRequest(doc)
-                Toast.makeText(this, "Request cancelled", Toast.LENGTH_SHORT).show()
+            .setTitle("Clear All Notifications")
+            .setMessage("Are you sure you want to clear all $currentTab notifications?")
+            .setPositiveButton("Clear") { _, _ ->
+                for (doc in notiList) deleteRequest(doc)
             }
-            .setNegativeButton("No", null)
+            .setNegativeButton("Cancel", null)
             .show()
     }
 
+    private fun acceptFriend(doc: DocumentSnapshot) {
+        val myUid = auth.currentUser?.uid ?: return
+        val senderUid = doc.getString("from_uid") ?: return
+        val senderName = doc.getString("from_name") ?: "Friend"
+
+        val batch = db.batch()
+        batch.update(db.collection("friend_requests").document(doc.id), "status", "accepted")
+        batch.update(db.collection("users").document(myUid), "friends", FieldValue.arrayUnion(senderUid))
+        batch.update(db.collection("users").document(senderUid), "friends", FieldValue.arrayUnion(myUid))
+
+        batch.commit().addOnSuccessListener {
+            Toast.makeText(this, "You and $senderName are now friends", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun deleteRequest(doc: DocumentSnapshot) {
+        db.document(doc.reference.path).delete()
+    }
+
     private fun updateTabUI(activeButton: Button) {
-        val buttons = listOf(btnTabRequest, btnTabGroup, btnTabFriend)
+        val buttons = listOf(btnTabFriend, btnTabGroup, btnTabRequest)
         buttons.forEach { button ->
             if (button == activeButton) {
                 button.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#3D79CA"))
@@ -164,26 +155,6 @@ class notification : AppCompatActivity() {
                 button.setTextColor(Color.parseColor("#64748B"))
             }
         }
-    }
-
-    private fun acceptFriend(doc: DocumentSnapshot) {
-        val myUid = auth.currentUser?.uid ?: return
-        val senderUid = doc.getString("from_uid") ?: return
-        val senderName = doc.getString("from_name") ?: "Unknown User"
-
-        val batch = db.batch()
-        batch.delete(db.collection("friend_requests").document(doc.id))
-        batch.update(db.collection("users").document(myUid), "friends", FieldValue.arrayUnion(senderUid))
-        batch.update(db.collection("users").document(senderUid), "friends", FieldValue.arrayUnion(myUid))
-
-        batch.commit().addOnSuccessListener {
-            Toast.makeText(this, "You are now friends with $senderName", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    private fun deleteRequest(doc: DocumentSnapshot) {
-        val collection = if (doc.reference.path.contains("friend_requests")) "friend_requests" else "notifications"
-        db.collection(collection).document(doc.id).delete()
     }
 
     override fun onDestroy() {

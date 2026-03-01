@@ -32,6 +32,17 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@+id/backButton" />
 
+    <ImageView
+        android:id="@+id/btnClearAll"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:padding="4dp"
+        android:src="@drawable/outline_delete_sweep"
+        app:layout_constraintBottom_toBottomOf="@+id/tvTitle"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/tvTitle"
+        app:tint="@color/fintech_blue" />
+
     <LinearLayout
         android:id="@+id/layoutTabs"
         android:layout_width="match_parent"
@@ -49,11 +60,11 @@
             android:layout_height="wrap_content"
             android:layout_marginEnd="8dp"
             android:layout_weight="1"
-            app:backgroundTint="#E2E8F0"
             android:text="Friend"
             android:textAllCaps="false"
             android:textColor="#64748B"
             android:textSize="14sp"
+            app:backgroundTint="#E2E8F0"
             app:cornerRadius="20dp" />
 
         <Button
@@ -62,11 +73,11 @@
             android:layout_height="wrap_content"
             android:layout_marginEnd="8dp"
             android:layout_weight="1"
-            app:backgroundTint="#E2E8F0"
             android:text="Group"
             android:textAllCaps="false"
             android:textColor="#64748B"
             android:textSize="14sp"
+            app:backgroundTint="#E2E8F0"
             app:cornerRadius="20dp" />
 
         <Button
@@ -74,14 +85,16 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            app:backgroundTint="#3D79CA"
             android:text="Request"
+            android:textAllCaps="false"
             android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            app:backgroundTint="#3D79CA"
             app:cornerRadius="20dp" />
     </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvFriendNoti"
+        android:id="@+id/rvNoti"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_marginTop="16dp"

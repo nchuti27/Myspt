@@ -28,35 +28,26 @@ class NotificationAdapter(
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val doc = notifications[position]
-        val myUid = FirebaseAuth.getInstance().currentUser?.uid
+        val type = doc.getString("type") ?: "friend" // แยกประเภท: friend, group, request
 
-        // 1. ตรวจสอบว่าเป็นคำขอ "ส่งออก" หรือ "รับเข้า" [cite: 2026-02-27]
-        val fromUid = doc.getString("from_uid")
-        val isSentByMe = fromUid == myUid
-
-        // 2. ตั้งค่าชื่อที่จะแสดง
-        // ถ้าเราส่งเอง ให้โชว์ชื่อคนรับ (to_name) ถ้าเขาส่งมา ให้โชว์ชื่อคนส่ง (from_name) [cite: 2026-02-27]
-        val displayName = if (isSentByMe) {
-            doc.getString("to_name") ?: "Unknown User"
-        } else {
-            doc.getString("from_name") ?: "Unknown User"
+        // ตั้งค่าข้อความตามประเภท
+        when (type) {
+            "group" -> {
+                val groupName = doc.getString("group_name") ?: "Unknown Group"
+                val inviter = doc.getString("from_name") ?: "Someone"
+                holder.tvName.text = "$inviter invited you to $groupName" // โชว์ชื่อคนเชิญ+ชื่อกลุ่ม
+            }
+            "bill_nudge" -> {
+                val billName = doc.getString("bill_name") ?: "Bill"
+                val amount = doc.getDouble("amount") ?: 0.0
+                holder.tvName.text = "Don't forget to pay $billName (฿$amount)" // แจ้งเตือนสะกิดจ่ายเงิน
+            }
+            else -> {
+                // Friend Request ตามเดิมที่พี่เขียนไว้
+                val fromName = doc.getString("from_name") ?: "Unknown User"
+                holder.tvName.text = fromName
+            }
         }
-        holder.tvName.text = displayName
-
-        // 3. จัดการปุ่มตามประเภทคำขอ [cite: 2026-02-27]
-        if (isSentByMe) {
-            // กรณี Tab Request (เราส่งเอง): ซ่อน Accept และเปลี่ยน Delete เป็น Cancel [cite: 2026-02-27]
-            holder.btnAccept.visibility = View.GONE
-            holder.btnDelete.text = "Cancel"
-        } else {
-            // กรณี Tab Friend/Group (คนอื่นส่งมา): โชว์ปุ่มตามปกติ [cite: 2026-02-27]
-            holder.btnAccept.visibility = View.VISIBLE
-            holder.btnDelete.text = "Delete"
-        }
-
-        // 4. จัดการเหตุการณ์กดปุ่ม
-        holder.btnAccept.setOnClickListener { onAccept(doc) }
-        holder.btnDelete.setOnClickListener { onDelete(doc) }
     }
 
     override fun getItemCount() = notifications.size
