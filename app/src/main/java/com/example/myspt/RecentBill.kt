@@ -19,7 +19,7 @@ class RecentBill : AppCompatActivity() {
     private lateinit var db: FirebaseFirestore
 
     private val billList = ArrayList<BillItem>()
-    private lateinit var adapter: RecentBillAdapter // ต้องสร้างไฟล์ Adapter แยกไว้ด้วย
+    private lateinit var adapter: RecentBillAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,7 +36,8 @@ class RecentBill : AppCompatActivity() {
 
         init()
         setupListeners()
-       // loadRecentBillsFromFirestore()
+        // ✅ เปลี่ยนมาโหลดข้อมูลจริงจาก Firestore [cite: 2026-02-13, 2026-02-21]
+        loadRecentBillsFromFirestore()
     }
 
     private fun init() {
@@ -44,14 +45,6 @@ class RecentBill : AppCompatActivity() {
         btnBack = findViewById(R.id.backButton)
 
         rvRecentBills.layoutManager = LinearLayoutManager(this)
-        // --- ใส่ข้อมูลบิลจำลอง (Dummy Data) ตรงนี้เลย โหลดปุ๊บโชว์ปั๊บ ---
-        billList.add(BillItem("หมูกระทะ", 1, 1590.00))
-        billList.add(BillItem("ชาบูตี๋น้อย", 1, 876.00))
-        billList.add(BillItem("ปาร์ตี้วันเกิด", 1, 3450.00))
-        billList.add(BillItem("ค่าแท็กซี่ไปเซ็นทรัล", 1, 150.00))
-        billList.add(BillItem("ทริปเที่ยวทะเล", 1, 5400.00))
-        billList.add(BillItem("ค่าไฟเดือนที่แล้ว", 1, 1420.50))
-        billList.add(BillItem("KFC มื้อดึก", 1, 455.00))
 
         // เชื่อมต่อ Adapter
         adapter = RecentBillAdapter(billList)
@@ -63,26 +56,30 @@ class RecentBill : AppCompatActivity() {
     }
 
     private fun loadRecentBillsFromFirestore() {
-        // ดึงข้อมูลบิลล่าสุด เรียงจากใหม่ไปเก่า [cite: 2026-02-13, 2026-02-21]
+        // ✅ ดึงบิลล่าสุด เรียงตามเวลาที่สร้าง (Timestamp) [cite: 2026-02-13, 2026-02-21]
         db.collection("bills")
             .orderBy("timestamp", Query.Direction.DESCENDING)
-            .get()
-            .addOnSuccessListener { documents ->
-                billList.clear()
-                for (doc in documents) {
-                    val name = doc.getString("billName") ?: "Unknown Bill"
-                    val total = doc.getDouble("totalAmount") ?: 0.0
-                    // สร้าง Object BillItem และเก็บ ID ไว้สำหรับสั่งลบ [cite: 2026-02-13]
-                    val item = BillItem(name, 1, total)
-                    // หมายเหตุ: คุณอาจต้องเพิ่ม field 'id' ใน Data Class BillItem เพื่อใช้เก็บ doc.id
-                    billList.add(item)
+            .addSnapshotListener { documents, e -> // ใช้ SnapshotListener เพื่อให้อัปเดต Realtime [cite: 2026-02-27]
+                if (e != null) {
+                    Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                    return@addSnapshotListener
                 }
 
+                if (documents != null) {
+                    billList.clear()
+                    for (doc in documents) {
+                        // ดึงชื่อบิล (ตรวจสอบว่าไม่เป็น String "null")
+                        val name = doc.getString("billName") ?: "Untitled Bill"
+                        val total = doc.getDouble("totalAmount") ?: 0.0
 
-                adapter.notifyDataSetChanged()
-            }
-            .addOnFailureListener { e ->
-                Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                        // สร้าง BillItem โดยใช้ doc.id เป็น ID เพื่อใช้สั่งลบ [cite: 2026-02-13]
+                        val item = BillItem(name, 1, total)
+                        item.id = doc.id // 🌟 สำคัญมาก: ต้องเซ็ต ID เพื่อใช้ลบใน Firestore
+
+                        billList.add(item)
+                    }
+                    adapter.notifyDataSetChanged()
+                }
             }
     }
 }

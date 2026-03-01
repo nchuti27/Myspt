@@ -17,7 +17,7 @@ class RecentBillAdapter(private val billList: ArrayList<BillItem>) :
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val tvBillName: TextView = view.findViewById(R.id.tvBillName)
-        val tvBillTotal: TextView = view.findViewById(R.id.tvBillDate) // หรือเปลี่ยนเป็น ID ยอดเงิน
+        val tvBillTotal: TextView = view.findViewById(R.id.tvBillTotal) // ✅ ปรับ ID ให้ตรงกับ UI ยอดเงิน
         val btnBillMenu: ImageView = view.findViewById(R.id.btnBillMenu)
     }
 
@@ -31,33 +31,39 @@ class RecentBillAdapter(private val billList: ArrayList<BillItem>) :
         holder.tvBillName.text = currentItem.itemName
         holder.tvBillTotal.text = String.format("%.2f ฿", currentItem.price)
 
-        // 🌟 1. กดที่ตัวกล่องบิล (ปิดปีกกาให้เรียบร้อยแล้ว)
+        // คลิกเพื่อดูรายละเอียดบิล
         holder.itemView.setOnClickListener { view ->
             val intent = Intent(view.context, BillDetail::class.java)
+            intent.putExtra("BILL_ID", currentItem.id) // ส่ง ID ไปดึงข้อมูลละเอียด [cite: 2026-02-13]
             intent.putExtra("BILL_NAME", currentItem.itemName)
-            intent.putExtra("BILL_TOTAL", currentItem.price)
             view.context.startActivity(intent)
-        } // <--- จุดที่ 1: เติมปีกกาปิดตรงนี้ครับ
+        }
 
-        // 🌟 2. ตั้งค่า PopupMenu สำหรับปุ่มจุด 3 จุด
+        // เมนูจุด 3 จุดสำหรับลบ
         holder.btnBillMenu.setOnClickListener { view ->
             val popup = PopupMenu(view.context, view)
-            popup.menu.add("Delete").setOnMenuItemClickListener {
-                confirmDelete(view.context, position)
+            popup.menu.add("Delete Bill").setOnMenuItemClickListener {
+                confirmDelete(view.context, currentItem, position)
                 true
             }
             popup.show()
         }
     }
 
-    private fun confirmDelete(context: android.content.Context, position: Int) {
+    private fun confirmDelete(context: android.content.Context, item: BillItem, position: Int) {
         AlertDialog.Builder(context)
-            .setTitle("Confirm Delete")
-            .setMessage("Do you want to delete this bill history?")
+            .setTitle("Delete History")
+            .setMessage("Are you sure you want to delete '${item.itemName}'?")
             .setPositiveButton("Delete") { _, _ ->
-                billList.removeAt(position)
-                notifyItemRemoved(position)
-                Toast.makeText(context, "Deleted", Toast.LENGTH_SHORT).show()
+                // ✅ ลบข้อมูลจริงใน Firestore [cite: 2026-02-13]
+                if (!item.id.isNullOrEmpty()) {
+                    FirebaseFirestore.getInstance().collection("bills").document(item.id!!)
+                        .delete()
+                        .addOnSuccessListener {
+                            Toast.makeText(context, "Bill deleted successfully", Toast.LENGTH_SHORT).show()
+                            // ไม่ต้อง remove จาก list เองถ้าใช้ SnapshotListener ในหน้า Activity [cite: 2026-02-27]
+                        }
+                }
             }
             .setNegativeButton("Cancel", null)
             .show()

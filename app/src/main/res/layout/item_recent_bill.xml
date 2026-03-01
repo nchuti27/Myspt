@@ -31,12 +31,22 @@
                 android:textStyle="bold" />
 
             <TextView
+                android:id="@+id/tvBillTotal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0.00 ฿"
+                android:textColor="@color/fintech_text_main"
+                android:textSize="14sp"
+                android:layout_marginTop="2dp" />
+
+            <TextView
                 android:id="@+id/tvBillDate"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="20 Feb 2026"
                 android:textColor="@color/fintech_text_sub"
-                android:textSize="12sp" />
+                android:textSize="12sp"
+                android:layout_marginTop="2dp" />
         </LinearLayout>
 
         <ImageView
