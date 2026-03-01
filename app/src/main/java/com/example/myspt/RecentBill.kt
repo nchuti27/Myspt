@@ -56,30 +56,21 @@ class RecentBill : AppCompatActivity() {
     }
 
     private fun loadRecentBillsFromFirestore() {
-        // ✅ ดึงบิลล่าสุด เรียงตามเวลาที่สร้าง (Timestamp) [cite: 2026-02-13, 2026-02-21]
         db.collection("bills")
             .orderBy("timestamp", Query.Direction.DESCENDING)
-            .addSnapshotListener { documents, e -> // ใช้ SnapshotListener เพื่อให้อัปเดต Realtime [cite: 2026-02-27]
-                if (e != null) {
-                    Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
-                    return@addSnapshotListener
+            .addSnapshotListener { snapshots, e ->
+                if (e != null) return@addSnapshotListener
+
+                billList.clear()
+                for (doc in snapshots!!) {
+                    // ✅ ดึงให้ตรงชื่อฟิลด์ใน Firebase (billName)
+                    val name = doc.getString("billName") ?: "No Name"
+                    val total = doc.getDouble("totalAmount") ?: 0.0
+                    val item = BillItem(name, 1, total)
+                    item.id = doc.id
+                    billList.add(item)
                 }
-
-                if (documents != null) {
-                    billList.clear()
-                    for (doc in documents) {
-                        // ดึงชื่อบิล (ตรวจสอบว่าไม่เป็น String "null")
-                        val name = doc.getString("billName") ?: "Untitled Bill"
-                        val total = doc.getDouble("totalAmount") ?: 0.0
-
-                        // สร้าง BillItem โดยใช้ doc.id เป็น ID เพื่อใช้สั่งลบ [cite: 2026-02-13]
-                        val item = BillItem(name, 1, total)
-                        item.id = doc.id // 🌟 สำคัญมาก: ต้องเซ็ต ID เพื่อใช้ลบใน Firestore
-
-                        billList.add(item)
-                    }
-                    adapter.notifyDataSetChanged()
-                }
+                adapter.notifyDataSetChanged() // สั่งให้ RecyclerView แสดงผลใหม่
             }
     }
 }
