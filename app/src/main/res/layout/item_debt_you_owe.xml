@@ -57,29 +57,14 @@
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
-            <ImageView
-                android:id="@+id/btnNotification"
-                android:layout_width="18dp"
-                android:layout_height="20dp"
-                android:layout_marginEnd="12dp"
-                android:src="@android:drawable/ic_popup_reminder"
-                app:tint="#2196F3"
-                tools:ignore="ContentDescription" />
-
             <TextView
                 android:id="@+id/txtAmount"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginEnd="8dp"
                 android:textColor="@color/fintech_blue"
                 android:textSize="18sp"
                 android:textStyle="bold"
                 tools:text="฿ 0.00" />
-
-            <CheckBox
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:buttonTint="@color/fintech_blue" />
         </LinearLayout>
     </LinearLayout>
 </androidx.cardview.widget.CardView>
