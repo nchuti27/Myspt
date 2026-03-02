@@ -20,6 +20,7 @@ class Grouplist : AppCompatActivity() {
     private lateinit var rvGroupList: RecyclerView
     private lateinit var etSearch: EditText
     private lateinit var backButton: ImageButton
+    private lateinit var btnAddFriend: ImageButton
     private lateinit var adapter: HomeGroupAdapter
     private val allGroups = ArrayList<CircleItem>()
     private lateinit var db: FirebaseFirestore
@@ -47,7 +48,15 @@ class Grouplist : AppCompatActivity() {
         rvGroupList = findViewById(R.id.rvGroupList)
         etSearch = findViewById(R.id.etSearch)
         backButton = findViewById(R.id.backButton)
-        backButton.setOnClickListener { finish() }
+        btnAddFriend = findViewById(R.id.btnAddFriend)
+
+        btnAddFriend.setOnClickListener {
+            val intent = Intent(this, CreateGroup::class.java) // ระบุหน้าที่จะไป
+            startActivity(intent)
+        }
+        backButton.setOnClickListener {
+            finish()
+        }
     }
 
     private fun setupRecyclerView() {
