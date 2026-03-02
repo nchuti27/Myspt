@@ -6,5 +6,5 @@ data class FriendData(
     val username: String,
     val uid: String,
     val profileUrl: String? = null,
-    var isExpanded: Boolean = false // ✅ เพิ่มเพื่อจำสถานะการกาง/ซ่อนแผงปุ่ม
+    var isExpanded: Boolean = false // ✅ ต้องเป็น var เท่านั้น
 ) : Serializable
