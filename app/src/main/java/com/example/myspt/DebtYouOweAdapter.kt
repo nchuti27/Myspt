@@ -10,6 +10,7 @@ class DebtYouOweAdapter(private var debtList: List<Debt>) : RecyclerView.Adapter
 
     class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val txtName: TextView = itemView.findViewById(R.id.txtName)
+        val txtBillDetail: TextView = itemView.findViewById(R.id.txtBillDetail) // 🌟 เพิ่มตัวแปรนี้
         val txtAmount: TextView = itemView.findViewById(R.id.txtAmount)
     }
 
@@ -20,7 +21,23 @@ class DebtYouOweAdapter(private var debtList: List<Debt>) : RecyclerView.Adapter
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val debt = debtList[position]
-        holder.txtName.text = debt.name
+
+        // ✅ ปรับตรรกะ: ถ้า creditorName ว่าง ให้เอา name มาโชว์แทนเพื่อป้องกันช่องว่างเปล่า
+        val displayName = if (debt.creditorName.isNullOrEmpty() || debt.creditorName == "Unknown") {
+            debt.name
+        } else {
+            debt.creditorName
+        }
+        holder.txtName.text = displayName
+
+        // ✅ ปรับตรรกะ: ถ้า billName ว่าง ให้โชว์ว่า "ไม่มีชื่อบิล" แทนค่า null
+        val displayBill = if (debt.billName.isNullOrEmpty() || debt.billName == "null") {
+            "ไม่มีชื่อบิล"
+        } else {
+            debt.billName
+        }
+        holder.txtBillDetail.text = "บิล: $displayBill"
+
         holder.txtAmount.text = "฿ ${String.format("%.2f", debt.amount)}"
     }
 
