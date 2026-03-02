@@ -1,35 +1,40 @@
-package com.example.myspt // อย่าลืมเช็คบรรทัดนี้ให้ตรงกับชื่อ Package ของแอปคุณนะครับ
+package com.example.myspt
 
+import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.CheckBox
+import android.widget.ImageView
 import android.widget.TextView
+import android.widget.Toast
 import androidx.recyclerview.widget.RecyclerView
+import com.google.firebase.firestore.FieldValue
+import com.google.firebase.firestore.FirebaseFirestore
 
-// 1. โครงสร้างข้อมูลสำหรับเก็บรายละเอียดหนี้
+// ✅ รวมคลาส Debt ไว้ในไฟล์นี้เพื่อแก้ปัญหา Unresolved reference
 data class Debt(
     var debtId: String = "",
     var creditorId: String = "",
     var friendId: String = "",
     var name: String = "",
-    var creditorName: String = "", // 🌟 เพิ่ม: ชื่อคนที่เราติดหนี้ (เจ้าหนี้)
-    var billName: String = "",     // 🌟 เพิ่ม: ชื่อบิล/กลุ่ม
+    var creditorName: String = "",
+    var billName: String = "",
     var amount: Double = 0.0,
     var status: String = "pending"
 )
-// 2. ตัว Adapter สำหรับจัดการ RecyclerView
+
 class DebtAdapter(
     private var debtList: List<Debt>,
     private val onDebtChecked: (Debt) -> Unit
 ) : RecyclerView.Adapter<DebtAdapter.DebtViewHolder>() {
 
-    // เชื่อมต่อกับตัวแปรในหน้า item_debt.xml
     class DebtViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val txtName: TextView = itemView.findViewById(R.id.txtName)
-        val txtBillDetail: TextView = itemView.findViewById(R.id.txtBillDetail) // 🌟 เพิ่มตัวแปรดึงชื่อบิล
+        val txtBillDetail: TextView = itemView.findViewById(R.id.txtBillDetail)
         val txtAmount: TextView = itemView.findViewById(R.id.txtAmount)
         val cbDebt: CheckBox = itemView.findViewById(R.id.cbDebt)
+        val btnNotification: ImageView = itemView.findViewById(R.id.btnNotification)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): DebtViewHolder {
@@ -40,27 +45,40 @@ class DebtAdapter(
     override fun onBindViewHolder(holder: DebtViewHolder, position: Int) {
         val debt = debtList[position]
 
-        // สำหรับ Owe You ฝั่งนี้ debt.name จะเป็นชื่อเพื่อนลูกหนี้ถูกต้องแล้วครับ
         holder.txtName.text = debt.name
-
-        // 🌟 แสดงชื่อบิล
         holder.txtBillDetail.text = "บิล: ${debt.billName}"
-
         holder.txtAmount.text = "฿ ${String.format("%.2f", debt.amount)}"
 
-        holder.cbDebt.setOnCheckedChangeListener(null)
         holder.cbDebt.isChecked = (debt.status == "paid")
+        holder.cbDebt.setOnClickListener { onDebtChecked(debt) }
 
-        holder.cbDebt.setOnCheckedChangeListener { _, isChecked ->
-            if (isChecked) {
-                onDebtChecked(debt)
-            }
+        // ✅ แก้ไข: ใช้ holder.itemView.context แทนคำว่า context
+        holder.btnNotification.setOnClickListener {
+            sendDebtNotification(holder.itemView.context, debt)
         }
     }
 
-    override fun getItemCount(): Int {
-        return debtList.size
+    private fun sendDebtNotification(context: Context, debt: Debt) {
+        val db = FirebaseFirestore.getInstance()
+        val notiData = hashMapOf(
+            "to_uid" to debt.friendId,
+            "from_uid" to debt.creditorId,
+            "message" to "ทวงหนี้: บิล ${debt.billName} จำนวน ฿${debt.amount}",
+            "type" to "debt_reminder",
+            "status" to "pending",
+            "timestamp" to FieldValue.serverTimestamp()
+        )
+
+        db.collection("notifications").add(notiData)
+            .addOnSuccessListener {
+                Toast.makeText(context, "ส่งแจ้งเตือนไปหาเพื่อนแล้ว", Toast.LENGTH_SHORT).show()
+            }
+            .addOnFailureListener {
+                Toast.makeText(context, "ส่งแจ้งเตือนไม่สำเร็จ", Toast.LENGTH_SHORT).show()
+            }
     }
+
+    override fun getItemCount(): Int = debtList.size
 
     fun updateData(newList: List<Debt>) {
         debtList = newList

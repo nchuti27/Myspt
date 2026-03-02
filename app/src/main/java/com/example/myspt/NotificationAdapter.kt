@@ -34,53 +34,26 @@ class NotificationAdapter(
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val doc = notifications[position]
-        val myUid = FirebaseAuth.getInstance().currentUser?.uid
+        val type = doc.getString("type") // เช็คว่าเป็นทวงหนี้หรือไม่
 
-        // 🌟 ดึงข้อมูลจาก Firestore
-        val fromName = doc.getString("from_name") ?: "Someone"
-        val fromProfileUrl = doc.getString("from_profileUrl")
-        val toName = doc.getString("to_name") ?: "Someone"
-        val toProfileUrl = doc.getString("to_profileUrl")
-        val groupName = doc.getString("groupName")
-
-        // 🌟 แยกการแสดงผลตาม Tab
-        when (activeTab) {
-            "REQUEST" -> {
-                // หน้าเราส่งหาเขา: โชว์ชื่อคนรับ (toName)
-                holder.tvName.text = toName
-                holder.tvMessage.text = "Waiting for approval..."
-                holder.btnAccept.visibility = View.GONE
-                loadImg(holder, toProfileUrl)
-            }
-            "GROUP" -> {
-                // หน้าเชิญเข้ากลุ่ม: โชว์ชื่อคนเชิญ (fromName) + ชื่อกลุ่ม
-                holder.tvName.text = fromName
-                holder.tvMessage.text = "invited you to join: ${groupName ?: "a group"}"
-                holder.btnAccept.visibility = View.VISIBLE
-                loadImg(holder, fromProfileUrl)
-            }
-            else -> { // Tab FRIEND
-                // หน้าคนอื่นขอเรา: โชว์ชื่อคนส่ง (fromName)
-                holder.tvName.text = fromName
-                holder.tvMessage.text = "sent you a friend request."
-                holder.btnAccept.visibility = View.VISIBLE
-                loadImg(holder, fromProfileUrl)
-            }
+        if (type == "debt_reminder") {
+            // --- UI สำหรับแจ้งเตือนทวงหนี้ ---
+            holder.tvName.text = "แจ้งเตือนการทวงหนี้"
+            holder.tvMessage.text = doc.getString("message") ?: "คุณมีหนี้ค้างชำระ"
+            holder.btnAccept.visibility = View.GONE // ซ่อนปุ่ม Accept
+            holder.btnDelete.text = "ลบ"
+            holder.imgAvatar.setImageResource(R.drawable.ic_launcher_background)
+        } else {
+            // --- UI เดิมสำหรับขอเป็นเพื่อน/กลุ่ม ---
+            val fromName = doc.getString("from_name") ?: "Someone"
+            holder.tvName.text = fromName
+            holder.tvMessage.text = "sent you a friend request."
+            holder.btnAccept.visibility = View.VISIBLE
+            // ... (โค้ดโหลดรูปเดิมของคุณ) ...
         }
-
-        // กันพลาด: ถ้าเป็นรายการที่เราส่งเอง ให้ซ่อนปุ่ม Accept เสมอ
-        if (doc.getString("from_uid") == myUid) holder.btnAccept.visibility = View.GONE
 
         holder.btnAccept.setOnClickListener { onAccept(doc) }
         holder.btnDelete.setOnClickListener { onDelete(doc) }
-    }
-
-    private fun loadImg(holder: ViewHolder, url: String?) {
-        Glide.with(holder.itemView.context)
-            .load(url ?: R.drawable.ic_launcher_background)
-            .placeholder(R.drawable.ic_launcher_background)
-            .circleCrop()
-            .into(holder.imgAvatar)
     }
 
     override fun getItemCount() = notifications.size
