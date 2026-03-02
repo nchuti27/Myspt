@@ -173,6 +173,7 @@ class FriendAdapter(private var originalList: ArrayList<FriendData>) :
             val intent = Intent(context, FriendProfile::class.java).apply {
                 putExtra("FRIEND_UID", currentItem.uid)
                 putExtra("FRIEND_NAME", currentItem.name)
+                putExtra("FRIEND_USERNAME", currentItem.username)
                 putExtra("FRIEND_IMG", currentItem.profileUrl)
             }
             context.startActivity(intent)

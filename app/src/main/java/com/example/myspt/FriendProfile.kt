@@ -63,27 +63,23 @@ class FriendProfile : AppCompatActivity() {
         db.collection("users").document(uid).get()
             .addOnSuccessListener { doc ->
                 if (doc.exists()) {
-                    // สมมติว่าชื่อฟิลด์ใน Firestore คือ profileImageUrl และ qrImageUrl
+                    // 1. ดึง Username มาแสดงผลซ้ำเพื่อความแม่นยำ
+                    val username = doc.getString("username") ?: ""
+                    if (username.isNotEmpty()) {
+                        tvUsername.text = if (username.startsWith("@")) username else "@$username"
+                    }
+
+                    // 2. ดึงรูปโปรไฟล์และ QR ตามเดิม
                     val profileUrl = doc.getString("profileImageUrl")
                     val qrUrl = doc.getString("qrImageUrl")
 
-                    // ใช้ Coil โหลดรูป (ถ้ามี URL)
                     if (!profileUrl.isNullOrEmpty()) {
-                        ivProfile.load(profileUrl) {
-                            crossfade(true)
-                            placeholder(R.drawable.ic_launcher_background) // รูปตอนกำลังโหลด
-                        }
+                        ivProfile.load(profileUrl) { crossfade(true) }
                     }
-
                     if (!qrUrl.isNullOrEmpty()) {
-                        ivQrCode.load(qrUrl) {
-                            crossfade(true)
-                        }
+                        ivQrCode.load(qrUrl) { crossfade(true) }
                     }
                 }
-            }
-            .addOnFailureListener { e ->
-                Toast.makeText(this, "Failed to load: ${e.message}", Toast.LENGTH_SHORT).show()
             }
     }
 
