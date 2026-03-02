@@ -21,22 +21,18 @@ class BillSplit : AppCompatActivity() {
     private var rvBillItems: RecyclerView? = null
     private var btnAddItem: FloatingActionButton? = null
     private var tvGrandTotal: TextView? = null
-    private var etBillName: EditText? = null // 🌟 ต้องประกาศตัวแปรนี้ด้วย
+    private var etBillName: EditText? = null
 
     private var selectedMembers = ArrayList<String>()
+    private var memberNames = ArrayList<String>()
     private var billList = ArrayList<BillItem>()
     private var adapter: BillAdapter? = null
     private lateinit var db: FirebaseFirestore
-
-    private var groupMemberUids = ArrayList<String>()
-    private var groupMemberNames = ArrayList<String>()
-    private lateinit var checkedMemberItems: BooleanArray
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_bill_split)
-
         db = FirebaseFirestore.getInstance()
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
@@ -45,80 +41,13 @@ class BillSplit : AppCompatActivity() {
             insets
         }
 
+        // โหลดข้อมูลให้เสร็จก่อน แล้วค่อย init UI
         val members = intent.getStringArrayListExtra("SELECTED_MEMBERS")
-        if (members != null && members.isNotEmpty()) {
+        if (!members.isNullOrEmpty()) {
             selectedMembers = members
-            groupMemberUids.addAll(members)
-            checkedMemberItems = BooleanArray(groupMemberUids.size) { false }
-            fetchMemberNames()
-        }
-
-        init()
-
-        btnBack?.setOnClickListener { finish() }
-
-        btnSplit?.setOnClickListener {
-            // 🌟 1. เช็คว่ากรอกชื่อบิลหรือยัง
-            val billName = etBillName?.text.toString().trim()
-            if (billName.isEmpty()) {
-                etBillName?.error = "Please enter a bill name" // แสดง Error ที่ช่องกรอก
-                Toast.makeText(this@BillSplit, "Please enter a bill name before splitting", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener // หยุดการทำงานตรงนี้
-            }
-
-            // 2. คำนวณยอดเงินที่แต่ละคนต้องจ่าย
-            val amountPerPerson = HashMap<String, Double>()
-            // ... (โค้ดคำนวณเหมือนเดิม)
-            for (item in billList) {
-                val itemTotal = item.price * item.quantity
-                val sharedBy = item.selectedUsers
-                if (sharedBy.isNotEmpty() && itemTotal > 0) {
-                    val costPerPerson = itemTotal / sharedBy.size
-                    for (uid in sharedBy) {
-                        amountPerPerson[uid] = (amountPerPerson[uid] ?: 0.0) + costPerPerson
-                    }
-                }
-            }
-
-            if (amountPerPerson.isEmpty()) {
-                Toast.makeText(this@BillSplit, "กรุณาระบุราคาและเลือกผู้ที่ต้องหารบิล", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-
-            // ... (ส่วนการเปิด Dialog และส่งข้อมูล ให้คงเดิมไว้ครับ)
-            val myUid = FirebaseAuth.getInstance().currentUser?.uid
-            val myAmount = amountPerPerson[myUid] ?: 0.0
-
-            val dialogView = layoutInflater.inflate(R.layout.layout_dialog_payment, null)
-            val dialog = AlertDialog.Builder(this@BillSplit).setView(dialogView).create()
-            dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
-
-            dialogView.findViewById<TextView>(R.id.tvPaymentMessage)?.text = String.format("You need to pay\n%.2f ฿", myAmount)
-            dialogView.findViewById<AppCompatButton>(R.id.backButton)?.setOnClickListener { dialog.dismiss() }
-
-            dialogView.findViewById<AppCompatButton>(R.id.btnOk)?.setOnClickListener {
-                // ใช้ billName ที่ดึงมาตอนแรกได้เลย
-                val nameMap = HashMap<String, String>()
-                for (i in groupMemberUids.indices) {
-                    if (i < groupMemberNames.size) nameMap[groupMemberUids[i]] = groupMemberNames[i]
-                }
-
-                val intent = Intent(this@BillSplit, WhoPays::class.java).apply {
-                    putExtra("BILL_NAME", billName)
-                    putExtra("SPLIT_RESULT", amountPerPerson)
-                    putExtra("MEMBER_NAMES", nameMap)
-                    putExtra("BILL_ITEMS", billList)
-                }
-                startActivity(intent)
-                dialog.dismiss()
-            }
-            dialog.show()
-        }
-
-        btnAddItem?.setOnClickListener {
-            billList.add(BillItem("", 1, 0.0))
-            adapter?.notifyItemInserted(billList.size - 1)
-            rvBillItems?.scrollToPosition(billList.size - 1)
+            fetchMemberNames(members)
+        } else {
+            fetchAllFriends()
         }
     }
 
@@ -128,12 +57,56 @@ class BillSplit : AppCompatActivity() {
         rvBillItems = findViewById(R.id.rvBillItems)
         btnAddItem = findViewById(R.id.btnAddItem)
         tvGrandTotal = findViewById(R.id.tvGrandTotal)
-        etBillName = findViewById(R.id.etBillName) // 🌟 เชื่อม ID จาก XML
+        etBillName = findViewById(R.id.etBillName)
 
         if (billList.isEmpty()) billList.add(BillItem("", 1, 0.0))
-        adapter = BillAdapter(billList, selectedMembers) { calculateGrandTotal() }
+
+        adapter = BillAdapter(billList, selectedMembers, memberNames) { calculateGrandTotal() }
         rvBillItems?.layoutManager = LinearLayoutManager(this)
         rvBillItems?.adapter = adapter
+
+        btnBack?.setOnClickListener { finish() }
+        btnSplit?.setOnClickListener { processSplit() }
+        btnAddItem?.setOnClickListener {
+            billList.add(BillItem("", 1, 0.0))
+            adapter?.notifyItemInserted(billList.size - 1)
+        }
+        calculateGrandTotal()
+    }
+
+    private fun fetchMemberNames(uids: ArrayList<String>) {
+        db.collection("users").whereIn(com.google.firebase.firestore.FieldPath.documentId(), uids.take(10))
+            .get().addOnSuccessListener { docs ->
+                memberNames.clear()
+                uids.take(10).forEach { uid ->
+                    memberNames.add(docs.documents.find { it.id == uid }?.getString("name") ?: "Unknown")
+                }
+                init() // เรียกตรงนี้เพื่อให้แน่ใจว่าได้ชื่อเพื่อนครบแล้ว
+            }
+    }
+
+    private fun fetchAllFriends() {
+        val myUid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        db.collection("users").document(myUid).get().addOnSuccessListener { doc ->
+            // ดึงเพื่อนทั้งหมด
+            val friends = doc.get("friends") as? List<String> ?: listOf()
+
+            // 🌟 รวม UID ของเราเข้าไปด้วย
+            val allMembers = ArrayList<String>()
+            allMembers.add(myUid)
+            allMembers.addAll(friends)
+
+            if (allMembers.isNotEmpty()) {
+                selectedMembers.clear()
+                selectedMembers.addAll(allMembers)
+                // ส่งไปดึงชื่อของทุกคน (รวมชื่อเราด้วย)
+                fetchMemberNames(selectedMembers)
+            } else {
+                // กรณีไม่มีเพื่อนเลย ก็ยังมีชื่อเราคนเดียว
+                selectedMembers.add(myUid)
+                fetchMemberNames(selectedMembers)
+            }
+        }
     }
 
     private fun calculateGrandTotal() {
@@ -142,16 +115,33 @@ class BillSplit : AppCompatActivity() {
         tvGrandTotal?.text = String.format("%.2f ฿", total)
     }
 
-    private fun fetchMemberNames() {
-        if (groupMemberUids.isEmpty()) return
-        db.collection("users").whereIn(com.google.firebase.firestore.FieldPath.documentId(), groupMemberUids.take(10))
-            .get()
-            .addOnSuccessListener { documents ->
-                groupMemberNames.clear()
-                for (uid in groupMemberUids.take(10)) {
-                    groupMemberNames.add(documents.documents.find { it.id == uid }?.getString("name") ?: "Unknown")
-                }
-                adapter?.updateMemberNames(groupMemberNames)
+    private fun processSplit() {
+        val billName = etBillName?.text.toString().trim()
+        if (billName.isEmpty()) { etBillName?.error = "Enter name"; return }
+
+        val amountPerPerson = HashMap<String, Double>()
+        for (item in billList) {
+            if (item.selectedUsers.isNotEmpty() && item.price > 0) {
+                val cost = (item.price * item.quantity) / item.selectedUsers.size
+                for (uid in item.selectedUsers) amountPerPerson[uid] = (amountPerPerson[uid] ?: 0.0) + cost
             }
+        }
+
+        if (amountPerPerson.isEmpty()) { Toast.makeText(this, "กรุณาเลือกผู้หาร", Toast.LENGTH_SHORT).show(); return }
+
+        val dialog = AlertDialog.Builder(this).create()
+        val view = layoutInflater.inflate(R.layout.layout_dialog_payment, null)
+        dialog.setView(view)
+        view.findViewById<TextView>(R.id.tvPaymentMessage).text = "You need to pay: ${String.format("%.2f", amountPerPerson[FirebaseAuth.getInstance().currentUser?.uid] ?: 0.0)} ฿"
+        view.findViewById<AppCompatButton>(R.id.btnOk).setOnClickListener {
+            val nameMap = HashMap<String, String>()
+            selectedMembers.forEachIndexed { i, uid -> if (i < memberNames.size) nameMap[uid] = memberNames[i] }
+            startActivity(Intent(this, WhoPays::class.java).apply {
+                putExtra("BILL_NAME", billName); putExtra("SPLIT_RESULT", amountPerPerson)
+                putExtra("MEMBER_NAMES", nameMap); putExtra("BILL_ITEMS", billList)
+            })
+            dialog.dismiss()
+        }
+        dialog.show()
     }
 }
