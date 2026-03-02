@@ -7,7 +7,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
-import androidx.activity.OnBackPressedCallback
+import androidx.activity.OnBackPressedCallback // 🌟 นำเข้าคลาสใหม่สำหรับปุ่ม Back
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
@@ -41,9 +41,6 @@ class WhoPays : AppCompatActivity() {
     private var totalAmount: Double = 0.0
     private var billName: String = "New Bill"
 
-    // ✅ ประกาศระดับ Class เพื่อให้เข้าถึงได้จากทุกที่
-    private var actualPayerUid: String? = null
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -52,7 +49,6 @@ class WhoPays : AppCompatActivity() {
         db = FirebaseFirestore.getInstance()
         auth = FirebaseAuth.getInstance()
 
-        // รับค่าชื่อบิลจากหน้าแรก
         billName = intent.getStringExtra("BILL_NAME") ?: "New Bill"
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
@@ -61,7 +57,7 @@ class WhoPays : AppCompatActivity() {
             insets
         }
 
-        // ดักการกดปุ่มย้อนกลับ
+        // 🌟 แก้ Error: ดักการกดปุ่มย้อนกลับด้วยวิธีใหม่ของ Android (แทน onBackPressed)
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 navigateBack()
@@ -79,12 +75,15 @@ class WhoPays : AppCompatActivity() {
         btnMenu = findViewById(R.id.btnMenu)
         Ptabfriend = findViewById(R.id.Ptabfriend)
         btnConfirm = findViewById(R.id.btnConfirm)
+
         rvSummaryItems = findViewById(R.id.rvSummaryItems)
         tvTotalAmount = findViewById(R.id.tvTotalAmount)
         etPaidAmount = findViewById(R.id.etPaidAmount)
         spinnerPayer = findViewById(R.id.spinnerPayer)
 
-        findViewById<TextView>(R.id.tabItems)?.setOnClickListener { navigateBack() }
+        findViewById<TextView>(R.id.tabItems)?.setOnClickListener {
+            navigateBack()
+        }
     }
 
     private fun setupData() {
@@ -92,7 +91,6 @@ class WhoPays : AppCompatActivity() {
         val namesMap = intent.getSerializableExtra("MEMBER_NAMES") as? HashMap<String, String>
         val itemsList = intent.getSerializableExtra("BILL_ITEMS") as? ArrayList<BillItem>
 
-        // แสดงชื่อบิลที่ส่งมาจากหน้าแรก
         etBillName?.setText(billName)
 
         if (splitResult != null) amountPerPerson.putAll(splitResult)
@@ -130,17 +128,24 @@ class WhoPays : AppCompatActivity() {
                     saveBillToDatabase()
                     dialog.dismiss()
                 }
-                .setNegativeButton("Cancel") { dialog, _ -> dialog.dismiss() }
+                .setNegativeButton("Cancel") { dialog, _ ->
+                    dialog.dismiss()
+                }
                 .show()
         }
 
         Ptabfriend?.setOnClickListener {
             if (isConfirmed) {
                 val intent = Intent(this, FriendOwe::class.java)
-                // ส่ง UID ของคนจ่ายเงินที่เลือกจริงไปยังหน้าถัดไป
-                intent.putExtra("PAYER_UID", actualPayerUid ?: auth.currentUser?.uid)
+
+                val myUid = auth.currentUser?.uid ?: ""
+                val selectedPayerIndex = spinnerPayer?.selectedItemPosition ?: 0
+                val actualPayerUid = if (uidList.isNotEmpty()) uidList[selectedPayerIndex] else myUid
+
+                intent.putExtra("PAYER_UID", actualPayerUid)
                 intent.putExtra("SPLIT_RESULT", amountPerPerson)
                 intent.putExtra("MEMBER_NAMES", memberNames)
+
                 startActivity(intent)
             } else {
                 showPleaseConfirmDialog()
@@ -153,24 +158,15 @@ class WhoPays : AppCompatActivity() {
     private fun saveBillToDatabase() {
         val myUid = auth.currentUser?.uid ?: return
         val selectedPayerIndex = spinnerPayer?.selectedItemPosition ?: 0
+        val actualPayerUid = if (uidList.isNotEmpty()) uidList[selectedPayerIndex] else myUid
 
-        // ✅ เก็บค่าเข้าตัวแปรระดับ Class
-        actualPayerUid = if (uidList.isNotEmpty()) uidList[selectedPayerIndex] else myUid
+        val currentBillName = etBillName?.text.toString().trim().ifEmpty { billName }
 
-        // ✅ ตรวจสอบชื่อบิล ป้องกันค่า "null" หลุดเข้าฐานข้อมูล
-        val inputName = etBillName?.text.toString().trim()
-        val finalBillName = when {
-            inputName.isNotEmpty() && inputName != "null" -> inputName
-            billName.isNotBlank() && billName != "null" -> billName
-            else -> "Untitled Bill"
-        }
-
-        // ปิดปุ่มเพื่อป้องกันการกดซ้ำ
         btnConfirm?.isEnabled = false
         btnConfirm?.alpha = 0.5f
 
         val billData = hashMapOf(
-            "billName" to finalBillName,
+            "billName" to currentBillName,
             "totalAmount" to totalAmount,
             "paidBy" to actualPayerUid,
             "timestamp" to com.google.firebase.Timestamp.now(),
@@ -219,8 +215,15 @@ class WhoPays : AppCompatActivity() {
         val dialog = Dialog(this)
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
         dialog.setContentView(R.layout.dialog_leave_group)
-        dialog.findViewById<Button>(R.id.btnNo)?.setOnClickListener { dialog.dismiss() }
-        dialog.findViewById<Button>(R.id.btnYes)?.setOnClickListener {
+
+        val btnNo = dialog.findViewById<Button>(R.id.btnNo)
+        val btnYes = dialog.findViewById<Button>(R.id.btnYes)
+        val tvMessage = dialog.findViewById<TextView>(R.id.tvMessage)
+
+        tvMessage?.text = "Are you sure you want to\n leave this group?"
+
+        btnNo?.setOnClickListener { dialog.dismiss() }
+        btnYes?.setOnClickListener {
             dialog.dismiss()
             Toast.makeText(this, "You have left the group.", Toast.LENGTH_SHORT).show()
             val intent = Intent(this, MainActivity::class.java)
@@ -235,26 +238,31 @@ class WhoPays : AppCompatActivity() {
         val dialog = Dialog(this)
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
         dialog.setContentView(R.layout.dialog_confirm_payer)
-        dialog.findViewById<Button>(R.id.btnOk)?.setOnClickListener { dialog.dismiss() }
+        val btnOk = dialog.findViewById<Button>(R.id.btnOk)
+        btnOk?.setOnClickListener { dialog.dismiss() }
         dialog.show()
     }
 
     class ItemSummaryAdapter(private val items: List<BillItem>) : RecyclerView.Adapter<ItemSummaryAdapter.ViewHolder>() {
+
         class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
             val tvItemName: TextView = view.findViewById(R.id.tvItemName)
             val tvQuantity: TextView = view.findViewById(R.id.tvQuantity)
             val tvPrice: TextView = view.findViewById(R.id.tvPrice)
         }
+
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
             val view = LayoutInflater.from(parent.context).inflate(R.layout.item_summary_row, parent, false)
             return ViewHolder(view)
         }
+
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val item = items[position]
             holder.tvItemName.text = item.itemName
             holder.tvQuantity.text = item.quantity.toString()
             holder.tvPrice.text = String.format("%.2f ฿", item.price * item.quantity)
         }
+
         override fun getItemCount() = items.size
     }
 }
