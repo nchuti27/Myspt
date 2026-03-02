@@ -53,44 +53,37 @@ class Register : AppCompatActivity() {
             val checkUser = "[a-zA-Z0-9_]{6,12}"
             val checkPass = "^[A-Za-z0-9]{6,12}$"
 
-            if (!rName.matches(checkName.toRegex())) {
-                edtRname!!.setError("Name must be 3-12 characters")
-            }
-            else if (!rUser.matches(checkUser.toRegex())) {
-                edtRUser!!.setError("User must be 6-12 characters (A-Z,0-9)")
-            }
-            else if (rPass.isEmpty() || rPass != rCfpass) {
-                edtRConf!!.setError("Passwords do not match")
-            }
-            else if (rPass.length < 6) {
-                edtRConf!!.setError("Password must be at least 6 digits")
-            }
-            else if (!rPass.matches(checkPass.toRegex())) {
-                edtRPass!!.setError("Password must contain letters and numbers")
-            }
-            else if (rMail.isEmpty() || !rMail.endsWith("@gmail.com")) {
-                edtMail!!.setError("Only @gmail.com is allowed")
-            }
-            else {
-                auth.createUserWithEmailAndPassword(rMail, rPass)
-                    .addOnCompleteListener { task ->
-                        if (task.isSuccessful) {
-                            // สร้างAcc สำเร็จ ดึง UID มาบันทึก Profile ลง Firestore
-                            val uid = auth.currentUser?.uid
-                            saveUser(uid, rName, rUser, rMail)
-                        } else {
-                            val exception = task.exception
-                            if (exception is com.google.firebase.auth.FirebaseAuthUserCollisionException) {
-                                // Email นี้เคยถูกใช้งานไปแล้ว
-                                edtMail!!.setError("This email is already registered")
-                                Toast.makeText(this, "This email is already in use. Please use another email",
-                                    Toast.LENGTH_SHORT).show()
+            when {
+                rName.isEmpty() -> edtRname!!.error = "Name is required"
+                rUser.isEmpty() -> edtRUser!!.error = "Username is required"
+                rMail.isEmpty() -> edtMail!!.error = "Email is required"
+                rPass.isEmpty() -> edtRPass!!.error = "Password is required"
+                rCfpass.isEmpty() -> edtRConf!!.error = "Please confirm your password"
+
+                !rName.matches("[a-zA-Z]{3,12}".toRegex()) -> edtRname!!.error = "Name must be 3-12 characters"
+                !rUser.matches("[a-zA-Z0-9_]{6,12}".toRegex()) -> edtRUser!!.error = "User must be 6-12 characters"
+                rPass != rCfpass -> edtRConf!!.error = "Passwords do not match"
+                rPass.length < 6 -> edtRPass!!.error = "Password must be at least 6 digits"
+                !rPass.matches("^[A-Za-z0-9]{6,12}$".toRegex()) -> edtRPass!!.error = "Password must contain letters and numbers"
+                !rMail.endsWith("@gmail.com") -> edtMail!!.error = "Only @gmail.com is allowed"
+
+                else -> {
+                    // ส่วนเดิม: เช็ค Username ใน Firestore และสมัคร Auth
+                    db.collection("users")
+                        .whereEqualTo("username", rUser)
+                        .get()
+                        .addOnSuccessListener { documents ->
+                            if (!documents.isEmpty) {
+                                edtRUser!!.error = "Username is already taken"
+                                Toast.makeText(this, "Username already exists", Toast.LENGTH_SHORT).show()
                             } else {
-                                Toast.makeText(this, "Error: ${exception?.message}",
-                                    Toast.LENGTH_SHORT).show()
+                                createUserAccount(rMail, rPass, rName, rUser)
                             }
                         }
-                    }
+                        .addOnFailureListener { e ->
+                            Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                        }
+                }
             }
         }
 
@@ -99,6 +92,23 @@ class Register : AppCompatActivity() {
             startActivity(intent)
             finish()
         }
+    }
+    private fun createUserAccount(email: String, pass: String, name: String, username: String) {
+        auth.createUserWithEmailAndPassword(email, pass)
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    val uid = auth.currentUser?.uid
+                    saveUser(uid, name, username, email)
+                } else {
+                    val exception = task.exception
+                    if (exception is com.google.firebase.auth.FirebaseAuthUserCollisionException) {
+                        edtMail!!.error = "This email is already registered"
+                        Toast.makeText(this, "Email already in use", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(this, "Authentication Error: ${exception?.message}", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
     }
 
 

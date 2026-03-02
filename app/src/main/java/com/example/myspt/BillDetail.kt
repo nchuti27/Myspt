@@ -1,5 +1,6 @@
 package com.example.myspt
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -17,6 +18,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 
 class BillDetail : AppCompatActivity() {
     private lateinit var btnBack: ImageView
+    private lateinit var btnDone: android.widget.Button
     private lateinit var txtTitle: TextView
     private lateinit var txtTotalAmount: TextView
     private lateinit var rvOrderItems: RecyclerView
@@ -56,19 +58,23 @@ class BillDetail : AppCompatActivity() {
     }
 
     private fun init() {
-        // ตรวจสอบว่า ID ใน XML ต้องชื่อ backButton, txtTitle, txtTotalAmount, rvOrderItems
         btnBack = findViewById(R.id.backButton)
+        btnDone = findViewById(R.id.btnDone)
         txtTitle = findViewById(R.id.txtTitle)
         txtTotalAmount = findViewById(R.id.txtTotalAmount)
         rvOrderItems = findViewById(R.id.rvOrderItems)
 
+        btnDone.setOnClickListener {
+            val intent = Intent(this, MainActivity::class.java)
+            startActivity(intent)
+            finish()
+        }
         rvOrderItems.layoutManager = LinearLayoutManager(this)
         itemAdapter = DetailItemAdapter(itemList)
         rvOrderItems.adapter = itemAdapter
     }
 
     private fun loadBillData(id: String) {
-        // ✅ ลบคำว่า ออกจากบรรทัดด้านล่างนี้ให้หมดครับ
         db.collection("bills").document(id).get()
             .addOnSuccessListener { doc ->
                 if (doc.exists()) {

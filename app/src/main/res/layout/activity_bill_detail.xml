@@ -97,12 +97,12 @@
             </RelativeLayout>
 
             <androidx.appcompat.widget.AppCompatButton
-                android:id="@+id/btnQr"
+                android:id="@+id/btnDone"
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
                 android:layout_marginTop="24dp"
                 android:background="@drawable/bg_fintech_button"
-                android:text="Save &amp; Done"
+                android:text="Done"
                 android:textAllCaps="false"
                 android:textColor="@color/white"
                 android:textSize="18sp"
