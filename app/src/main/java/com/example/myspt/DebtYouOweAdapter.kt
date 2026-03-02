@@ -1,0 +1,33 @@
+package com.example.myspt
+
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.TextView
+import androidx.recyclerview.widget.RecyclerView
+
+class DebtYouOweAdapter(private var debtList: List<Debt>) : RecyclerView.Adapter<DebtYouOweAdapter.ViewHolder>() {
+
+    class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        val txtName: TextView = itemView.findViewById(R.id.txtName)
+        val txtAmount: TextView = itemView.findViewById(R.id.txtAmount)
+    }
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+        val view = LayoutInflater.from(parent.context).inflate(R.layout.item_debt_you_owe, parent, false)
+        return ViewHolder(view)
+    }
+
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        val debt = debtList[position]
+        holder.txtName.text = debt.name
+        holder.txtAmount.text = "฿ ${String.format("%.2f", debt.amount)}"
+    }
+
+    override fun getItemCount(): Int = debtList.size
+
+    fun updateData(newList: List<Debt>) {
+        debtList = newList
+        notifyDataSetChanged()
+    }
+}

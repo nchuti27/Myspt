@@ -182,6 +182,28 @@ class WhoPays : AppCompatActivity() {
 
         db.collection("bills").add(billData)
             .addOnSuccessListener {
+                // ======== ส่วนที่เพิ่มใหม่: สร้างรายการหนี้รายบุคคล ========
+
+                // วนลูปรายชื่อทุกคนที่มีในบิลนี้
+                for ((debtorUid, amount) in amountPerPerson) {
+                    // ข้ามคนที่เป็นคนออกเงินไปก่อน (ไม่ต้องสร้างหนี้ตัวเองให้ตัวเอง)
+                    if (debtorUid == actualPayerUid) continue
+
+                    // สร้างข้อมูลหนี้สำหรับคนนี้
+                    val debtData = hashMapOf(
+                        "billName" to finalBillName,
+                        "creditorId" to actualPayerUid, // คนที่เป็นเจ้าหนี้ (คนออกเงิน)
+                        "friendId" to debtorUid,        // คนที่เป็นลูกหนี้ (เพื่อนที่ต้องคืนเงิน)
+                        "name" to (memberNames[debtorUid] ?: "Unknown"), // ชื่อของลูกหนี้
+                        "amount" to amount,             // จำนวนเงินที่คนนี้ต้องจ่าย
+                        "status" to "pending"           // สถานะเริ่มต้น
+                    )
+
+                    // บันทึกลง Collection ใหม่ชื่อ "debts"
+                    db.collection("debts").add(debtData)
+                }
+                // ======== จบส่วนที่เพิ่มใหม่ ========
+
                 isConfirmed = true
                 Toast.makeText(this, "Bill Saved Successfully!", Toast.LENGTH_SHORT).show()
             }
