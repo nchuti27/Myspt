@@ -1,9 +1,11 @@
 package com.example.myspt
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import android.transition.TransitionManager
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -16,11 +18,11 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.google.android.material.button.MaterialButton
+import com.google.android.material.imageview.ShapeableImageView
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
-
-
 
 class Friend_list : AppCompatActivity() {
 
@@ -56,6 +58,7 @@ class Friend_list : AppCompatActivity() {
         btnAddFriendPage.setOnClickListener { startActivity(Intent(this, AddFriend::class.java)) }
         btnBack.setOnClickListener { finish() }
 
+        // ✅ ใช้ Adapter ตัวจบในไฟล์เดียวกัน
         friendAdapter = FriendAdapter(fullFriendList)
         rvFriendList.layoutManager = LinearLayoutManager(this)
         rvFriendList.adapter = friendAdapter
@@ -86,7 +89,6 @@ class Friend_list : AppCompatActivity() {
             }
     }
 
-    // ✅ 2. ดึงข้อมูลเพื่อนพร้อมรูปโปรไฟล์
     private fun fetchFriendsDetails(uids: List<String>) {
         db.collection("users").whereIn("__name__", uids).get()
             .addOnSuccessListener { querySnapshot ->
@@ -94,29 +96,33 @@ class Friend_list : AppCompatActivity() {
                 for (doc in querySnapshot.documents) {
                     val name = doc.getString("name") ?: "Unknown"
                     val username = doc.getString("username") ?: ""
-                    val pUrl = doc.getString("profileUrl") // 🌟 กู้คืนการดึง URL รูปภาพ
+                    val pUrl = doc.getString("profileUrl")
                     val uid = doc.id
-                    fullFriendList.add(FriendData(name, username, uid, pUrl))
+                    // ✅ ส่งค่าเริ่มต้น isExpanded = false เพื่อให้แผงปุ่มซ่อนอยู่ตอนเริ่ม
+                    fullFriendList.add(FriendData(name, username, uid, pUrl, false))
                 }
                 friendAdapter.updateData(fullFriendList)
             }
     }
 }
 
-// ✅ 3. Adapter สำหรับแสดงผล (ใช้ Layout item_friend_list ตัวใหม่)
+// ✅ 3. Adapter ชุดจบ: กางแผงปุ่มได้เหมือน Group List
 class FriendAdapter(private var originalList: ArrayList<FriendData>) :
     RecyclerView.Adapter<FriendAdapter.FriendViewHolder>() {
 
     private var filteredList = ArrayList<FriendData>(originalList)
 
     class FriendViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        val ivProfile: com.google.android.material.imageview.ShapeableImageView = itemView.findViewById(R.id.ivFriendProfile)
+        val ivProfile: ShapeableImageView = itemView.findViewById(R.id.ivFriendProfile)
         val tvName: TextView = itemView.findViewById(R.id.tvFriendName)
         val btnMore: ImageButton = itemView.findViewById(R.id.btnMore)
+        val layoutActions: LinearLayout = itemView.findViewById(R.id.layoutActions)
+        val divider: View = itemView.findViewById(R.id.divider)
+        val btnFriendDetail: MaterialButton = itemView.findViewById(R.id.btnFriendDetail)
+        val btnRemoveFriend: MaterialButton = itemView.findViewById(R.id.btnRemoveFriend)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): FriendViewHolder {
-        // 🌟 เปลี่ยนกลับมาใช้ไฟล์ XML ที่พี่ออกแบบมาสวยๆ
         val view = LayoutInflater.from(parent.context).inflate(R.layout.item_friend_list, parent, false)
         return FriendViewHolder(view)
     }
@@ -127,27 +133,53 @@ class FriendAdapter(private var originalList: ArrayList<FriendData>) :
 
         holder.tvName.text = currentItem.name
 
-        // 🌟 ใช้ Glide โหลดรูปวงกลม
+        // ✅ กางหรือซ่อน ตามค่า isExpanded ใน Model (เหมือน g list)
+        holder.layoutActions.visibility = if (currentItem.isExpanded) View.VISIBLE else View.GONE
+        holder.divider.visibility = if (currentItem.isExpanded) View.VISIBLE else View.GONE
+
         Glide.with(context)
             .load(currentItem.profileUrl ?: R.drawable.ic_launcher_background)
             .placeholder(R.drawable.ic_launcher_background)
             .circleCrop()
             .into(holder.ivProfile)
 
-        // ปุ่มเมนูเพิ่มเติม (สำหรับลบเพื่อน)
+        // ✅ ปุ่ม 3 จุด: ทำหน้าที่สลับสถานะเปิด/ปิด (Toggle)
         holder.btnMore.setOnClickListener {
+            TransitionManager.beginDelayedTransition(holder.itemView as ViewGroup)
+            currentItem.isExpanded = !currentItem.isExpanded
+            notifyItemChanged(position)
+        }
+
+        // ✅ ปุ่มลบเพื่อน: ย้าย Dialog มาไว้ที่นี่ เพื่อให้เด้งหลังจากกางแผงออกมาแล้ว
+        holder.btnRemoveFriend.setOnClickListener {
             AlertDialog.Builder(context)
                 .setTitle("Remove Friend")
                 .setMessage("Do you want to remove ${currentItem.name}?")
                 .setPositiveButton("Remove") { _, _ ->
                     removeFriendFromFirestore(currentItem.uid, context, holder.bindingAdapterPosition)
                 }
-                .setNegativeButton("Cancel", null)
+                .setNegativeButton("Cancel") { dialog, _ ->
+                    currentItem.isExpanded = false // พับแผงเก็บเมื่อกดยกเลิก
+                    notifyItemChanged(position)
+                    dialog.dismiss()
+                }
                 .show()
+        }
+
+        // ✅ ปุ่มรายละเอียด
+        holder.btnFriendDetail.setOnClickListener {
+            currentItem.isExpanded = false
+            notifyItemChanged(position)
+            val intent = Intent(context, FriendProfile::class.java).apply {
+                putExtra("FRIEND_UID", currentItem.uid)
+                putExtra("FRIEND_NAME", currentItem.name)
+                putExtra("FRIEND_IMG", currentItem.profileUrl)
+            }
+            context.startActivity(intent)
         }
     }
 
-    private fun removeFriendFromFirestore(friendUid: String, context: android.content.Context, position: Int) {
+    private fun removeFriendFromFirestore(friendUid: String, context: Context, position: Int) {
         val myUid = FirebaseAuth.getInstance().currentUser?.uid ?: return
         FirebaseFirestore.getInstance().collection("users").document(myUid)
             .update("friends", FieldValue.arrayRemove(friendUid))
@@ -156,6 +188,7 @@ class FriendAdapter(private var originalList: ArrayList<FriendData>) :
                 if (position != RecyclerView.NO_POSITION && position < filteredList.size) {
                     filteredList.removeAt(position)
                     notifyItemRemoved(position)
+                    notifyItemRangeChanged(position, filteredList.size)
                 }
                 Toast.makeText(context, "Removed", Toast.LENGTH_SHORT).show()
             }

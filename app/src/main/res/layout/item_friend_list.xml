@@ -20,10 +20,9 @@
             android:layout_height="48dp"
             android:scaleType="centerCrop"
             android:src="@drawable/ic_launcher_background"
-            app:shapeAppearanceOverlay="@style/CircleImageStyle"
-            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toTopOf="parent"
+            app:shapeAppearanceOverlay="@style/CircleImageStyle" />
 
         <TextView
             android:id="@+id/tvFriendName"
@@ -34,11 +33,11 @@
             android:textColor="@color/fintech_text_main"
             android:textSize="16sp"
             android:textStyle="bold"
-            tools:text="Friend Name"
-            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintBottom_toBottomOf="@+id/ivFriendProfile"
             app:layout_constraintEnd_toStartOf="@+id/btnMore"
             app:layout_constraintStart_toEndOf="@+id/ivFriendProfile"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toTopOf="@+id/ivFriendProfile"
+            tools:text="Friend Name" />
 
         <ImageButton
             android:id="@+id/btnMore"
@@ -46,11 +45,49 @@
             android:layout_height="40dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@drawable/ic_more_vert"
-            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintBottom_toBottomOf="@+id/ivFriendProfile"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/ivFriendProfile"
             app:tint="@color/fintech_text_sub" />
 
-    </androidx.constraintlayout.widget.ConstraintLayout>
+        <View
+            android:id="@+id/divider"
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="12dp"
+            android:background="#EEEEEE"
+            android:visibility="gone"
+            app:layout_constraintTop_toBottomOf="@+id/ivFriendProfile" />
 
+        <LinearLayout
+            android:id="@+id/layoutActions"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:orientation="horizontal"
+            android:visibility="gone"
+            app:layout_constraintTop_toBottomOf="@+id/divider">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnFriendDetail"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:layout_weight="1"
+                android:text="FRIEND DETAIL"
+                app:cornerRadius="24dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnRemoveFriend"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:backgroundTint="#D32F2F"
+                android:text="Remove Friend"
+                android:textColor="@android:color/white"
+                app:cornerRadius="24dp" />
+        </LinearLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>
