@@ -77,11 +77,9 @@ class notification : AppCompatActivity() {
     private fun loadFriendTab() {
         currentTab = "FRIEND"
         updateTabUI(btnTabFriend)
-
-        val myUid = auth.currentUser?.uid ?: return
         notiListener?.remove()
+        val myUid = auth.currentUser?.uid ?: return
 
-        // ดึงทั้งคำขอเพื่อน และ การทวงหนี้ มารวมกัน
         val friendReq = db.collection("friend_requests").whereEqualTo("to_uid", myUid).whereEqualTo("status", "pending").get()
         val debtNoti = db.collection("notifications").whereEqualTo("to_uid", myUid).whereEqualTo("type", "debt_reminder").get()
 
@@ -117,12 +115,50 @@ class notification : AppCompatActivity() {
             }
     }
 
-    // --- ฟังก์ชัน Helper เดิมของคุณ ---
-    private fun acceptFriend(doc: DocumentSnapshot) { /* ใส่โค้ดเดิม */ }
-    private fun acceptGroupInvite(doc: DocumentSnapshot) { /* ใส่โค้ดเดิม */ }
-    private fun deleteRequest(doc: DocumentSnapshot) { db.document(doc.reference.path).delete() }
+    private fun acceptFriend(doc: DocumentSnapshot) {
+        val myUid = auth.currentUser?.uid ?: return
+        val senderUid = doc.getString("from_uid") ?: return
+        val senderName = doc.getString("from_name") ?: "Friend"
 
-    private fun confirmClearAll() { /* ใส่โค้ดเดิม */ }
+        val batch = db.batch()
+        batch.update(db.collection("friend_requests").document(doc.id), "status", "accepted")
+        batch.update(db.collection("users").document(myUid), "friends", FieldValue.arrayUnion(senderUid))
+        batch.update(db.collection("users").document(senderUid), "friends", FieldValue.arrayUnion(myUid))
+
+        batch.commit().addOnSuccessListener {
+            Toast.makeText(this, "You and $senderName are now friends", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun acceptGroupInvite(doc: DocumentSnapshot) {
+        val myUid = auth.currentUser?.uid ?: return
+        val groupId = doc.getString("groupId") ?: return
+        val groupName = doc.getString("groupName") ?: "Group"
+
+        val batch = db.batch()
+        batch.update(db.collection("group_invites").document(doc.id), "status", "accepted")
+        batch.update(db.collection("groups").document(groupId), "members", FieldValue.arrayUnion(myUid))
+        batch.update(db.collection("users").document(myUid), "groups", FieldValue.arrayUnion(groupId))
+
+        batch.commit().addOnSuccessListener {
+            Toast.makeText(this, "Joined $groupName!", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun deleteRequest(doc: DocumentSnapshot) {
+        db.document(doc.reference.path).delete()
+    }
+
+    private fun confirmClearAll() {
+        AlertDialog.Builder(this)
+            .setTitle("Clear All")
+            .setMessage("Clear all $currentTab items?")
+            .setPositiveButton("Clear") { _, _ ->
+                for (doc in notiList) deleteRequest(doc)
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
 
     private fun updateTabUI(activeButton: Button) {
         val buttons = listOf(btnTabFriend, btnTabGroup, btnTabRequest)
