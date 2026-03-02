@@ -107,30 +107,22 @@ class Friend_list : AppCompatActivity() {
     }
 }
 
-// --- Model Data ---
-data class FriendData(
-    val name: String,
-    val username: String,
-    val uid: String,
-    var isExpanded: Boolean = false
-)
 
-// --- Adapter ---
 class FriendAdapter(private var originalList: ArrayList<FriendData>) :
     RecyclerView.Adapter<FriendAdapter.FriendViewHolder>() {
 
     private var filteredList = ArrayList<FriendData>(originalList)
 
     class FriendViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        val tvName: TextView = itemView.findViewById(R.id.tvName)
-        val btnExpand: ImageButton = itemView.findViewById(R.id.btnExpand)
-        val layoutHidden: LinearLayout = itemView.findViewById(R.id.layoutHidden)
-        val btnDelete: Button = itemView.findViewById(R.id.btnDelete)
-        val btnViewProfile: Button = itemView.findViewById(R.id.btnViewProfile)
+        // ✅ เปลี่ยน ID ให้ตรงกับไฟล์ item_friend_list.xml ของพี่
+        val ivProfile: com.google.android.material.imageview.ShapeableImageView = itemView.findViewById(R.id.ivFriendProfile)
+        val tvName: TextView = itemView.findViewById(R.id.tvFriendName)
+        val btnMore: ImageButton = itemView.findViewById(R.id.btnMore)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): FriendViewHolder {
-        val view = LayoutInflater.from(parent.context).inflate(R.layout.item_friend_exp, parent, false)
+        // ✅ เปลี่ยนจาก item_friend_exp เป็น item_friend_list (ตัวที่สวยๆ)
+        val view = LayoutInflater.from(parent.context).inflate(R.layout.item_friend_list, parent, false)
         return FriendViewHolder(view)
     }
 
@@ -139,51 +131,41 @@ class FriendAdapter(private var originalList: ArrayList<FriendData>) :
         val context = holder.itemView.context
 
         holder.tvName.text = currentItem.name
-        holder.layoutHidden.visibility = if (currentItem.isExpanded) View.VISIBLE else View.GONE
 
-        // คลิกเพื่อกาง/หุบเมนู
-        holder.btnExpand.setOnClickListener {
-            currentItem.isExpanded = !currentItem.isExpanded
-            notifyItemChanged(holder.bindingAdapterPosition)
-        }
+        // ✅ โหลดรูปโปรไฟล์ให้เป็นวงกลมด้วย Glide
+        com.bumptech.glide.Glide.with(context)
+            .load(currentItem.profileUrl ?: R.drawable.ic_launcher_background)
+            .placeholder(R.drawable.ic_launcher_background)
+            .circleCrop()
+            .into(holder.ivProfile)
 
-        // คลิกไปหน้าโปรไฟล์
-        holder.btnViewProfile.setOnClickListener {
-            val intent = Intent(context, FriendProfile::class.java).apply {
-                putExtra("FRIEND_UID", currentItem.uid)
-                putExtra("FRIEND_NAME", currentItem.name)
-            }
-            context.startActivity(intent)
-        }
-
-        // ลบเพื่อน
-        holder.btnDelete.setOnClickListener {
+        // คลิกปุ่ม 3 จุด (โชว์เมนูลบ)
+        holder.btnMore.setOnClickListener {
             AlertDialog.Builder(context)
                 .setTitle("Remove Friend")
-                .setMessage("Remove ${currentItem.name} from friend list?")
+                .setMessage("Do you want to remove ${currentItem.name}?")
                 .setPositiveButton("Remove") { _, _ ->
-                    val myUid = FirebaseAuth.getInstance().currentUser?.uid ?: return@setPositiveButton
-                    val db = FirebaseFirestore.getInstance()
-
-                    db.collection("users").document(myUid)
-                        .update("friends", FieldValue.arrayRemove(currentItem.uid))
-                        .addOnSuccessListener {
-                            // ลบออกจากทั้ง Original และ Filtered list
-                            originalList.removeAll { it.uid == currentItem.uid }
-                            val pos = holder.bindingAdapterPosition
-                            filteredList.removeAt(pos)
-                            notifyItemRemoved(pos)
-                            Toast.makeText(context, "Removed", Toast.LENGTH_SHORT).show()
-                        }
+                    removeFriendFromFirestore(currentItem.uid, context, position)
                 }
                 .setNegativeButton("Cancel", null)
                 .show()
         }
     }
 
+    private fun removeFriendFromFirestore(friendUid: String, context: android.content.Context, position: Int) {
+        val myUid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        FirebaseFirestore.getInstance().collection("users").document(myUid)
+            .update("friends", FieldValue.arrayRemove(friendUid))
+            .addOnSuccessListener {
+                originalList.removeAll { it.uid == friendUid }
+                filteredList.removeAt(position)
+                notifyItemRemoved(position)
+                Toast.makeText(context, "Removed", Toast.LENGTH_SHORT).show()
+            }
+    }
+
     override fun getItemCount(): Int = filteredList.size
 
-    // ฟังก์ชันสำหรับ Search Filter
     fun filter(query: String) {
         val searchText = query.lowercase().trim()
         filteredList = if (searchText.isEmpty()) {
@@ -197,7 +179,6 @@ class FriendAdapter(private var originalList: ArrayList<FriendData>) :
         notifyDataSetChanged()
     }
 
-    // ฟังก์ชันอัปเดตข้อมูลเมื่อโหลดเสร็จ
     fun updateData(newList: ArrayList<FriendData>) {
         originalList = newList
         filteredList = ArrayList(newList)
