@@ -61,9 +61,9 @@ class BillSplit : AppCompatActivity() {
             // 🌟 1. เช็คว่ากรอกชื่อบิลหรือยัง
             val billName = etBillName?.text.toString().trim()
             if (billName.isEmpty()) {
-                etBillName?.error = "กรุณากรอกชื่อบิลก่อนครับ" // แสดง Error ที่ช่องกรอก
-                Toast.makeText(this@BillSplit, "กรุณากรอกชื่อบิลก่อนกด SPLIT BILL", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener // หยุดการทำงานตรงนี้ ไม่ให้ไปต่อ
+                etBillName?.error = "Please enter a bill name" // แสดง Error ที่ช่องกรอก
+                Toast.makeText(this@BillSplit, "Please enter a bill name before splitting", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener // หยุดการทำงานตรงนี้
             }
 
             // 2. คำนวณยอดเงินที่แต่ละคนต้องจ่าย

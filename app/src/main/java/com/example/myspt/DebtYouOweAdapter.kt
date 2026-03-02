@@ -36,7 +36,7 @@ class DebtYouOweAdapter(private var debtList: List<Debt>) : RecyclerView.Adapter
         } else {
             debt.billName
         }
-        holder.txtBillDetail.text = "บิล: $displayBill"
+        holder.txtBillDetail.text = "Bill: $displayBill"
 
         holder.txtAmount.text = "฿ ${String.format("%.2f", debt.amount)}"
     }

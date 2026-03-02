@@ -48,7 +48,7 @@ class BillAdapter(
         holder.btnSelectUser.setOnClickListener {
             // เช็คว่าโหลดชื่อเพื่อนเสร็จหรือยัง
             if (memberNames.isEmpty()) {
-                Toast.makeText(holder.itemView.context, "กำลังโหลดรายชื่อเพื่อน...", Toast.LENGTH_SHORT).show()
+                Toast.makeText(holder.itemView.context, "Loading friends list...", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 

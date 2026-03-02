@@ -63,7 +63,7 @@ class DebtAdapter(
         val notiData = hashMapOf(
             "to_uid" to debt.friendId,
             "from_uid" to debt.creditorId,
-            "message" to "ทวงหนี้: บิล ${debt.billName} จำนวน ฿${debt.amount}",
+            "message" to "Payment Reminder: ${debt.billName} | Amount: ฿${debt.amount}",
             "type" to "debt_reminder",
             "status" to "pending",
             "timestamp" to FieldValue.serverTimestamp()
@@ -71,10 +71,10 @@ class DebtAdapter(
 
         db.collection("notifications").add(notiData)
             .addOnSuccessListener {
-                Toast.makeText(context, "ส่งแจ้งเตือนไปหาเพื่อนแล้ว", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Notification sent!", Toast.LENGTH_SHORT).show()
             }
             .addOnFailureListener {
-                Toast.makeText(context, "ส่งแจ้งเตือนไม่สำเร็จ", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Unable to send reminders. Please try again.", Toast.LENGTH_SHORT).show()
             }
     }
 
