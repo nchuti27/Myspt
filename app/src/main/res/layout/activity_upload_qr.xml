@@ -32,7 +32,7 @@
         android:id="@+id/textView4"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Upload QRCode"
+        android:text="Upload QR Code"
         android:textColor="@android:color/black"
         android:textSize="18sp"
         android:textStyle="bold"
@@ -55,9 +55,9 @@
         <androidx.cardview.widget.CardView
             android:layout_width="280dp"
             android:layout_height="280dp"
+            android:layout_marginBottom="32dp"
             app:cardCornerRadius="16dp"
-            app:cardElevation="4dp"
-            android:layout_marginBottom="32dp">
+            app:cardElevation="4dp">
 
             <ImageView
                 android:id="@+id/ivQrPreview"
@@ -71,10 +71,10 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
             android:text="Please upload your PromptPay QR Code"
             android:textColor="#64748B"
-            android:textSize="14sp"
-            android:layout_marginBottom="24dp" />
+            android:textSize="14sp" />
 
         <Button
             android:id="@+id/btnSelectQr"
@@ -91,9 +91,9 @@
             android:id="@+id/btnUploadQr"
             android:layout_width="match_parent"
             android:layout_height="56dp"
+            android:enabled="false"
             android:text="Save QR Code"
             android:textAllCaps="false"
-            android:enabled="false"
             app:cornerRadius="12dp" />
 
     </LinearLayout>
