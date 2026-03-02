@@ -26,6 +26,20 @@
         app:layout_constraintTop_toTopOf="parent"
         app:tint="@color/fintech_blue" />
 
+    <ImageButton
+        android:id="@+id/btnAddFriend"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="Add Friend"
+        android:src="@android:drawable/ic_input_add"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:tint="@color/fintech_blue_dark" />
+
     <TextView
         android:id="@+id/tvTitle"
         android:layout_width="wrap_content"
