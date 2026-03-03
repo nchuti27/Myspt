@@ -122,13 +122,44 @@ class notification : AppCompatActivity() {
         val senderUid = doc.getString("from_uid") ?: return
         val senderName = doc.getString("from_name") ?: "Friend"
 
-        val batch = db.batch()
-        batch.update(db.collection("friend_requests").document(doc.id), "status", "accepted")
-        batch.update(db.collection("users").document(myUid), "friends", FieldValue.arrayUnion(senderUid))
-        batch.update(db.collection("users").document(senderUid), "friends", FieldValue.arrayUnion(myUid))
+        // 🌟 ดึงข้อมูลของเรา(ผู้กดรับ) เพื่อเอาไปสร้าง Notification ตอบกลับ (ถ้าต้องการ) และอัปเดตข้อมูลให้ชัวร์
+        db.collection("users").document(myUid).get().addOnSuccessListener { myDoc ->
+            val myName = myDoc.getString("name") ?: "Your Friend"
+            val myProfileUrl = myDoc.getString("profileUrl")
 
-        batch.commit().addOnSuccessListener {
-            Toast.makeText(this, "You and $senderName are now friends", Toast.LENGTH_SHORT).show()
+            val batch = db.batch()
+
+            // 1. เปลี่ยนสถานะคำขอเป็น accepted (หรือลบทิ้งก็ได้)
+            val requestRef = db.collection("friend_requests").document(doc.id)
+            batch.update(requestRef, "status", "accepted")
+
+            // 2. 🌟 เพิ่ม senderUid เข้า List friends ของเรา (myUid)
+            val myRef = db.collection("users").document(myUid)
+            batch.update(myRef, "friends", FieldValue.arrayUnion(senderUid))
+
+            // 3. 🌟 เพิ่ม myUid เข้า List friends ของเขา (senderUid)
+            val senderRef = db.collection("users").document(senderUid)
+            batch.update(senderRef, "friends", FieldValue.arrayUnion(myUid))
+
+            // 4. (Optional) ส่ง Notification กลับไปบอกว่า "เรารับแอดแล้วนะ"
+            val notiRef = db.collection("notifications").document()
+            batch.set(notiRef, hashMapOf(
+                "receiverId" to senderUid,
+                "senderId" to myUid,
+                "type" to "FRIEND_ACCEPTED",
+                "message" to "$myName accepted your friend request.",
+                "timestamp" to FieldValue.serverTimestamp()
+            ))
+
+            batch.commit().addOnSuccessListener {
+                Toast.makeText(this, "You and $senderName are now friends", Toast.LENGTH_SHORT).show()
+                // 🌟 โหลดหน้าจอแท็บ Friend ใหม่ เพื่อให้คำขอหายไป
+                loadFriendTab()
+            }.addOnFailureListener { e ->
+                Toast.makeText(this, "Error accepting friend: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }.addOnFailureListener {
+            Toast.makeText(this, "Error fetching your info.", Toast.LENGTH_SHORT).show()
         }
     }
 
