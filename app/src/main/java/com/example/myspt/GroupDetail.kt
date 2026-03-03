@@ -79,7 +79,8 @@ class GroupDetail : AppCompatActivity() {
                 Toast.makeText(this, "Please enter group name", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            // 🌟 เริ่มต้นขั้นตอนดึงชื่อจริงจาก Firestore
+
+            // เรียกดึงชื่อเราก่อน แล้วค่อยสั่ง Save ทั้งหมด
             fetchMyNameAndSave(newName)
         }
 
@@ -92,18 +93,14 @@ class GroupDetail : AppCompatActivity() {
     private fun fetchMyNameAndSave(newName: String) {
         val myUid = auth.currentUser?.uid ?: return
 
-        // ตัวอย่าง Logic ที่ถูกต้องก่อนส่งเข้า Firestore
         db.collection("users").document(myUid).get().addOnSuccessListener { doc ->
-            val myName = doc.getString("name") ?: "Unknown" // ✅ ดึงชื่อจริง
-            val myProfileUrl = doc.getString("profileUrl") // ✅ ดึงรูปโปรไฟล์
+            val myName = doc.getString("name") ?: "Unknown"
+            val myProfileUrl = doc.getString("profileUrl")
 
-            // บันทึกลง group_invites หรือ friend_requests
-            val data = hashMapOf(
-                "from_name" to myName,
-                "from_profileUrl" to myProfileUrl,
-                // ... field อื่นๆ
-            )
-            db.collection("group_invites").add(data)
+            // เรียกฟังก์ชันบันทึกจริงที่นี่
+            saveChangesAndSendInvites(newName, myName, myProfileUrl)
+        }.addOnFailureListener {
+            Toast.makeText(this, "Error fetching user data", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -126,23 +123,26 @@ class GroupDetail : AppCompatActivity() {
         val batch = db.batch()
         val groupRef = db.collection("groups").document(gId)
 
+        // 1. อัปเดตชื่อกลุ่ม (ทับของเดิม)
         batch.update(groupRef, "groupName", newName)
 
+        // 2. ถ้ามีการเลือกเพื่อนใหม่ ให้เพิ่มคำเชิญ
         if (pendingSelectedUids.isNotEmpty()) {
             for (uid in pendingSelectedUids) {
                 val inviteRef = db.collection("group_invites").document()
                 val inviteData = hashMapOf(
                     "from_uid" to myUid,
-                    "from_name" to senderName, // ✅ ใช้ชื่อจริงที่ดึงมาแล้ว
-                    "from_profileUrl" to senderProfileUrl, // ✅ ใส่รูปคนเชิญไปด้วย
+                    "from_name" to senderName,
+                    "from_profileUrl" to senderProfileUrl,
                     "to_uid" to uid,
                     "groupId" to gId,
-                    "groupName" to newName,
+                    "groupName" to newName, // บันทึกชื่อใหม่ลงในคำเชิญด้วย
                     "status" to "pending",
                     "timestamp" to FieldValue.serverTimestamp()
                 )
                 batch.set(inviteRef, inviteData)
 
+                // เพิ่ม Notification
                 val notiRef = db.collection("notifications").document()
                 batch.set(notiRef, hashMapOf(
                     "receiverId" to uid,
@@ -155,7 +155,7 @@ class GroupDetail : AppCompatActivity() {
         }
 
         batch.commit().addOnSuccessListener {
-            Toast.makeText(this, "Changes saved and invitations sent!", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Group updated and invitations sent!", Toast.LENGTH_SHORT).show()
             pendingSelectedUids.clear()
             finish()
         }.addOnFailureListener { e ->
