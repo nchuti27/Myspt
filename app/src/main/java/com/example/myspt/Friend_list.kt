@@ -184,17 +184,32 @@ class FriendAdapter(private var originalList: ArrayList<FriendData>) :
 
     private fun removeFriendFromFirestore(friendUid: String, context: Context, position: Int) {
         val myUid = FirebaseAuth.getInstance().currentUser?.uid ?: return
-        FirebaseFirestore.getInstance().collection("users").document(myUid)
-            .update("friends", FieldValue.arrayRemove(friendUid))
-            .addOnSuccessListener {
-                originalList.removeAll { it.uid == friendUid }
-                if (position != RecyclerView.NO_POSITION && position < filteredList.size) {
-                    filteredList.removeAt(position)
-                    notifyItemRemoved(position)
-                    notifyItemRangeChanged(position, filteredList.size)
-                }
-                Toast.makeText(context, "Removed", Toast.LENGTH_SHORT).show()
+        val db = FirebaseFirestore.getInstance()
+
+        // 🌟 ใช้ Batch เพื่อลบทั้ง 2 ฝั่งพร้อมกัน
+        val batch = db.batch()
+
+        // 1. ลบเพื่อนออกจากเรา
+        val myRef = db.collection("users").document(myUid)
+        batch.update(myRef, "friends", FieldValue.arrayRemove(friendUid))
+
+        // 2. ลบเราออกจากเพื่อน
+        val friendRef = db.collection("users").document(friendUid)
+        batch.update(friendRef, "friends", FieldValue.arrayRemove(myUid))
+
+        // 3. Commit คำสั่ง
+        batch.commit().addOnSuccessListener {
+            // อัปเดต UI เมื่อลบสำเร็จ
+            originalList.removeAll { it.uid == friendUid }
+            if (position != RecyclerView.NO_POSITION && position < filteredList.size) {
+                filteredList.removeAt(position)
+                notifyItemRemoved(position)
+                // notifyItemRangeChanged(position, filteredList.size) // ซ่อนไว้ก่อน บางทีทำให้ Animation กระตุก
             }
+            Toast.makeText(context, "Unfriended successfully", Toast.LENGTH_SHORT).show()
+        }.addOnFailureListener { e ->
+            Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
     }
 
     override fun getItemCount(): Int = filteredList.size
