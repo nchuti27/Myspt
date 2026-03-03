@@ -22,7 +22,6 @@ class DebtYouOweAdapter(private var debtList: List<Debt>) : RecyclerView.Adapter
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val debt = debtList[position]
 
-        // ✅ ปรับตรรกะ: ถ้า creditorName ว่าง ให้เอา name มาโชว์แทนเพื่อป้องกันช่องว่างเปล่า
         val displayName = if (debt.creditorName.isNullOrEmpty() || debt.creditorName == "Unknown") {
             debt.name
         } else {
@@ -30,12 +29,8 @@ class DebtYouOweAdapter(private var debtList: List<Debt>) : RecyclerView.Adapter
         }
         holder.txtName.text = displayName
 
-        // ✅ ปรับตรรกะ: ถ้า billName ว่าง ให้โชว์ว่า "ไม่มีชื่อบิล" แทนค่า null
-        val displayBill = if (debt.billName.isNullOrEmpty() || debt.billName == "null") {
-            "ไม่มีชื่อบิล"
-        } else {
-            debt.billName
-        }
+        val displayBill = debt.billName
+
         holder.txtBillDetail.text = "Bill: $displayBill"
 
         holder.txtAmount.text = "฿ ${String.format("%.2f", debt.amount)}"

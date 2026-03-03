@@ -46,7 +46,7 @@ class DebtAdapter(
         val debt = debtList[position]
 
         holder.txtName.text = debt.name
-        holder.txtBillDetail.text = "บิล: ${debt.billName}"
+        holder.txtBillDetail.text = "Bill: ${debt.billName}"
         holder.txtAmount.text = "฿ ${String.format("%.2f", debt.amount)}"
 
         holder.cbDebt.isChecked = (debt.status == "paid")
