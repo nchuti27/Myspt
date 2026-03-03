@@ -1,5 +1,6 @@
 package com.example.myspt
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -7,7 +8,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
-import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
@@ -74,21 +74,30 @@ class BillDetail : AppCompatActivity() {
         rvOrderItems.adapter = itemAdapter
     }
 
+    @SuppressLint("NotifyDataSetChanged") // 🌟 ใส่ตรงนี้เพื่อปิด Warning itemAdapter
     private fun loadBillData(id: String) {
         db.collection("bills").document(id).get()
             .addOnSuccessListener { doc ->
                 if (doc.exists()) {
                     val total = doc.getDouble("totalAmount") ?: 0.0
-                    txtTotalAmount.text = String.format("฿ %.2f", total)
+                    txtTotalAmount.text = String.format(java.util.Locale.getDefault(), "฿ %.2f", total)
 
-                    // ดึง Array 'items' จาก Firestore
+                    @Suppress("UNCHECKED_CAST")
                     val items = doc.get("items") as? List<Map<String, Any>>
                     if (items != null) {
                         itemList.clear()
                         for (itemData in items) {
                             val name = itemData["itemName"] as? String ?: ""
                             val qty = (itemData["quantity"] as? Long)?.toInt() ?: 1
-                            val price = (itemData["price"] as? Double) ?: 0.0
+
+                            // 🌟 วิธีดึงราคาที่ปลอดภัยที่สุด (รองรับทั้ง Long และ Double)
+                            val price = when (val p = itemData["price"]) {
+                                is Double -> p
+                                is Long -> p.toDouble()
+                                is Number -> p.toDouble()
+                                else -> 0.0
+                            }
+
                             itemList.add(BillItem(name, qty, price))
                         }
                         itemAdapter.notifyDataSetChanged()
@@ -109,9 +118,10 @@ class BillDetail : AppCompatActivity() {
         }
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val item = items[position]
+            val context = holder.itemView.context
             holder.tvName.text = item.itemName
-            holder.tvQty.text = "x${item.quantity}"
-            holder.tvPrice.text = String.format("%.2f", item.price * item.quantity)
+            holder.tvQty.text = context.getString(R.string.quantity_format, item.quantity)
+            holder.tvPrice.text = String.format(java.util.Locale.getDefault(), "%.2f", item.price * item.quantity)
         }
         override fun getItemCount() = items.size
     }
