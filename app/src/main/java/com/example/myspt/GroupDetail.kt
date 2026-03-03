@@ -191,37 +191,45 @@ class GroupDetail : AppCompatActivity() {
 
         builder.setPositiveButton("Remove") { _, _ ->
             val gId = groupId ?: return@setPositiveButton
+            val currentUid = auth.currentUser?.uid ?: return@setPositiveButton // 🌟 ดึง UID ของตัวเราเองมาด้วย
+
             val groupRef = db.collection("groups").document(gId)
-            val userRef = db.collection("users").document(uidToRemove) // 🌟 อ้างอิงตัวเพื่อนที่โดนลบ
+            val userToRemoveRef = db.collection("users").document(uidToRemove) // คนที่ถูกเลือกให้ลบ
+            val currentUserRef = db.collection("users").document(currentUid) // ตัวเราเอง
 
             groupRef.get().addOnSuccessListener { snapshot ->
                 val members = snapshot.get("members") as? MutableList<String> ?: mutableListOf()
-                members.remove(uidToRemove)
 
-                val batch = db.batch() // 🌟 ใช้ Batch เพื่อจัดการหลายอย่างพร้อมกัน
+                val batch = db.batch()
 
-                if (members.isEmpty()) {
-                    // 1. กรณีไม่เหลือใครแล้ว: ลบกลุ่ม + ลบบิล + ลบ ID กลุ่มออกจากตัวเพื่อน
+                // กรณีที่ 1: ลบสมาชิกคนสุดท้าย (ยุบกลุ่ม)
+                if (members.size <= 1) {
+                    // ลบตัวกลุ่ม
                     batch.delete(groupRef)
-                    batch.update(userRef, "groups", FieldValue.arrayRemove(gId)) // 🌟 ลบจากจอเพื่อน
 
+                    // 🌟 ล้าง ID กลุ่มออกจากทั้ง "ตัวเรา" และ "เพื่อน"
+                    batch.update(userToRemoveRef, "groups", FieldValue.arrayRemove(gId))
+                    batch.update(currentUserRef, "groups", FieldValue.arrayRemove(gId))
+
+                    // ไปหาบิลเพื่อลบทิ้งด้วย
                     db.collection("bills").whereEqualTo("groupId", gId).get()
                         .addOnSuccessListener { bills ->
                             for (bill in bills) {
-                                batch.delete(bill.reference) // ใช้ batch ตัวเดิมที่ประกาศไว้ข้างบน
+                                batch.delete(bill.reference)
                             }
                             batch.commit().addOnSuccessListener {
-                                Toast.makeText(this, "Group and bills deleted.", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(this, "Group and bills deleted completely.", Toast.LENGTH_SHORT).show()
                                 finish()
                             }
                         }
-                } else {
-                    // 2. ยังมีคนอื่นอยู่: ลบ UID เพื่อนออกจากกลุ่ม + ลบ ID กลุ่มออกจากจอเพื่อน
+                }
+                // กรณีที่ 2: แค่เอาเพื่อนออก (กลุ่มยังอยู่)
+                else {
                     batch.update(groupRef, "members", FieldValue.arrayRemove(uidToRemove))
-                    batch.update(userRef, "groups", FieldValue.arrayRemove(gId)) // 🌟 สำคัญ! เพื่อให้กลุ่มหายจากหน้าจอเพื่อน
+                    batch.update(userToRemoveRef, "groups", FieldValue.arrayRemove(gId))
 
                     batch.commit().addOnSuccessListener {
-                        Toast.makeText(this, "Member removed successfully.", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this, "Member removed.", Toast.LENGTH_SHORT).show()
                     }
                 }
             }
