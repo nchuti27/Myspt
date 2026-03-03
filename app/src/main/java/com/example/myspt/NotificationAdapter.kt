@@ -42,25 +42,21 @@ class NotificationAdapter(
         // 1. จัดการการแสดงผลตามแท็บที่เลือก (Active Tab)
         when (activeTab) {
             "FRIEND" -> {
-                val fromName = doc.getString("from_name") ?: "Someone"
-                holder.tvName.text = fromName
-                holder.tvMessage.text = "sent you a friend request."
-                holder.btnAccept.visibility = View.VISIBLE
-                holder.btnDelete.text = "Decline"
+                // ... โค้ดเดิมของคุณ
             }
             "GROUP" -> {
-                val groupName = doc.getString("groupName") ?: "Unknown Group"
-                holder.tvName.text = groupName
-                holder.tvMessage.text = "invited you to join."
-                holder.btnAccept.visibility = View.VISIBLE
-                holder.btnDelete.text = "Decline"
+                // ... โค้ดเดิมของคุณ
             }
+            // 🌟 เปลี่ยนตรงนี้ครับ:
             "REQUEST" -> {
-                // แท็บคำขอที่เราส่ง: โชว์ชื่อคนรับ (to_name) และซ่อนปุ่ม Accept
                 val toName = doc.getString("to_name") ?: "Waiting for user..."
                 holder.tvName.text = toName
                 holder.tvMessage.text = "Waiting for approval..."
+
+                // เพิ่ม 2 บรรทัดนี้เพื่อให้ปุ่มแสดงขึ้นมาและปุ่ม Accept หายไป
                 holder.btnAccept.visibility = View.GONE
+                holder.btnDelete.visibility = View.VISIBLE
+
                 holder.btnDelete.text = "Cancel"
             }
         }
