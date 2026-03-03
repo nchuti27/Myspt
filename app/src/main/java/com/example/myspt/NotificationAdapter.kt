@@ -34,73 +34,86 @@ class NotificationAdapter(
         return ViewHolder(view)
     }
 
-    // ในไฟล์ NotificationAdapter.kt
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val doc = notifications[position]
         val type = doc.getString("type")
 
-        // 1. จัดการการแสดงผลตามแท็บที่เลือก (Active Tab)
-        when (activeTab) {
-            "FRIEND" -> {
-                // ... โค้ดเดิมของคุณ
-            }
-            "GROUP" -> {
-                // ... โค้ดเดิมของคุณ
-            }
-            // 🌟 เปลี่ยนตรงนี้ครับ:
-            "REQUEST" -> {
-                val toName = doc.getString("to_name") ?: "Waiting for user..."
-                holder.tvName.text = toName
-                holder.tvMessage.text = "Waiting for approval..."
+        // --- 1. รีเซ็ตสถานะปุ่ม (สำคัญมาก เพื่อไม่ให้ UI รวนเวลา Scroll) ---
+        // 1. รีเซ็ตสถานะปุ่มและ Visibility พื้นฐาน
+        holder.btnAccept.visibility = View.VISIBLE
+        holder.btnDelete.visibility = View.VISIBLE
+        holder.btnDelete.text = "Delete"
+        holder.ivMore.visibility = View.VISIBLE
 
-                // เพิ่ม 2 บรรทัดนี้เพื่อให้ปุ่มแสดงขึ้นมาและปุ่ม Accept หายไป
-                holder.btnAccept.visibility = View.GONE
-                holder.btnDelete.visibility = View.VISIBLE
-
-                holder.btnDelete.text = "Cancel"
-            }
-        }
-
-        // 2. กรณีแจ้งเตือนทวงเงิน (Debt Reminder)
+        // --- 2. จัดการเงื่อนไขตามประเภท (Type) หรือ Active Tab ---
         if (type == "debt_reminder") {
+            // เงื่อนไข Debt Reminder
             holder.tvName.text = "Debt Reminder"
             holder.tvMessage.text = doc.getString("message") ?: "You have a pending debt."
+
+            // Debt Reminder: ซ่อนปุ่มกดปกติ
             holder.btnAccept.visibility = View.GONE
             holder.btnDelete.visibility = View.GONE
-        }
 
-        // 🌟 3. ปุ่ม 3 จุดสำหรับดูโปรไฟล์ (View Profile) - ซ่อน QR Code
+        } else {
+            // เงื่อนไขแท็บปกติ (Friend, Group, Request)
+            when (activeTab) {
+                "FRIEND" -> {
+                    holder.tvName.text = doc.getString("from_name") ?: "Someone"
+                    holder.tvMessage.text = "sent you a friend request."
+                    holder.btnDelete.text = "Decline"
+                }
+                "GROUP" -> {
+                    holder.tvName.text = doc.getString("groupName") ?: "Unknown Group"
+                    holder.tvMessage.text = "invited you to join."
+                    holder.btnDelete.text = "Decline"
+                }
+                "REQUEST" -> {
+                    holder.tvName.text = doc.getString("to_name") ?: "Waiting for user..."
+                    holder.tvMessage.text = "Waiting for approval..."
+                    holder.btnAccept.visibility = View.GONE
+                    holder.btnDelete.text = "Cancel"
+                }
+            }
+        }
+// 3. ปรับแต่ง PopupMenu ตามประเภท
         holder.ivMore.setOnClickListener { view ->
             val popup = PopupMenu(view.context, view)
-            popup.menu.add("View Profile")
+
+            if (type == "debt_reminder") {
+                // Debt Reminder: มีแค่เมนู Delete
+                popup.menu.add("Delete")
+            } else {
+                // อื่นๆ: มีแค่เมนู View Profile
+                popup.menu.add("View Profile")
+            }
 
             popup.setOnMenuItemClickListener { item ->
-                if (item.title == "View Profile") {
-                    val intent = Intent(view.context, FriendProfile::class.java).apply {
-                        if (activeTab == "REQUEST") {
-                            putExtra("FRIEND_UID", doc.getString("to_uid"))
-                            putExtra("FRIEND_NAME", doc.getString("to_name"))
-                        } else {
-                            putExtra("FRIEND_UID", doc.getString("from_uid"))
-                            putExtra("FRIEND_NAME", doc.getString("from_name"))
+                when (item.title) {
+                    "Delete" -> onDelete(doc)
+                    "View Profile" -> {
+                        val intent = Intent(view.context, FriendProfile::class.java).apply {
+                            // ดึง UID ตามแท็บ
+                            val uid = if (activeTab == "REQUEST") doc.getString("to_uid") else doc.getString("from_uid")
+                            val name = if (activeTab == "REQUEST") doc.getString("to_name") else doc.getString("from_name")
+                            putExtra("FRIEND_UID", uid)
+                            putExtra("FRIEND_NAME", name)
+                            putExtra("IS_FRIEND", false)
                         }
-                        putExtra("IS_FRIEND", false) // ส่ง false เสมอเพื่อซ่อน QR
+                        view.context.startActivity(intent)
                     }
-                    view.context.startActivity(intent)
                 }
                 true
             }
             popup.show()
         }
 
-        // 4. ผูกการทำงานปุ่มกด (OnClickListener)
-        holder.btnAccept.setOnClickListener { onAccept(doc) }
-        // ใน NotificationAdapter.kt ตรงปุ่มลบรายบุคคล
-        holder.btnDelete.setOnClickListener {
-            // 🌟 เรียก onDelete ที่ส่งมาจาก Activity
-            onDelete(doc)
+        // 4. ผูกการทำงานปุ่มปกติ (ทำงานเฉพาะกรณีไม่ใช่ Debt Reminder)
+        if (type != "debt_reminder") {
+            holder.btnAccept.setOnClickListener { onAccept(doc) }
+            holder.btnDelete.setOnClickListener { onDelete(doc) }
         }
-    } // 🌟 ปิดฟังก์ชัน onBindViewHolder (จุดที่พี่มักจะลืม)
+    }
 
     private fun showDeleteConfirmation(context: Context, doc: DocumentSnapshot) {
         AlertDialog.Builder(context)
