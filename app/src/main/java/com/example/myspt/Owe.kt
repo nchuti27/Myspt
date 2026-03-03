@@ -83,29 +83,26 @@ class Owe : AppCompatActivity() {
             }
     }
 
+    // ในไฟล์ Owe.kt
     private fun markDebtAsPaid(debt: Debt) {
-        val batch = db.batch() // 🌟 ใช้ Batch เพื่อมัดรวมคำสั่ง
+        val batch = db.batch()
         val debtRef = db.collection("debts").document(debt.debtId)
-        val notiRef = db.collection("notifications").document() // สร้างเอกสารแจ้งเตือนใหม่
+        val notiRef = db.collection("notifications").document()
 
-        // 1. อัปเดตสถานะหนี้เป็นจ่ายแล้ว
         batch.update(debtRef, "status", "paid")
 
-        // 2. 🌟 สร้างแจ้งเตือนส่งไปหาเจ้าหนี้ (creditorId)
+        // 🌟 แก้ไขตรงนี้ให้ใช้ to_uid เพื่อให้หน้าแจ้งเตือนดึงไปโชว์ได้
         val notiData = hashMapOf(
-            "receiverId" to debt.creditorId, // เจ้าหนี้เป็นคนรับแจ้งเตือน
-            "senderId" to myUid,             // เราเป็นคนจ่าย
+            "to_uid" to debt.creditorId, // เปลี่ยนจาก "receiverId" เป็น "to_uid"
+            "from_uid" to myUid,         // เปลี่ยนจาก "senderId" เป็น "from_uid"
             "type" to "PAYMENT_RECEIVED",
             "message" to "Received payment: ฿${String.format("%.2f", debt.amount)} from ${debt.name}",
             "timestamp" to com.google.firebase.firestore.FieldValue.serverTimestamp()
         )
         batch.set(notiRef, notiData)
 
-        // สั่งรันพร้อมกัน
         batch.commit().addOnSuccessListener {
             Toast.makeText(this, "Status updated and creditor notified!", Toast.LENGTH_SHORT).show()
-        }.addOnFailureListener { e ->
-            Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
 }

@@ -94,14 +94,23 @@ class notification : AppCompatActivity() {
         notiListener?.remove()
         val myUid = auth.currentUser?.uid ?: return
 
-        val friendReq = db.collection("friend_requests").whereEqualTo("to_uid", myUid).whereEqualTo("status", "pending").get()
-        val debtNoti = db.collection("notifications").whereEqualTo("to_uid", myUid).whereEqualTo("type", "debt_reminder").get()
+        // 1. ดึงคำขอเป็นเพื่อน (เหมือนเดิม)
+        val friendReq = db.collection("friend_requests")
+            .whereEqualTo("to_uid", myUid)
+            .whereEqualTo("status", "pending")
+            .get()
+
+        // 2. 🌟 แก้ไขจุดนี้: ดึงแจ้งเตือนทุกประเภทที่ส่งมาหาเรา (to_uid)
+        // โดยลบ .whereEqualTo("type", "debt_reminder") ออก เพื่อให้ PAYMENT_RECEIVED โผล่มาด้วย
+        val debtNoti = db.collection("notifications")
+            .whereEqualTo("to_uid", myUid) // ดึงทึกอย่างที่ส่งถึงเรา
+            .get()
 
         Tasks.whenAllSuccess<QuerySnapshot>(friendReq, debtNoti).addOnSuccessListener { results ->
             notiList.clear()
             results.forEach { snapshot -> notiList.addAll(snapshot.documents) }
 
-            checkEmptyState(notiList) // เรียกตรวจสอบ
+            checkEmptyState(notiList)
             notiAdapter.updateData(notiList, "FRIEND")
         }
     }
