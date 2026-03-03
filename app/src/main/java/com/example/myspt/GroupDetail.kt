@@ -3,20 +3,14 @@ package com.example.myspt
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
-import android.widget.Button
-import android.widget.EditText
-import android.widget.ImageView
-import android.widget.Toast
+import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FieldPath
-import com.google.firebase.firestore.FieldValue
-import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.*
 
 class GroupDetail : AppCompatActivity() {
-
     private lateinit var db: FirebaseFirestore
     private lateinit var auth: FirebaseAuth
     private var groupId: String? = null
@@ -40,7 +34,16 @@ class GroupDetail : AppCompatActivity() {
         auth = FirebaseAuth.getInstance()
         groupId = intent.getStringExtra("GROUP_ID")
 
+        // 1. เชื่อมต่อ Views
         initViews()
+
+        // 2. ตั้งค่า Adapter (ส่งฟังก์ชันลบเข้าไปด้วย)
+        memberAdapter = MemberListAdapter(memberList) { memberId ->
+            removeMemberFromGroup(memberId)
+        }
+
+        rvMembers.layoutManager = LinearLayoutManager(this)
+        rvMembers.adapter = memberAdapter
 
         if (!groupId.isNullOrEmpty()) {
             loadGroupData()
@@ -62,7 +65,6 @@ class GroupDetail : AppCompatActivity() {
 
         btnEditName.setOnClickListener {
             editGroupName.requestFocus()
-            Toast.makeText(this, "Edit group name now", Toast.LENGTH_SHORT).show()
         }
 
         btnAddMember.setOnClickListener {
@@ -79,25 +81,15 @@ class GroupDetail : AppCompatActivity() {
                 Toast.makeText(this, "Please enter group name", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-
-            // เรียกดึงชื่อเราก่อน แล้วค่อยสั่ง Save ทั้งหมด
             fetchMyNameAndSave(newName)
         }
-
-        memberAdapter = MemberListAdapter(memberList)
-        rvMembers.layoutManager = LinearLayoutManager(this)
-        rvMembers.adapter = memberAdapter
     }
 
-    // 🌟 ดึงชื่อเราเองจาก Firestore ก่อน เพื่อให้ชื่อคนส่งเชิญไม่เป็น Your Friend
     private fun fetchMyNameAndSave(newName: String) {
         val myUid = auth.currentUser?.uid ?: return
-
         db.collection("users").document(myUid).get().addOnSuccessListener { doc ->
             val myName = doc.getString("name") ?: "Unknown"
             val myProfileUrl = doc.getString("profileUrl")
-
-            // เรียกฟังก์ชันบันทึกจริงที่นี่
             saveChangesAndSendInvites(newName, myName, myProfileUrl)
         }.addOnFailureListener {
             Toast.makeText(this, "Error fetching user data", Toast.LENGTH_SHORT).show()
@@ -110,12 +102,11 @@ class GroupDetail : AppCompatActivity() {
             val uids = data?.getStringArrayListExtra("SELECTED_FRIENDS")
             if (uids != null) {
                 pendingSelectedUids.addAll(uids)
-                Toast.makeText(this, "Added ${uids.size} friends to invite list. Click Save to send.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Added ${uids.size} friends. Click Save.", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
-    // ✅ ปรับ Parameter ให้รับ 3 ค่า (ชื่อกลุ่ม, ชื่อคนส่ง, รูปคนส่ง)
     private fun saveChangesAndSendInvites(newName: String, senderName: String, senderProfileUrl: String?) {
         val gId = groupId ?: return
         val myUid = auth.currentUser?.uid ?: return
@@ -123,10 +114,8 @@ class GroupDetail : AppCompatActivity() {
         val batch = db.batch()
         val groupRef = db.collection("groups").document(gId)
 
-        // 1. อัปเดตชื่อกลุ่ม (ทับของเดิม)
         batch.update(groupRef, "groupName", newName)
 
-        // 2. ถ้ามีการเลือกเพื่อนใหม่ ให้เพิ่มคำเชิญ
         if (pendingSelectedUids.isNotEmpty()) {
             for (uid in pendingSelectedUids) {
                 val inviteRef = db.collection("group_invites").document()
@@ -136,13 +125,12 @@ class GroupDetail : AppCompatActivity() {
                     "from_profileUrl" to senderProfileUrl,
                     "to_uid" to uid,
                     "groupId" to gId,
-                    "groupName" to newName, // บันทึกชื่อใหม่ลงในคำเชิญด้วย
+                    "groupName" to newName,
                     "status" to "pending",
                     "timestamp" to FieldValue.serverTimestamp()
                 )
                 batch.set(inviteRef, inviteData)
 
-                // เพิ่ม Notification
                 val notiRef = db.collection("notifications").document()
                 batch.set(notiRef, hashMapOf(
                     "receiverId" to uid,
@@ -155,7 +143,7 @@ class GroupDetail : AppCompatActivity() {
         }
 
         batch.commit().addOnSuccessListener {
-            Toast.makeText(this, "Group updated and invitations sent!", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Updated!", Toast.LENGTH_SHORT).show()
             pendingSelectedUids.clear()
             finish()
         }.addOnFailureListener { e ->
@@ -193,5 +181,30 @@ class GroupDetail : AppCompatActivity() {
                 }
                 memberAdapter.notifyDataSetChanged()
             }
+    }
+    private fun removeMemberFromGroup(uidToRemove: String) {
+        // สร้าง Dialog เพื่อยืนยันการลบ
+        val builder = androidx.appcompat.app.AlertDialog.Builder(this)
+        builder.setTitle("Remove Member")
+        builder.setMessage("Are you sure you want to remove this member from the group?")
+
+        builder.setPositiveButton("Remove") { _, _ ->
+            // ถ้าผู้ใช้กดตกลง ให้ดำเนินการลบ
+            val gId = groupId ?: return@setPositiveButton
+            db.collection("groups").document(gId)
+                .update("members", FieldValue.arrayRemove(uidToRemove))
+                .addOnSuccessListener {
+                    Toast.makeText(this, "Member removed successfully", Toast.LENGTH_SHORT).show()
+                    // ระบบจะอัปเดต List อัตโนมัติผ่าน SnapshotListener
+                }
+                .addOnFailureListener { e ->
+                    Toast.makeText(this, "Error: \${e.message}", Toast.LENGTH_SHORT).show()
+                }
+        }
+
+        // ปุ่มยกเลิก
+        builder.setNegativeButton("Cancel", null)
+        builder.show()
+
     }
 }
