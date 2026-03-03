@@ -108,7 +108,7 @@ class DebtSummary : AppCompatActivity() {
     private fun confirmPayment(debt: Debt) {
         AlertDialog.Builder(this)
             .setTitle("Confirm Payment")
-            .setMessage("Did you receive ฿${String.format("%.2f", debt.amount)} from ${debt.name}?")
+            .setMessage("Did you receive ฿${String.format(java.util.Locale.getDefault(), "%.2f", debt.amount)} from ${debt.name}?")
             .setPositiveButton("Yes") { _, _ ->
                 // 🌟 ลบหนี้ออกจาก Database จริงๆ เมื่อยืนยันรับเงิน
                 db.collection("debts").document(debt.debtId).delete()
@@ -124,23 +124,25 @@ class DebtSummary : AppCompatActivity() {
     private fun loadDebtData() {
         val myUid = auth.currentUser?.uid ?: return
 
-        // 🌟 ดึงข้อมูลแบบ Real-time เพื่อให้หน้าจออัปเดตทันทีที่ลบ
         db.collection("debts").addSnapshotListener { snapshots, _ ->
             if (snapshots != null) {
                 val oweYouList = ArrayList<Debt>()
                 val youOweList = ArrayList<Debt>()
 
                 for (doc in snapshots.documents) {
+                    // 🌟 กรองเฉพาะสถานะ "pending" (ยังไม่จ่าย)
+                    val status = doc.getString("status") ?: "pending"
+                    if (status != "pending") continue
+
                     val debt = doc.toObject(Debt::class.java) ?: continue
                     debt.debtId = doc.id
 
                     if (debt.creditorId == myUid) {
-                        oweYouList.add(debt) // เราเป็นเจ้าหนี้
+                        oweYouList.add(debt)
                     } else if (debt.friendId == myUid) {
-                        youOweList.add(debt) // เราเป็นลูกหนี้
+                        youOweList.add(debt)
                     }
                 }
-
                 oweYouAdapter.updateData(oweYouList)
                 youOweAdapter.updateData(youOweList)
             }
