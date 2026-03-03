@@ -10,6 +10,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.google.android.material.imageview.ShapeableImageView
 import com.google.firebase.firestore.DocumentSnapshot
+import android.content.Intent
 
 class NotificationAdapter(
     private var notifications: List<DocumentSnapshot>,
@@ -38,9 +39,9 @@ class NotificationAdapter(
         val doc = notifications[position]
         val type = doc.getString("type")
 
+        // 1. จัดการการแสดงผลตามแท็บที่เลือก (Active Tab)
         when (activeTab) {
             "FRIEND" -> {
-                // ดึงชื่อคนที่ส่งมาหาเรา
                 val fromName = doc.getString("from_name") ?: "Someone"
                 holder.tvName.text = fromName
                 holder.tvMessage.text = "sent you a friend request."
@@ -52,24 +53,54 @@ class NotificationAdapter(
                 holder.tvName.text = groupName
                 holder.tvMessage.text = "invited you to join."
                 holder.btnAccept.visibility = View.VISIBLE
+                holder.btnDelete.text = "Decline"
             }
             "REQUEST" -> {
-                // 🌟 แท็บนี้ต้องโชว์ชื่อคนที่เราส่งไปหา (to_name)
+                // แท็บคำขอที่เราส่ง: โชว์ชื่อคนรับ (to_name) และซ่อนปุ่ม Accept
                 val toName = doc.getString("to_name") ?: "Waiting for user..."
                 holder.tvName.text = toName
                 holder.tvMessage.text = "Waiting for approval..."
-                holder.btnAccept.visibility = View.GONE // ซ่อนปุ่ม Accept ตามที่พี่ต้องการ
-                holder.btnDelete.text = "Cancel" // เปลี่ยนเป็นปุ่ม Cancel แทน
+                holder.btnAccept.visibility = View.GONE
+                holder.btnDelete.text = "Cancel"
             }
         }
 
-        // กรณีทวงหนี้ (Debt) ให้จัดการแยกต่างหากตามเดิม
+        // 2. กรณีแจ้งเตือนทวงเงิน (Debt Reminder)
         if (type == "debt_reminder") {
             holder.tvName.text = "Debt Reminder"
+            holder.tvMessage.text = doc.getString("message") ?: "You have a pending debt."
             holder.btnAccept.visibility = View.GONE
             holder.btnDelete.visibility = View.GONE
         }
-    }
+
+        // 🌟 3. ปุ่ม 3 จุดสำหรับดูโปรไฟล์ (View Profile) - ซ่อน QR Code
+        holder.ivMore.setOnClickListener { view ->
+            val popup = PopupMenu(view.context, view)
+            popup.menu.add("View Profile")
+
+            popup.setOnMenuItemClickListener { item ->
+                if (item.title == "View Profile") {
+                    val intent = Intent(view.context, FriendProfile::class.java).apply {
+                        if (activeTab == "REQUEST") {
+                            putExtra("FRIEND_UID", doc.getString("to_uid"))
+                            putExtra("FRIEND_NAME", doc.getString("to_name"))
+                        } else {
+                            putExtra("FRIEND_UID", doc.getString("from_uid"))
+                            putExtra("FRIEND_NAME", doc.getString("from_name"))
+                        }
+                        putExtra("IS_FRIEND", false) // ส่ง false เสมอเพื่อซ่อน QR
+                    }
+                    view.context.startActivity(intent)
+                }
+                true
+            }
+            popup.show()
+        }
+
+        // 4. ผูกการทำงานปุ่มกด (OnClickListener)
+        holder.btnAccept.setOnClickListener { onAccept(doc) }
+        holder.btnDelete.setOnClickListener { onDelete(doc) }
+    } // 🌟 ปิดฟังก์ชัน onBindViewHolder (จุดที่พี่มักจะลืม)
 
     private fun showDeleteConfirmation(context: Context, doc: DocumentSnapshot) {
         AlertDialog.Builder(context)
