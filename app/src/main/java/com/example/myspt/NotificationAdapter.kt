@@ -38,26 +38,23 @@ class NotificationAdapter(
         val doc = notifications[position]
         val type = doc.getString("type")
 
-        // --- 1. รีเซ็ตสถานะ View พื้นฐาน (เพื่อไม่ให้ UI รวนเวลา Scroll) ---
         holder.btnAccept.visibility = View.VISIBLE
         holder.btnDelete.visibility = View.VISIBLE
         holder.btnDelete.text = "Delete"
         holder.ivMore.visibility = View.VISIBLE
         holder.imgAvatar.setImageResource(R.drawable.outline_person) // รีเซ็ตเป็นรูป default ก่อน
 
-        // --- 2. จัดการเงื่อนไขตามประเภท (Type) ---
         if (type == "debt_reminder" || type == "PAYMENT_RECEIVED") {
-            // 🌟 แจ้งเตือนเรื่องเงิน (ทวงหนี้ / อนุมัติหนี้)
+
             holder.tvName.text = if (type == "debt_reminder") "Debt Reminder" else "Payment Received"
             holder.tvMessage.text = doc.getString("message") ?: ""
 
-            // ซ่อนปุ่มกดปกติ ให้เหลือแค่ดูข้อมูลหรือลบทิ้งใน Popup
+
             holder.btnAccept.visibility = View.GONE
             holder.btnDelete.visibility = View.GONE
-            holder.imgAvatar.setImageResource(R.drawable.outline_person) // เปลี่ยนเป็นไอคอนแจ้งเตือน
+            holder.imgAvatar.setImageResource(R.drawable.outline_money) // เปลี่ยนเป็นไอคอนแจ้งเตือน
 
         } else {
-            // เงื่อนไขตามแท็บ (Friend Request, Group Invite, Sent Request)
             when (activeTab) {
                 "FRIEND" -> {
                     holder.tvName.text = doc.getString("from_name") ?: "Someone"
@@ -77,23 +74,21 @@ class NotificationAdapter(
                 }
             }
 
-            // ถ้ามีรูปโปรไฟล์ให้โหลดด้วย Glide (ถ้าพี่ทำไว้)
+
             val profileUrl = doc.getString("from_profileUrl") ?: doc.getString("to_profileUrl")
             if (!profileUrl.isNullOrEmpty()) {
                 Glide.with(holder.itemView.context).load(profileUrl).into(holder.imgAvatar)
             }
         }
 
-        // --- 3. ปรับแต่ง PopupMenu ตามประเภท ---
         holder.ivMore.setOnClickListener { view ->
             val popup = PopupMenu(view.context, view)
 
-            // 🌟 ถ้าเป็นเรื่องเงิน ให้มีแค่เมนู Delete (ลบแจ้งเตือน)
             if (type == "debt_reminder" || type == "PAYMENT_RECEIVED") {
                 popup.menu.add("Delete")
             } else {
                 popup.menu.add("View Profile")
-                popup.menu.add("Delete") // เพิ่มเผื่ออยากลบคำขอด้วย
+                popup.menu.add("Delete")
             }
 
             popup.setOnMenuItemClickListener { item ->
@@ -115,7 +110,6 @@ class NotificationAdapter(
             popup.show()
         }
 
-        // --- 4. ผูกการทำงานปุ่มกด ---
         holder.btnAccept.setOnClickListener { onAccept(doc) }
         holder.btnDelete.setOnClickListener { onDelete(doc) }
     }
