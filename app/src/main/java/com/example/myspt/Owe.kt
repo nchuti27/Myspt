@@ -95,7 +95,7 @@ class Owe : AppCompatActivity() {
         val notiData = hashMapOf(
             "to_uid" to debt.creditorId,    // 🌟 เปลี่ยนจาก receiverId เป็น to_uid ให้ตรงกับหน้าดึงข้อมูล
             "from_uid" to myUid,            // 🌟 เปลี่ยนจาก senderId เป็น from_uid
-            "from_name" to (FirebaseAuth.getInstance().currentUser?.displayName ?: "Someone"),
+            "from_name" to debt.name,
             "type" to "PAYMENT_RECEIVED",
             "message" to "Received payment: ฿${String.format("%.2f", debt.amount)} from ${debt.name}",
             "timestamp" to com.google.firebase.firestore.FieldValue.serverTimestamp()

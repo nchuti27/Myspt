@@ -92,27 +92,29 @@ class notification : AppCompatActivity() {
         currentTab = "FRIEND"
         updateTabUI(btnTabFriend)
         notiListener?.remove()
+
         val myUid = auth.currentUser?.uid ?: return
-
-        // 1. ดึงคำขอเป็นเพื่อน (เหมือนเดิม)
-        val friendReq = db.collection("friend_requests")
+        notiListener = db.collection("notifications")
             .whereEqualTo("to_uid", myUid)
-            .whereEqualTo("status", "pending")
-            .get()
+            .addSnapshotListener { snapshots, error ->
+                if (error != null) return@addSnapshotListener
+                val newNotis = snapshots?.documents ?: listOf()
 
-        // 2. 🌟 แก้ไขจุดนี้: ดึงแจ้งเตือนทุกประเภทที่ส่งมาหาเรา (to_uid)
-        // โดยลบ .whereEqualTo("type", "debt_reminder") ออก เพื่อให้ PAYMENT_RECEIVED โผล่มาด้วย
-        val debtNoti = db.collection("notifications")
-            .whereEqualTo("to_uid", myUid) // ดึงทึกอย่างที่ส่งถึงเรา
-            .get()
+                db.collection("friend_requests")
+                    .whereEqualTo("to_uid", myUid)
+                    .whereEqualTo("status", "pending")
+                    .get()
+                    .addOnSuccessListener { friendSnapshots ->
+                        notiList.clear()
+                        notiList.addAll(newNotis)
+                        notiList.addAll(friendSnapshots.documents) // ใส่คำขอเพื่อน
 
-        Tasks.whenAllSuccess<QuerySnapshot>(friendReq, debtNoti).addOnSuccessListener { results ->
-            notiList.clear()
-            results.forEach { snapshot -> notiList.addAll(snapshot.documents) }
+                        notiList.sortByDescending { it.getTimestamp("timestamp") }
 
-            checkEmptyState(notiList)
-            notiAdapter.updateData(notiList, "FRIEND")
-        }
+                        checkEmptyState(notiList)
+                        notiAdapter.updateData(notiList, "FRIEND")
+                    }
+            }
     }
 
     private fun loadGroupTab() {
