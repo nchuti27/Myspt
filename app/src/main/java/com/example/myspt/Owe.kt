@@ -84,6 +84,7 @@ class Owe : AppCompatActivity() {
     }
 
     // ในไฟล์ Owe.kt
+    // ในไฟล์ Owe.kt
     private fun markDebtAsPaid(debt: Debt) {
         val batch = db.batch()
         val debtRef = db.collection("debts").document(debt.debtId)
@@ -91,10 +92,10 @@ class Owe : AppCompatActivity() {
 
         batch.update(debtRef, "status", "paid")
 
-        // 🌟 แก้ไขตรงนี้ให้ใช้ to_uid เพื่อให้หน้าแจ้งเตือนดึงไปโชว์ได้
         val notiData = hashMapOf(
-            "to_uid" to debt.creditorId, // เปลี่ยนจาก "receiverId" เป็น "to_uid"
-            "from_uid" to myUid,         // เปลี่ยนจาก "senderId" เป็น "from_uid"
+            "to_uid" to debt.creditorId,    // 🌟 เปลี่ยนจาก receiverId เป็น to_uid ให้ตรงกับหน้าดึงข้อมูล
+            "from_uid" to myUid,            // 🌟 เปลี่ยนจาก senderId เป็น from_uid
+            "from_name" to (FirebaseAuth.getInstance().currentUser?.displayName ?: "Someone"),
             "type" to "PAYMENT_RECEIVED",
             "message" to "Received payment: ฿${String.format("%.2f", debt.amount)} from ${debt.name}",
             "timestamp" to com.google.firebase.firestore.FieldValue.serverTimestamp()
@@ -102,7 +103,7 @@ class Owe : AppCompatActivity() {
         batch.set(notiRef, notiData)
 
         batch.commit().addOnSuccessListener {
-            Toast.makeText(this, "Status updated and creditor notified!", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Success!", Toast.LENGTH_SHORT).show()
         }
     }
 }
