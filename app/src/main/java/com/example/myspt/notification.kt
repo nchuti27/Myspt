@@ -204,7 +204,26 @@ class notification : AppCompatActivity() {
     }
 
     private fun deleteRequest(doc: DocumentSnapshot) {
+        // ลบจาก Firebase
         db.document(doc.reference.path).delete()
+            .addOnSuccessListener {
+                // 1. ลบรายการออกจาก List ที่เก็บไว้ใน Activity นี้
+                val currentList = notiList.toMutableList()
+                currentList.remove(doc)
+                notiList = currentList as ArrayList<DocumentSnapshot>
+
+                // 2. สั่ง Adapter อัปเดตข้อมูลทันที
+                notiAdapter.updateData(notiList, currentTab)
+
+                // 3. เช็กว่าถ้าลบหมดแล้วให้โชว์หน้า Empty State
+                checkEmptyState(notiList)
+
+                // 4. แจ้งเตือนผู้ใช้
+                Toast.makeText(this, "Deleted successfully", Toast.LENGTH_SHORT).show()
+            }
+            .addOnFailureListener { e ->
+                Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
     }
     private fun confirmClearAll() {
         if (notiList.isEmpty()) {
