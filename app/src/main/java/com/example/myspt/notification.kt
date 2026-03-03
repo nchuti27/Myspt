@@ -3,6 +3,7 @@ package com.example.myspt
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.os.Bundle
+import android.view.View
 import android.widget.*
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AlertDialog
@@ -25,6 +26,7 @@ class notification : AppCompatActivity() {
     private lateinit var btnTabRequest: Button
     private lateinit var btnClearAll: ImageView
     private lateinit var rvNoti: RecyclerView
+    private lateinit var tvEmptyState: TextView // 1. ประกาศตัวแปร
 
     private var notiList = ArrayList<DocumentSnapshot>()
     private lateinit var notiAdapter: NotificationAdapter
@@ -52,9 +54,21 @@ class notification : AppCompatActivity() {
         btnTabRequest = findViewById(R.id.btnTabRequest)
         btnClearAll = findViewById(R.id.btnClearAll)
         rvNoti = findViewById(R.id.rvNoti)
+        tvEmptyState = findViewById(R.id.tvEmptyState) // 2. ผูก View
 
         btnBack.setOnClickListener { finish() }
         btnClearAll.setOnClickListener { confirmClearAll() }
+    }
+
+    // 3. สร้างฟังก์ชันตรวจสอบสถานะว่าง
+    private fun checkEmptyState(list: ArrayList<DocumentSnapshot>) {
+        if (list.isEmpty()) {
+            tvEmptyState.visibility = View.VISIBLE
+            rvNoti.visibility = View.GONE
+        } else {
+            tvEmptyState.visibility = View.GONE
+            rvNoti.visibility = View.VISIBLE
+        }
     }
 
     private fun setupRecyclerView() {
@@ -80,13 +94,14 @@ class notification : AppCompatActivity() {
         notiListener?.remove()
         val myUid = auth.currentUser?.uid ?: return
 
-        // ดึงคำขอที่ส่ง "มาหาเรา" (to_uid == myUid)
         val friendReq = db.collection("friend_requests").whereEqualTo("to_uid", myUid).whereEqualTo("status", "pending").get()
         val debtNoti = db.collection("notifications").whereEqualTo("to_uid", myUid).whereEqualTo("type", "debt_reminder").get()
 
         Tasks.whenAllSuccess<QuerySnapshot>(friendReq, debtNoti).addOnSuccessListener { results ->
             notiList.clear()
             results.forEach { snapshot -> notiList.addAll(snapshot.documents) }
+
+            checkEmptyState(notiList) // เรียกตรวจสอบ
             notiAdapter.updateData(notiList, "FRIEND")
         }
     }
@@ -100,7 +115,6 @@ class notification : AppCompatActivity() {
     private fun loadRequestTab() {
         currentTab = "REQUEST"
         updateTabUI(btnTabRequest)
-        // 🌟 ดึงคำขอที่ "เราส่งออกไป" (from_uid == myUid)
         fetchData("friend_requests", "from_uid")
     }
 
@@ -113,7 +127,9 @@ class notification : AppCompatActivity() {
             .addSnapshotListener { snapshots, _ ->
                 notiList.clear()
                 snapshots?.let { notiList.addAll(it.documents) }
-                notiAdapter.updateData(notiList, currentTab) // 🌟 ส่งแท็บปัจจุบันไปด้วย
+
+                checkEmptyState(notiList) // เรียกตรวจสอบ
+                notiAdapter.updateData(notiList, currentTab)
             }
     }
 
@@ -181,8 +197,6 @@ class notification : AppCompatActivity() {
     private fun deleteRequest(doc: DocumentSnapshot) {
         db.document(doc.reference.path).delete()
     }
-
-    // ในไฟล์ notification.kt หรือ NotiGroup.kt
     private fun confirmClearAll() {
         if (notiList.isEmpty()) {
             Toast.makeText(this, "No items to clear", Toast.LENGTH_SHORT).show()
@@ -194,22 +208,15 @@ class notification : AppCompatActivity() {
             .setMessage("Clear all $currentTab notifications?")
             .setPositiveButton("Clear") { _, _ ->
                 val batch = db.batch()
-                // 1. วนลูปสั่งลบทุก Document ที่โชว์อยู่ใน List ปัจจุบัน
                 for (doc in notiList) {
                     batch.delete(doc.reference)
                 }
 
                 batch.commit().addOnSuccessListener {
                     Toast.makeText(this, "Cleared successfully", Toast.LENGTH_SHORT).show()
-
-                    // 🌟 จุดสำคัญ: ถ้าเป็นแท็บ FRIEND ต้องสั่งโหลดใหม่เองเพราะไม่ได้ใช้ Listener
                     if (currentTab == "FRIEND") {
                         loadFriendTab()
                     }
-                    // ส่วนแท็บอื่นที่ใช้ SnapshotListener หน้าจอจะหายไปเองอัตโนมัติครับ
-
-                }.addOnFailureListener { e ->
-                    Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
             }
             .setNegativeButton("Cancel", null)

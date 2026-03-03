@@ -2,6 +2,7 @@ package com.example.myspt
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
 import android.widget.*
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AlertDialog
@@ -29,6 +30,7 @@ class NotiRequest : AppCompatActivity() {
 
     private var requestList = ArrayList<DocumentSnapshot>()
     private lateinit var notiAdapter: NotificationAdapter
+    private var tvEmptyState: TextView? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -55,6 +57,7 @@ class NotiRequest : AppCompatActivity() {
         btnTabGroup = findViewById(R.id.btnTabGroup)
         btnClearAll = findViewById(R.id.btnClearAll) // 🌟 ผูกปุ่มถังขยะ
         rvNotification = findViewById(R.id.rvNotification)
+        tvEmptyState = findViewById(R.id.tvEmptyState)
 
         backButton?.setOnClickListener {
             val intent = Intent(this, MainActivity::class.java)
@@ -84,6 +87,15 @@ class NotiRequest : AppCompatActivity() {
             finish()
         }
     }
+    private fun checkEmptyState(list: ArrayList<DocumentSnapshot>) {
+        if (list.isEmpty()) {
+            tvEmptyState?.visibility = View.VISIBLE
+            rvNotification?.visibility = View.GONE
+        } else {
+            tvEmptyState?.visibility = View.GONE
+            rvNotification?.visibility = View.VISIBLE
+        }
+    }
 
     private fun setupRecyclerView() {
         // 🌟 ส่งแท็บ "REQUEST" เพื่อให้ Adapter ซ่อนปุ่ม Accept อัตโนมัติ
@@ -108,6 +120,9 @@ class NotiRequest : AppCompatActivity() {
                 if (snapshots != null) {
                     requestList.clear()
                     requestList.addAll(snapshots.documents)
+
+                    checkEmptyState(requestList)
+
                     notiAdapter.updateData(requestList, "REQUEST")
                 }
             }
