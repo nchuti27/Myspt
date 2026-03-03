@@ -52,7 +52,6 @@ class DebtAdapter(
         holder.cbDebt.isChecked = (debt.status == "paid")
         holder.cbDebt.setOnClickListener { onDebtChecked(debt) }
 
-        // ✅ แก้ไข: ใช้ holder.itemView.context แทนคำว่า context
         holder.btnNotification.setOnClickListener {
             sendDebtNotification(holder.itemView.context, debt)
         }
