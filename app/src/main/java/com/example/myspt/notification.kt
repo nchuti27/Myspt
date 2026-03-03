@@ -80,6 +80,7 @@ class notification : AppCompatActivity() {
         notiListener?.remove()
         val myUid = auth.currentUser?.uid ?: return
 
+        // ดึงคำขอที่ส่ง "มาหาเรา" (to_uid == myUid)
         val friendReq = db.collection("friend_requests").whereEqualTo("to_uid", myUid).whereEqualTo("status", "pending").get()
         val debtNoti = db.collection("notifications").whereEqualTo("to_uid", myUid).whereEqualTo("type", "debt_reminder").get()
 
@@ -99,6 +100,7 @@ class notification : AppCompatActivity() {
     private fun loadRequestTab() {
         currentTab = "REQUEST"
         updateTabUI(btnTabRequest)
+        // 🌟 ดึงคำขอที่ "เราส่งออกไป" (from_uid == myUid)
         fetchData("friend_requests", "from_uid")
     }
 
@@ -111,7 +113,7 @@ class notification : AppCompatActivity() {
             .addSnapshotListener { snapshots, _ ->
                 notiList.clear()
                 snapshots?.let { notiList.addAll(it.documents) }
-                notiAdapter.updateData(notiList, currentTab)
+                notiAdapter.updateData(notiList, currentTab) // 🌟 ส่งแท็บปัจจุบันไปด้วย
             }
     }
 
@@ -149,12 +151,21 @@ class notification : AppCompatActivity() {
         db.document(doc.reference.path).delete()
     }
 
+    // ในไฟล์ notification.kt หรือ NotiGroup.kt
     private fun confirmClearAll() {
         AlertDialog.Builder(this)
             .setTitle("Clear All")
             .setMessage("Clear all $currentTab items?")
             .setPositiveButton("Clear") { _, _ ->
-                for (doc in notiList) deleteRequest(doc)
+                val batch = db.batch()
+                for (doc in notiList) {
+                    // 🌟 ลบของจริงใน Firestore
+                    batch.delete(doc.reference)
+                }
+                batch.commit().addOnSuccessListener {
+                    Toast.makeText(this, "Cleared successfully", Toast.LENGTH_SHORT).show()
+                    // ไม่ต้องสั่ง updateData เอง เพราะ SnapshotListener จะดึง List ว่างมาให้เองครับ
+                }
             }
             .setNegativeButton("Cancel", null)
             .show()

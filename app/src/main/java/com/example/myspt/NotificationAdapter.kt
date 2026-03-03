@@ -33,47 +33,42 @@ class NotificationAdapter(
         return ViewHolder(view)
     }
 
+    // ในไฟล์ NotificationAdapter.kt
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val doc = notifications[position]
         val type = doc.getString("type")
 
-        if (type == "debt_reminder") {
-            // --- ภาษาอังกฤษสำหรับ Debt ---
-            holder.tvName.text = "Debt Reminder"
-            val message = doc.getString("message") ?: "You have an outstanding debt"
-            holder.tvMessage.text = message
-                .replace("ทวงหนี้: บิล", "Debt: Bill")
-                .replace("จำนวน", "Amount")
-                .replace("คุณมีหนี้ค้างชำระ", "You have an outstanding debt")
+        when (activeTab) {
+            "FRIEND" -> {
+                // ดึงชื่อคนที่ส่งมาหาเรา
+                val fromName = doc.getString("from_name") ?: "Someone"
+                holder.tvName.text = fromName
+                holder.tvMessage.text = "sent you a friend request."
+                holder.btnAccept.visibility = View.VISIBLE
+                holder.btnDelete.text = "Decline"
+            }
+            "GROUP" -> {
+                val groupName = doc.getString("groupName") ?: "Unknown Group"
+                holder.tvName.text = groupName
+                holder.tvMessage.text = "invited you to join."
+                holder.btnAccept.visibility = View.VISIBLE
+            }
+            "REQUEST" -> {
+                // 🌟 แท็บนี้ต้องโชว์ชื่อคนที่เราส่งไปหา (to_name)
+                val toName = doc.getString("to_name") ?: "Waiting for user..."
+                holder.tvName.text = toName
+                holder.tvMessage.text = "Waiting for approval..."
+                holder.btnAccept.visibility = View.GONE // ซ่อนปุ่ม Accept ตามที่พี่ต้องการ
+                holder.btnDelete.text = "Cancel" // เปลี่ยนเป็นปุ่ม Cancel แทน
+            }
+        }
 
+        // กรณีทวงหนี้ (Debt) ให้จัดการแยกต่างหากตามเดิม
+        if (type == "debt_reminder") {
+            holder.tvName.text = "Debt Reminder"
             holder.btnAccept.visibility = View.GONE
             holder.btnDelete.visibility = View.GONE
-            holder.imgAvatar.setImageResource(R.drawable.ic_launcher_background)
-        } else {
-            // --- ภาษาอังกฤษสำหรับ Friend/Group ---
-            val fromName = doc.getString("from_name") ?: "Someone"
-            holder.tvName.text = fromName
-            holder.tvMessage.text = "sent you a friend request."
-
-            holder.btnAccept.visibility = View.VISIBLE
-            holder.btnDelete.visibility = View.VISIBLE
         }
-
-        // เมนูสามจุดสำหรับลบ
-        holder.ivMore.setOnClickListener { view ->
-            val popup = PopupMenu(view.context, view)
-            popup.menu.add("Delete")
-            popup.setOnMenuItemClickListener { item ->
-                if (item.title == "Delete") {
-                    showDeleteConfirmation(view.context, doc)
-                }
-                true
-            }
-            popup.show()
-        }
-
-        holder.btnAccept.setOnClickListener { onAccept(doc) }
-        holder.btnDelete.setOnClickListener { onDelete(doc) }
     }
 
     private fun showDeleteConfirmation(context: Context, doc: DocumentSnapshot) {
