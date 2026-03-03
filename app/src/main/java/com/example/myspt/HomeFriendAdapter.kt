@@ -78,6 +78,8 @@ class HomeFriendAdapter(private val friendList: ArrayList<FriendData>) :
                 putExtra("FRIEND_UID", currentItem.uid)
                 putExtra("FRIEND_NAME", currentItem.name)
                 putExtra("FRIEND_IMG", currentItem.profileUrl)
+                // 🌟 บรรทัดสำคัญที่ห้ามลืม! บอกหน้าโปรไฟล์ว่าเป็นเพื่อนกันแล้ว
+                putExtra("IS_FRIEND", true)
             }
             context.startActivity(intent)
         }

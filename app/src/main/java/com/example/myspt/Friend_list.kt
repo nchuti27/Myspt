@@ -175,6 +175,8 @@ class FriendAdapter(private var originalList: ArrayList<FriendData>) :
                 putExtra("FRIEND_NAME", currentItem.name)
                 putExtra("FRIEND_USERNAME", currentItem.username)
                 putExtra("FRIEND_IMG", currentItem.profileUrl)
+                // 🌟 บรรทัดสำคัญ! ส่งค่าว่าเป็นเพื่อนกันเพื่อให้โชว์ QR
+                putExtra("IS_FRIEND", true)
             }
             context.startActivity(intent)
         }

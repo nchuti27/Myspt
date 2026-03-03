@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
+import android.view.View // 🌟 ต้องมีตัวนี้เพื่อใช้ View.GONE
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import coil.load
@@ -20,6 +21,7 @@ class FriendProfile : AppCompatActivity() {
     private lateinit var tvFullName: TextView
     private lateinit var tvUsername: TextView
     private lateinit var btnSaveQr: Button
+    private lateinit var tvQrLabel: TextView // 🌟 เพิ่มตัวแปรสำหรับข้อความหัวข้อ QR
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -27,21 +29,35 @@ class FriendProfile : AppCompatActivity() {
 
         initView()
 
-        // 1. รับข้อมูลจาก Intent ที่ส่งมาจาก FriendAdapter
+        // 1. รับข้อมูลจาก Intent
         val friendUid = intent.getStringExtra("FRIEND_UID")
         val friendName = intent.getStringExtra("FRIEND_NAME") ?: "Unknown"
         val friendUsername = intent.getStringExtra("FRIEND_USERNAME") ?: ""
 
-        // 2. แสดงข้อมูลเบื้องต้นทันที
+        // 🌟 2. รับสถานะความเป็นเพื่อน (ถ้าไม่ได้ส่งมาจะถือว่าเป็น false ไว้ก่อน)
+        val isFriend = intent.getBooleanExtra("IS_FRIEND", false)
+
+        // 3. แสดงข้อมูลเบื้องต้น
         tvFullName.text = friendName
         tvUsername.text = if (friendUsername.startsWith("@")) friendUsername else "@$friendUsername"
 
-        // 3. ดึงข้อมูลเชิงลึก (รูปภาพ) จาก Firestore
-        if (friendUid != null) {
-            loadFriendDataFromFirestore(friendUid)
+        // 🌟 4. ลอจิกการซ่อน/แสดง QR Code
+        if (!isFriend) {
+            ivQrCode.visibility = View.GONE
+            btnSaveQr.visibility = View.GONE
+            tvQrLabel.text = "Connect with friend to see QR Code" // เปลี่ยนข้อความบอกผู้ใช้
+            Toast.makeText(this, "Add friend to see QR Code", Toast.LENGTH_SHORT).show()
+        } else {
+            ivQrCode.visibility = View.VISIBLE
+            btnSaveQr.visibility = View.VISIBLE
+            tvQrLabel.text = "PromptPay QR Code"
         }
 
-        // 4. ปุ่มบันทึก QR Code
+        // 5. ดึงข้อมูลเชิงลึก (รูปภาพ) จาก Firestore
+        if (friendUid != null) {
+            loadFriendDataFromFirestore(friendUid, isFriend)
+        }
+
         btnSaveQr.setOnClickListener {
             saveQrToGallery(friendName)
         }
@@ -53,30 +69,32 @@ class FriendProfile : AppCompatActivity() {
         tvFullName = findViewById(R.id.tvFriendFullName)
         tvUsername = findViewById(R.id.tvFriendUsername)
         btnSaveQr = findViewById(R.id.btnSaveQr)
-        val btnBack = findViewById<ImageButton>(R.id.backButton)
+        // 🌟 สมมติว่าใน XML พี่ใช้ ID นี้สำหรับตัวหนังสือเหนือ QR
+        tvQrLabel = findViewById(R.id.tvQrLabel)
 
+        val btnBack = findViewById<ImageButton>(R.id.backButton)
         btnBack.setOnClickListener { finish() }
     }
 
-    private fun loadFriendDataFromFirestore(uid: String) {
+    private fun loadFriendDataFromFirestore(uid: String, isFriend: Boolean) {
         val db = FirebaseFirestore.getInstance()
         db.collection("users").document(uid).get()
             .addOnSuccessListener { doc ->
                 if (doc.exists()) {
-                    // 1. ดึง Username มาแสดงผลซ้ำเพื่อความแม่นยำ
                     val username = doc.getString("username") ?: ""
                     if (username.isNotEmpty()) {
                         tvUsername.text = if (username.startsWith("@")) username else "@$username"
                     }
 
-                    // 2. ดึงรูปโปรไฟล์และ QR ตามเดิม
                     val profileUrl = doc.getString("profileImageUrl")
                     val qrUrl = doc.getString("qrImageUrl")
 
                     if (!profileUrl.isNullOrEmpty()) {
                         ivProfile.load(profileUrl) { crossfade(true) }
                     }
-                    if (!qrUrl.isNullOrEmpty()) {
+
+                    // 🌟 โหลดรูป QR เฉพาะเมื่อเป็นเพื่อนกันเท่านั้น
+                    if (isFriend && !qrUrl.isNullOrEmpty()) {
                         ivQrCode.load(qrUrl) { crossfade(true) }
                     }
                 }
