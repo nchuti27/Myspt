@@ -60,9 +60,13 @@ class DebtAdapter(
 
     private fun sendDebtNotification(context: Context, debt: Debt) {
         val db = FirebaseFirestore.getInstance()
+        val auth = com.google.firebase.auth.FirebaseAuth.getInstance()
+        val myName = auth.currentUser?.displayName ?: "A friend" // 🌟 ดึงชื่อเรา
+
         val notiData = hashMapOf(
             "to_uid" to debt.friendId,
             "from_uid" to debt.creditorId,
+            "from_name" to myName, // 🌟 เพิ่มบรรทัดนี้เพื่อให้หน้าแจ้งเตือนโชว์ชื่อคนทวง
             "message" to "Payment Reminder: ${debt.billName} | Amount: ฿${debt.amount}",
             "type" to "debt_reminder",
             "status" to "pending",

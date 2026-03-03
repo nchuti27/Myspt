@@ -99,7 +99,11 @@ class NotificationAdapter(
 
         // 4. ผูกการทำงานปุ่มกด (OnClickListener)
         holder.btnAccept.setOnClickListener { onAccept(doc) }
-        holder.btnDelete.setOnClickListener { onDelete(doc) }
+        // ใน NotificationAdapter.kt ตรงปุ่มลบรายบุคคล
+        holder.btnDelete.setOnClickListener {
+            // 🌟 เรียก onDelete ที่ส่งมาจาก Activity
+            onDelete(doc)
+        }
     } // 🌟 ปิดฟังก์ชัน onBindViewHolder (จุดที่พี่มักจะลืม)
 
     private fun showDeleteConfirmation(context: Context, doc: DocumentSnapshot) {

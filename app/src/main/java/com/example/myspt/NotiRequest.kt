@@ -100,7 +100,6 @@ class NotiRequest : AppCompatActivity() {
     private fun listenToSentRequests() {
         val myUid = auth.currentUser?.uid ?: return
 
-        // 🌟 ดึงเฉพาะคำขอที่ "เราเป็นคนส่ง" (from_uid == myUid)
         requestListener = db.collection("friend_requests")
             .whereEqualTo("from_uid", myUid)
             .whereEqualTo("status", "pending")
@@ -122,17 +121,29 @@ class NotiRequest : AppCompatActivity() {
             }
     }
 
+    // เพิ่มฟังก์ชันนี้ใน NotiRequest.kt
+    // 🌟 ระบบ Clear All (Batch Delete)
     private fun confirmClearAll() {
+        if (requestList.isEmpty()) {
+            Toast.makeText(this, "No requests to clear", Toast.LENGTH_SHORT).show()
+            return
+        }
+
         AlertDialog.Builder(this)
-            .setTitle("Clear Sent Requests")
-            .setMessage("Do you want to cancel all pending friend requests?")
+            .setTitle("Clear All Sent Requests")
+            .setMessage("Are you sure you want to cancel all pending requests?")
             .setPositiveButton("Clear All") { _, _ ->
                 val batch = db.batch()
+                // วนลูปตาม List ที่โชว์อยู่บนหน้าจอ เพื่อลบใน Database จริง
                 for (doc in requestList) {
-                    batch.delete(doc.reference) // 🌟 ลบแบบ Batch
+                    batch.delete(doc.reference)
                 }
+
                 batch.commit().addOnSuccessListener {
-                    Toast.makeText(this, "All sent requests cleared", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "All requests cleared successfully", Toast.LENGTH_SHORT).show()
+                    // หน้าจอจะอัปเดตเองเพราะระบบ SnapshotListener ครับ
+                }.addOnFailureListener { e ->
+                    Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
             }
             .setNegativeButton("Cancel", null)
