@@ -92,6 +92,7 @@ class DebtSummary : AppCompatActivity() {
             // 🌟 เมื่อติ๊กช่อง cbDebt (อนุมัติว่าเขาจ่ายแล้ว)
             confirmPayment(debt)
         }
+
         rvOweYou.layoutManager = LinearLayoutManager(this)
         rvOweYou.adapter = oweYouAdapter
 

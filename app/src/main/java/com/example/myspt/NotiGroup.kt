@@ -117,17 +117,29 @@ class NotiGroup : AppCompatActivity() {
     }
 
     private fun confirmClearAll() {
+        // 🌟 ในหน้านี้พี่น่าจะใช้ชื่อ groupNotiList (หรือชื่ออื่นที่พี่ประกาศไว้ข้างบน)
+        // ถ้าพี่ประกาศชื่ออะไรไว้ ให้เปลี่ยนคำว่า groupNotiList เป็นชื่อนั้นครับ
+        if (groupNotiList.isEmpty()) {
+            Toast.makeText(this, "No group invites to clear", Toast.LENGTH_SHORT).show()
+            return
+        }
+
         AlertDialog.Builder(this)
             .setTitle("Clear Group Invites")
             .setMessage("Do you want to clear all group invitations?")
             .setPositiveButton("Clear All") { _, _ ->
                 val batch = db.batch()
+
+                // 🌟 เปลี่ยนจาก notiList เป็น groupNotiList ตามที่หน้านี้มี
                 for (doc in groupNotiList) {
-                    batch.delete(doc.reference) // 🌟 ลบจาก Database จริง
+                    batch.delete(doc.reference)
                 }
+
                 batch.commit().addOnSuccessListener {
                     Toast.makeText(this, "All invites cleared", Toast.LENGTH_SHORT).show()
-                    // รายการจะหายจากหน้าจออัตโนมัติเพราะ SnapshotListener
+                    // รายการจะหายจากหน้าจออัตโนมัติเพราะ SnapshotListener ทำงานอยู่
+                }.addOnFailureListener { e ->
+                    Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
             }
             .setNegativeButton("Cancel", null)

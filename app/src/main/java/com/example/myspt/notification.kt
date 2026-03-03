@@ -153,18 +153,32 @@ class notification : AppCompatActivity() {
 
     // ในไฟล์ notification.kt หรือ NotiGroup.kt
     private fun confirmClearAll() {
+        if (notiList.isEmpty()) {
+            Toast.makeText(this, "No items to clear", Toast.LENGTH_SHORT).show()
+            return
+        }
+
         AlertDialog.Builder(this)
             .setTitle("Clear All")
-            .setMessage("Clear all $currentTab items?")
+            .setMessage("Clear all $currentTab notifications?")
             .setPositiveButton("Clear") { _, _ ->
                 val batch = db.batch()
+                // 1. วนลูปสั่งลบทุก Document ที่โชว์อยู่ใน List ปัจจุบัน
                 for (doc in notiList) {
-                    // 🌟 ลบของจริงใน Firestore
                     batch.delete(doc.reference)
                 }
+
                 batch.commit().addOnSuccessListener {
                     Toast.makeText(this, "Cleared successfully", Toast.LENGTH_SHORT).show()
-                    // ไม่ต้องสั่ง updateData เอง เพราะ SnapshotListener จะดึง List ว่างมาให้เองครับ
+
+                    // 🌟 จุดสำคัญ: ถ้าเป็นแท็บ FRIEND ต้องสั่งโหลดใหม่เองเพราะไม่ได้ใช้ Listener
+                    if (currentTab == "FRIEND") {
+                        loadFriendTab()
+                    }
+                    // ส่วนแท็บอื่นที่ใช้ SnapshotListener หน้าจอจะหายไปเองอัตโนมัติครับ
+
+                }.addOnFailureListener { e ->
+                    Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
             }
             .setNegativeButton("Cancel", null)
