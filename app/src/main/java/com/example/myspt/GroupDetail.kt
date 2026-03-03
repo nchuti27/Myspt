@@ -3,10 +3,6 @@ package com.example.myspt
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
-import android.widget.Button
-import android.widget.EditText
-import android.widget.ImageView
-import android.widget.Toast
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -15,7 +11,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.*
+import com.google.firebase.firestore.DocumentSnapshot
 
 class GroupDetail : AppCompatActivity() {
 
@@ -42,10 +38,9 @@ class GroupDetail : AppCompatActivity() {
         auth = FirebaseAuth.getInstance()
         groupId = intent.getStringExtra("GROUP_ID")
 
-        // 1. เชื่อมต่อ Views
         initViews()
 
-        // 2. ตั้งค่า Adapter (ส่งฟังก์ชันลบเข้าไปด้วย)
+        // ตั้งค่า Adapter พร้อมลอจิกเช็คคนสุดท้ายก่อนลบ
         memberAdapter = MemberListAdapter(memberList) { memberId ->
             removeMemberFromGroup(memberId)
         }
@@ -90,22 +85,15 @@ class GroupDetail : AppCompatActivity() {
                 Toast.makeText(this, "Please enter group name", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-
-            // เรียกดึงชื่อเราก่อน แล้วค่อยสั่ง Save ทั้งหมด
             fetchMyNameAndSave(newName)
         }
-
     }
 
-    // 🌟 ดึงชื่อเราเองจาก Firestore ก่อน เพื่อให้ชื่อคนส่งเชิญไม่เป็น Your Friend
     private fun fetchMyNameAndSave(newName: String) {
         val myUid = auth.currentUser?.uid ?: return
-
         db.collection("users").document(myUid).get().addOnSuccessListener { doc ->
             val myName = doc.getString("name") ?: "Unknown"
             val myProfileUrl = doc.getString("profileUrl")
-
-            // เรียกฟังก์ชันบันทึกจริงที่นี่
             saveChangesAndSendInvites(newName, myName, myProfileUrl)
         }.addOnFailureListener {
             Toast.makeText(this, "Error fetching user data", Toast.LENGTH_SHORT).show()
@@ -118,41 +106,33 @@ class GroupDetail : AppCompatActivity() {
             val uids = data?.getStringArrayListExtra("SELECTED_FRIENDS")
             if (uids != null) {
                 pendingSelectedUids.addAll(uids)
-                Toast.makeText(this, "Added ${uids.size} friends to invite list. Click Save to send.", Toast.LENGTH_SHORT).show()
                 Toast.makeText(this, "Added ${uids.size} friends. Click Save.", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
-    // ✅ ปรับ Parameter ให้รับ 3 ค่า (ชื่อกลุ่ม, ชื่อคนส่ง, รูปคนส่ง)
     private fun saveChangesAndSendInvites(newName: String, senderName: String, senderProfileUrl: String?) {
         val gId = groupId ?: return
         val myUid = auth.currentUser?.uid ?: return
-
         val batch = db.batch()
         val groupRef = db.collection("groups").document(gId)
 
-        // 1. อัปเดตชื่อกลุ่ม (ทับของเดิม)
         batch.update(groupRef, "groupName", newName)
 
-        // 2. ถ้ามีการเลือกเพื่อนใหม่ ให้เพิ่มคำเชิญ
         if (pendingSelectedUids.isNotEmpty()) {
             for (uid in pendingSelectedUids) {
                 val inviteRef = db.collection("group_invites").document()
-                val inviteData = hashMapOf(
+                batch.set(inviteRef, hashMapOf(
                     "from_uid" to myUid,
                     "from_name" to senderName,
                     "from_profileUrl" to senderProfileUrl,
                     "to_uid" to uid,
                     "groupId" to gId,
-                    "groupName" to newName, // บันทึกชื่อใหม่ลงในคำเชิญด้วย
                     "groupName" to newName,
                     "status" to "pending",
                     "timestamp" to FieldValue.serverTimestamp()
-                )
-                batch.set(inviteRef, inviteData)
+                ))
 
-                // เพิ่ม Notification
                 val notiRef = db.collection("notifications").document()
                 batch.set(notiRef, hashMapOf(
                     "receiverId" to uid,
@@ -165,12 +145,9 @@ class GroupDetail : AppCompatActivity() {
         }
 
         batch.commit().addOnSuccessListener {
-            Toast.makeText(this, "Group updated and invitations sent!", Toast.LENGTH_SHORT).show()
             Toast.makeText(this, "Updated!", Toast.LENGTH_SHORT).show()
             pendingSelectedUids.clear()
             finish()
-        }.addOnFailureListener { e ->
-            Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -205,29 +182,46 @@ class GroupDetail : AppCompatActivity() {
                 memberAdapter.notifyDataSetChanged()
             }
     }
+
+    // 🌟 ส่วนที่แก้: เช็คคนสุดท้าย + ลบบิล + ลบกลุ่ม
     private fun removeMemberFromGroup(uidToRemove: String) {
-        // สร้าง Dialog เพื่อยืนยันการลบ
         val builder = androidx.appcompat.app.AlertDialog.Builder(this)
         builder.setTitle("Remove Member")
-        builder.setMessage("Are you sure you want to remove this member from the group?")
+        builder.setMessage("Are you sure? If this is the last member, the group and all bills will be deleted.")
 
         builder.setPositiveButton("Remove") { _, _ ->
-            // ถ้าผู้ใช้กดตกลง ให้ดำเนินการลบ
             val gId = groupId ?: return@setPositiveButton
-            db.collection("groups").document(gId)
-                .update("members", FieldValue.arrayRemove(uidToRemove))
-                .addOnSuccessListener {
-                    Toast.makeText(this, "Member removed successfully", Toast.LENGTH_SHORT).show()
-                    // ระบบจะอัปเดต List อัตโนมัติผ่าน SnapshotListener
-                }
-                .addOnFailureListener { e ->
-                    Toast.makeText(this, "Error: \${e.message}", Toast.LENGTH_SHORT).show()
-                }
-        }
+            val groupRef = db.collection("groups").document(gId)
 
-        // ปุ่มยกเลิก
+            groupRef.get().addOnSuccessListener { snapshot ->
+                val members = snapshot.get("members") as? MutableList<String> ?: mutableListOf()
+                members.remove(uidToRemove)
+
+                if (members.isEmpty()) {
+                    // 🌟 กรณีไม่เหลือใครแล้ว: ล้างบางข้อมูลทั้งหมด
+                    val batch = db.batch()
+                    batch.delete(groupRef)
+
+                    db.collection("bills").whereEqualTo("groupId", gId).get()
+                        .addOnSuccessListener { bills ->
+                            for (bill in bills) {
+                                batch.delete(bill.reference)
+                            }
+                            batch.commit().addOnSuccessListener {
+                                Toast.makeText(this, "Group and related bills deleted.", Toast.LENGTH_SHORT).show()
+                                finish()
+                            }
+                        }
+                } else {
+                    // ยังมีคนอื่นอยู่ แค่ลบสมาชิกคนนั้นออกปกติ
+                    groupRef.update("members", FieldValue.arrayRemove(uidToRemove))
+                        .addOnSuccessListener {
+                            Toast.makeText(this, "Member removed", Toast.LENGTH_SHORT).show()
+                        }
+                }
+            }
+        }
         builder.setNegativeButton("Cancel", null)
         builder.show()
-
     }
 }

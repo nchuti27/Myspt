@@ -69,8 +69,14 @@ class CreateGroup : AppCompatActivity() {
 
         btnCreate?.setOnClickListener {
             val name = etGroupName.text.toString().trim()
+
+            // 🌟 ส่วนที่แก้: ห้ามสร้างกลุ่มคนเดียว (ต้องมีเพื่อนอย่างน้อย 1 คน)
+            if (selectedMemberUids.isEmpty()) {
+                Toast.makeText(this, "Please select at least one friend to create a group", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
             if (name.isNotEmpty()) {
-                // 🌟 ดึงชื่อเราเองจาก Firestore ก่อน เพื่อให้ชื่อคนส่งเชิญถูกต้อง
                 fetchMyInfoAndCreateGroup(name)
             } else {
                 etGroupName.error = "Please input your group name"
@@ -112,7 +118,6 @@ class CreateGroup : AppCompatActivity() {
             }
     }
 
-    // 🌟 ดึงข้อมูลชื่อและรูปของเราเองจาก Firestore ก่อนบันทึกกลุ่ม
     private fun fetchMyInfoAndCreateGroup(groupName: String) {
         val myUid = auth.currentUser?.uid ?: return
         btnCreate?.isEnabled = false
@@ -132,7 +137,7 @@ class CreateGroup : AppCompatActivity() {
         val groupData = hashMapOf(
             "groupName" to groupName,
             "admin" to myUid,
-            "members" to arrayListOf(myUid),
+            "members" to arrayListOf(myUid), // เริ่มต้นมีแค่เรา แต่คำเชิญจะถูกส่งออกไปทันที
             "createdAt" to com.google.firebase.Timestamp.now()
         )
 
@@ -144,12 +149,11 @@ class CreateGroup : AppCompatActivity() {
             batch.update(myUserRef, "groups", FieldValue.arrayUnion(groupId))
 
             for (uid in selectedMemberUids) {
-                // 🌟 ส่งข้อมูลชื่อคนเชิญและรูปไปในคำเชิญด้วย
                 val inviteRef = db.collection("group_invites").document()
                 batch.set(inviteRef, hashMapOf(
                     "from_uid" to myUid,
-                    "from_name" to senderName,       // ✅ ชื่อจริงเรา
-                    "from_profileUrl" to senderProfileUrl, // ✅ รูปเรา
+                    "from_name" to senderName,
+                    "from_profileUrl" to senderProfileUrl,
                     "to_uid" to uid,
                     "groupId" to groupId,
                     "groupName" to groupName,
