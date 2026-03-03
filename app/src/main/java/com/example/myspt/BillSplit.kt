@@ -22,7 +22,6 @@ class BillSplit : AppCompatActivity() {
     private var btnAddItem: FloatingActionButton? = null
     private var tvGrandTotal: TextView? = null
     private var etBillName: EditText? = null
-
     private var selectedMembers = ArrayList<String>()
     private var memberNames = ArrayList<String>()
     private var billList = ArrayList<BillItem>()
@@ -41,7 +40,6 @@ class BillSplit : AppCompatActivity() {
             insets
         }
 
-        // โหลดข้อมูลให้เสร็จก่อน แล้วค่อย init UI
         val members = intent.getStringArrayListExtra("SELECTED_MEMBERS")
         if (!members.isNullOrEmpty()) {
             selectedMembers = members
@@ -81,17 +79,14 @@ class BillSplit : AppCompatActivity() {
                 uids.take(10).forEach { uid ->
                     memberNames.add(docs.documents.find { it.id == uid }?.getString("name") ?: "Unknown")
                 }
-                init() // เรียกตรงนี้เพื่อให้แน่ใจว่าได้ชื่อเพื่อนครบแล้ว
+                init()
             }
     }
 
     private fun fetchAllFriends() {
         val myUid = FirebaseAuth.getInstance().currentUser?.uid ?: return
         db.collection("users").document(myUid).get().addOnSuccessListener { doc ->
-            // ดึงเพื่อนทั้งหมด
             val friends = doc.get("friends") as? List<String> ?: listOf()
-
-            // 🌟 รวม UID ของเราเข้าไปด้วย
             val allMembers = ArrayList<String>()
             allMembers.add(myUid)
             allMembers.addAll(friends)
@@ -99,10 +94,8 @@ class BillSplit : AppCompatActivity() {
             if (allMembers.isNotEmpty()) {
                 selectedMembers.clear()
                 selectedMembers.addAll(allMembers)
-                // ส่งไปดึงชื่อของทุกคน (รวมชื่อเราด้วย)
                 fetchMemberNames(selectedMembers)
             } else {
-                // กรณีไม่มีเพื่อนเลย ก็ยังมีชื่อเราคนเดียว
                 selectedMembers.add(myUid)
                 fetchMemberNames(selectedMembers)
             }
@@ -132,16 +125,28 @@ class BillSplit : AppCompatActivity() {
         val dialog = AlertDialog.Builder(this).create()
         val view = layoutInflater.inflate(R.layout.layout_dialog_payment, null)
         dialog.setView(view)
+
         view.findViewById<TextView>(R.id.tvPaymentMessage).text = "You need to pay: ${String.format("%.2f", amountPerPerson[FirebaseAuth.getInstance().currentUser?.uid] ?: 0.0)} ฿"
+
+        // ปุ่ม OK: ไปหน้าถัดไป
         view.findViewById<AppCompatButton>(R.id.btnOk).setOnClickListener {
             val nameMap = HashMap<String, String>()
             selectedMembers.forEachIndexed { i, uid -> if (i < memberNames.size) nameMap[uid] = memberNames[i] }
+
             startActivity(Intent(this, WhoPays::class.java).apply {
-                putExtra("BILL_NAME", billName); putExtra("SPLIT_RESULT", amountPerPerson)
-                putExtra("MEMBER_NAMES", nameMap); putExtra("BILL_ITEMS", billList)
+                putExtra("BILL_NAME", billName)
+                putExtra("SPLIT_RESULT", amountPerPerson)
+                putExtra("MEMBER_NAMES", nameMap)
+                putExtra("BILL_ITEMS", billList)
             })
             dialog.dismiss()
         }
+
+        // ปุ่ม Back (No): ปิด Dialog
+        view.findViewById<AppCompatButton>(R.id.backButton).setOnClickListener {
+            dialog.dismiss()
+        }
+
         dialog.show()
     }
 }
