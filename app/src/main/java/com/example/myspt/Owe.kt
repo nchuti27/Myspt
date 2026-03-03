@@ -84,7 +84,28 @@ class Owe : AppCompatActivity() {
     }
 
     private fun markDebtAsPaid(debt: Debt) {
-        db.collection("debts").document(debt.debtId).update("status", "paid")
-            .addOnSuccessListener { Toast.makeText(this, "อัปเดตสถานะว่า ${debt.name} จ่ายแล้ว!", Toast.LENGTH_SHORT).show() }
+        val batch = db.batch() // 🌟 ใช้ Batch เพื่อมัดรวมคำสั่ง
+        val debtRef = db.collection("debts").document(debt.debtId)
+        val notiRef = db.collection("notifications").document() // สร้างเอกสารแจ้งเตือนใหม่
+
+        // 1. อัปเดตสถานะหนี้เป็นจ่ายแล้ว
+        batch.update(debtRef, "status", "paid")
+
+        // 2. 🌟 สร้างแจ้งเตือนส่งไปหาเจ้าหนี้ (creditorId)
+        val notiData = hashMapOf(
+            "receiverId" to debt.creditorId, // เจ้าหนี้เป็นคนรับแจ้งเตือน
+            "senderId" to myUid,             // เราเป็นคนจ่าย
+            "type" to "PAYMENT_RECEIVED",
+            "message" to "Received payment: ฿${String.format("%.2f", debt.amount)} from ${debt.name}",
+            "timestamp" to com.google.firebase.firestore.FieldValue.serverTimestamp()
+        )
+        batch.set(notiRef, notiData)
+
+        // สั่งรันพร้อมกัน
+        batch.commit().addOnSuccessListener {
+            Toast.makeText(this, "Status updated and creditor notified!", Toast.LENGTH_SHORT).show()
+        }.addOnFailureListener { e ->
+            Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
     }
 }

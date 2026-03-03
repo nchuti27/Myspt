@@ -36,7 +36,7 @@ class Forgotpassword : AppCompatActivity() {
             val fMail = edtFemail!!.text.toString().trim()
 
             if(fMail.isEmpty()){
-                edtFemail!!.setError("Please input your email")
+                edtFemail!!.error = "Please input your email"
             } else {
 
                 auth.sendPasswordResetEmail(fMail)

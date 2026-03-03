@@ -55,6 +55,7 @@ class FindUser : AppCompatActivity() {
 
         // 1. เช็กความเป็นเพื่อน
         db.collection("users").document(myUid).get().addOnSuccessListener { doc ->
+            @Suppress("UNCHECKED_CAST")
             val friends = doc.get("friends") as? List<String> ?: listOf()
             if (friends.contains(targetUid)) {
                 updateButton("Already Friends", false)

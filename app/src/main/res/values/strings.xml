@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">Myspt</string>
+    <string name="bill_detail_format">Bill: %s</string>
+    <string name="amount_format">฿ %1$.2f</string>
 </resources>

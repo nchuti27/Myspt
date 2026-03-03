@@ -1,5 +1,6 @@
 package com.example.myspt
 
+import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -22,7 +23,8 @@ class DebtYouOweAdapter(private var debtList: List<Debt>) : RecyclerView.Adapter
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val debt = debtList[position]
 
-        val displayName = if (debt.creditorName.isNullOrEmpty() || debt.creditorName == "Unknown") {
+        // 🌟 เปลี่ยนแค่จุดเดียวคือ .isEmpty()
+        val displayName = if (debt.creditorName.isEmpty() || debt.creditorName == "Unknown") {
             debt.name
         } else {
             debt.creditorName
@@ -31,13 +33,13 @@ class DebtYouOweAdapter(private var debtList: List<Debt>) : RecyclerView.Adapter
 
         val displayBill = debt.billName
 
-        holder.txtBillDetail.text = "Bill: $displayBill"
-
-        holder.txtAmount.text = "฿ ${String.format("%.2f", debt.amount)}"
+        val context = holder.itemView.context
+        holder.txtBillDetail.text = context.getString(R.string.bill_detail_format, displayBill)
+        holder.txtAmount.text = context.getString(R.string.amount_format, debt.amount)
     }
 
     override fun getItemCount(): Int = debtList.size
-
+    @SuppressLint("NotifyDataSetChanged")
     fun updateData(newList: List<Debt>) {
         debtList = newList
         notifyDataSetChanged()
