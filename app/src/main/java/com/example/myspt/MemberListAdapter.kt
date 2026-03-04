@@ -27,7 +27,6 @@ class MemberListAdapter(
         val member = memberList[position]
         holder.tvMemberName.text = member.name
 
-        // เมื่อกดปุ่มกากบาท ให้ส่ง ID ของสมาชิกคนนั้นไปทำงานต่อ
         holder.btnRemove.setOnClickListener {
             onRemoveClick(member.id)
         }

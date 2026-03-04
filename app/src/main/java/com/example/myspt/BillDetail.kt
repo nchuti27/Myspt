@@ -32,7 +32,6 @@ class BillDetail : AppCompatActivity() {
         enableEdgeToEdge()
         setContentView(R.layout.activity_bill_detail)
 
-        // ✅ ลบ ออกแล้ว
         db = FirebaseFirestore.getInstance()
 
         val billId = intent.getStringExtra("BILL_ID")
@@ -74,7 +73,7 @@ class BillDetail : AppCompatActivity() {
         rvOrderItems.adapter = itemAdapter
     }
 
-    @SuppressLint("NotifyDataSetChanged") // 🌟 ใส่ตรงนี้เพื่อปิด Warning itemAdapter
+    @SuppressLint("NotifyDataSetChanged")
     private fun loadBillData(id: String) {
         db.collection("bills").document(id).get()
             .addOnSuccessListener { doc ->
@@ -90,7 +89,6 @@ class BillDetail : AppCompatActivity() {
                             val name = itemData["itemName"] as? String ?: ""
                             val qty = (itemData["quantity"] as? Long)?.toInt() ?: 1
 
-                            // 🌟 วิธีดึงราคาที่ปลอดภัยที่สุด (รองรับทั้ง Long และ Double)
                             val price = when (val p = itemData["price"]) {
                                 is Double -> p
                                 is Long -> p.toDouble()

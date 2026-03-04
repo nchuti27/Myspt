@@ -41,7 +41,6 @@ class WhoPays : AppCompatActivity() {
     private var totalAmount: Double = 0.0
     private var billName: String = "New Bill"
 
-    // ✅ ประกาศระดับ Class เพื่อให้เข้าถึงได้จากทุกที่
     private var actualPayerUid: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -155,10 +154,10 @@ class WhoPays : AppCompatActivity() {
         val myUid = auth.currentUser?.uid ?: return
         val selectedPayerIndex = spinnerPayer?.selectedItemPosition ?: 0
 
-        // ✅ เก็บค่าเข้าตัวแปรระดับ Class
+        // เก็บค่าเข้าตัวแปร
         actualPayerUid = if (uidList.isNotEmpty()) uidList[selectedPayerIndex] else myUid
 
-        // ✅ ตรวจสอบชื่อบิล ป้องกันค่า "null" หลุดเข้าฐานข้อมูล
+        // ตรวจสอบชื่อบิล
         val inputName = etBillName?.text.toString().trim()
         val finalBillName = when {
             inputName.isNotEmpty() && inputName != "null" -> inputName
@@ -183,26 +182,25 @@ class WhoPays : AppCompatActivity() {
         db.collection("bills").add(billData)
             .addOnSuccessListener {
 
-                // 🌟 เพิ่มการดึงชื่อเจ้าหนี้ (คนออกเงิน) เพื่อเตรียมบันทึกลงในแต่ละหนี้
+                // เดึงชื่อเจ้าหนี้
                 val creditorName = memberNames[actualPayerUid] ?: "Unknown"
 
-                // วนลูปรายชื่อทุกคนที่มีในบิลนี้
+                // วนลูปรายชื่อทุกคนที่มีในบิล
                 for ((debtorUid, amount) in amountPerPerson) {
-                    // ข้ามคนที่เป็นคนออกเงินไปก่อน (ไม่ต้องสร้างหนี้ตัวเองให้ตัวเอง)
+                    // ข้ามคนที่เป็นคนออกเงินไปก่อน
                     if (debtorUid == actualPayerUid) continue
 
                     // สร้างข้อมูลหนี้สำหรับคนนี้
                     val debtData = hashMapOf(
                         "billName" to finalBillName,
-                        "creditorId" to actualPayerUid, // คนที่เป็นเจ้าหนี้ (คนออกเงิน)
-                        "friendId" to debtorUid,        // คนที่เป็นลูกหนี้ (เพื่อนที่ต้องคืนเงิน)
+                        "creditorId" to actualPayerUid, // คนที่เป็นเจ้าหนี้
+                        "friendId" to debtorUid,        // คนที่เป็นลูกหนี้
                         "name" to (memberNames[debtorUid] ?: "Unknown"), // ชื่อของลูกหนี้
-                        "creditorName" to creditorName,  // 🌟 บันทึกชื่อเจ้าหนี้ลงไปด้วยตามที่ขอ
+                        "creditorName" to creditorName,
                         "amount" to amount,             // จำนวนเงินที่คนนี้ต้องจ่าย
                         "status" to "pending"           // สถานะเริ่มต้น
                     )
 
-                    // บันทึกลง Collection ใหม่ชื่อ "debts"
                     db.collection("debts").add(debtData)
                 }
 

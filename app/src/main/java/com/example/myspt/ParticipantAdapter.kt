@@ -31,7 +31,6 @@ class ParticipantAdapter(
 
         holder.tvMemberName.text = participant.name
 
-        // ✅ โหลดรูปโปรไฟล์เพื่อน (ถ้าใน ParticipantData มีฟิลด์ profileUrl)
         Glide.with(holder.itemView.context)
             .load(participant.profileUrl ?: R.drawable.ic_launcher_background)
             .placeholder(R.drawable.ic_launcher_background)

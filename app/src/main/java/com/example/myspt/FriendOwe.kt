@@ -53,7 +53,6 @@ class FriendOwe : AppCompatActivity() {
         btnBack = findViewById(R.id.backButton)
         tvTotalBalance = findViewById(R.id.tvTotalBalance)
 
-        // 🌟 ผูก ID ให้ปุ่ม Menu
         btnMenu = findViewById(R.id.btnMenu)
 
         tabItems = findViewById(R.id.tabItems)
@@ -63,7 +62,6 @@ class FriendOwe : AppCompatActivity() {
 
         btnBack?.setOnClickListener { finish() }
 
-        // 🌟 ดักจับการกดปุ่ม Menu เพื่อเรียกฟังก์ชันโชว์ Popup
         btnMenu?.setOnClickListener { view ->
             showMenu(view)
         }
@@ -105,21 +103,17 @@ class FriendOwe : AppCompatActivity() {
         adapter.notifyDataSetChanged()
     }
 
-    // ==========================================
-    // 🌟 ฟังก์ชันจัดการ Popup Menu
-    // ==========================================
     private fun showMenu(view: View) {
         val popupMenu = PopupMenu(this, view)
-        // สมมติว่าไฟล์ XML เมนูของคุณชื่อ menu_group_options.xml (ถ้าไม่ใช่ ให้เปลี่ยนชื่อให้ตรงนะครับ)
         popupMenu.menuInflater.inflate(R.menu.menu_group_options, popupMenu.menu)
         popupMenu.setOnMenuItemClickListener { menuItem ->
             when (menuItem.itemId) {
                 R.id.action_edit_items -> {
-                    finish() // กด Edit items ให้ปิดหน้านี้ เพื่อกลับไปหน้า WhoPays
+                    finish() // กด Edit items เพื่อกลับไปหน้า WhoPays
                     true
                 }
                 R.id.action_leave_group -> {
-                    showLeaveDialog() // กด Leave group โชว์หน้าต่างยืนยัน
+                    showLeaveDialog() // กด Leave group
                     true
                 }
                 else -> false
@@ -128,13 +122,11 @@ class FriendOwe : AppCompatActivity() {
         popupMenu.show()
     }
 
-    // ==========================================
-    // 🌟 ฟังก์ชันแสดง Dialog ยืนยันการออกจากกลุ่ม
-    // ==========================================
+
     private fun showLeaveDialog() {
         val dialog = Dialog(this)
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-        dialog.setContentView(R.layout.dialog_leave_group) // เรียกใช้ Layout Dialog เดียวกับหน้า WhoPays
+        dialog.setContentView(R.layout.dialog_leave_group)
 
         val btnNo = dialog.findViewById<Button>(R.id.btnNo)
         val btnYes = dialog.findViewById<Button>(R.id.btnYes)
@@ -147,7 +139,6 @@ class FriendOwe : AppCompatActivity() {
             dialog.dismiss()
             Toast.makeText(this, "You have left the group.", Toast.LENGTH_SHORT).show()
 
-            // กลับไปหน้าแรกสุด และล้าง Stack
             val intent = Intent(this, MainActivity::class.java)
             intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
             startActivity(intent)

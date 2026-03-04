@@ -66,7 +66,6 @@ class NotiRequest : AppCompatActivity() {
             finish()
         }
 
-        // 🌟 ระบบ Clear All สำหรับแท็บ Request (คำขอที่เราส่ง)
         btnClearAll?.setOnClickListener {
             if (requestList.isEmpty()) {
                 Toast.makeText(this, "No sent requests to clear", Toast.LENGTH_SHORT).show()
@@ -98,7 +97,6 @@ class NotiRequest : AppCompatActivity() {
     }
 
     private fun setupRecyclerView() {
-        // 🌟 ส่งแท็บ "REQUEST" เพื่อให้ Adapter ซ่อนปุ่ม Accept อัตโนมัติ
         notiAdapter = NotificationAdapter(requestList,
             onAccept = { /* แท็บนี้ไม่มี Accept */ },
             onDelete = { doc -> cancelRequest(doc) }
@@ -129,15 +127,12 @@ class NotiRequest : AppCompatActivity() {
     }
 
     private fun cancelRequest(doc: DocumentSnapshot) {
-        // 🌟 ลบคำขอออกจาก Database จริงๆ
+        // ลบคำขอออกจาก Database
         db.collection("friend_requests").document(doc.id).delete()
             .addOnSuccessListener {
                 Toast.makeText(this, "Request cancelled", Toast.LENGTH_SHORT).show()
             }
     }
-
-    // เพิ่มฟังก์ชันนี้ใน NotiRequest.kt
-    // 🌟 ระบบ Clear All (Batch Delete)
     private fun confirmClearAll() {
         if (requestList.isEmpty()) {
             Toast.makeText(this, "No requests to clear", Toast.LENGTH_SHORT).show()
@@ -149,14 +144,12 @@ class NotiRequest : AppCompatActivity() {
             .setMessage("Are you sure you want to cancel all pending requests?")
             .setPositiveButton("Clear All") { _, _ ->
                 val batch = db.batch()
-                // วนลูปตาม List ที่โชว์อยู่บนหน้าจอ เพื่อลบใน Database จริง
                 for (doc in requestList) {
                     batch.delete(doc.reference)
                 }
 
                 batch.commit().addOnSuccessListener {
                     Toast.makeText(this, "All requests cleared successfully", Toast.LENGTH_SHORT).show()
-                    // หน้าจอจะอัปเดตเองเพราะระบบ SnapshotListener ครับ
                 }.addOnFailureListener { e ->
                     Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
                 }

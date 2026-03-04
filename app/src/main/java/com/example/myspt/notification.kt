@@ -60,7 +60,6 @@ class notification : AppCompatActivity() {
         btnClearAll.setOnClickListener { confirmClearAll() }
     }
 
-    // 3. สร้างฟังก์ชันตรวจสอบสถานะว่าง
     private fun checkEmptyState(list: ArrayList<DocumentSnapshot>) {
         if (list.isEmpty()) {
             tvEmptyState.visibility = View.VISIBLE
@@ -149,26 +148,22 @@ class notification : AppCompatActivity() {
         val senderUid = doc.getString("from_uid") ?: return
         val senderName = doc.getString("from_name") ?: "Friend"
 
-        // 🌟 ดึงข้อมูลของเรา(ผู้กดรับ) เพื่อเอาไปสร้าง Notification ตอบกลับ (ถ้าต้องการ) และอัปเดตข้อมูลให้ชัวร์
         db.collection("users").document(myUid).get().addOnSuccessListener { myDoc ->
             val myName = myDoc.getString("name") ?: "Your Friend"
             val myProfileUrl = myDoc.getString("profileUrl")
 
             val batch = db.batch()
 
-            // 1. เปลี่ยนสถานะคำขอเป็น accepted (หรือลบทิ้งก็ได้)
+            // 1. เปลี่ยนสถานะคำขอเป็น accepted
             val requestRef = db.collection("friend_requests").document(doc.id)
             batch.update(requestRef, "status", "accepted")
 
-            // 2. 🌟 เพิ่ม senderUid เข้า List friends ของเรา (myUid)
             val myRef = db.collection("users").document(myUid)
             batch.update(myRef, "friends", FieldValue.arrayUnion(senderUid))
 
-            // 3. 🌟 เพิ่ม myUid เข้า List friends ของเขา (senderUid)
             val senderRef = db.collection("users").document(senderUid)
             batch.update(senderRef, "friends", FieldValue.arrayUnion(myUid))
 
-            // 4. (Optional) ส่ง Notification กลับไปบอกว่า "เรารับแอดแล้วนะ"
             val notiRef = db.collection("notifications").document()
             batch.set(notiRef, hashMapOf(
                 "receiverId" to senderUid,
@@ -180,7 +175,6 @@ class notification : AppCompatActivity() {
 
             batch.commit().addOnSuccessListener {
                 Toast.makeText(this, "You and $senderName are now friends", Toast.LENGTH_SHORT).show()
-                // 🌟 โหลดหน้าจอแท็บ Friend ใหม่ เพื่อให้คำขอหายไป
                 loadFriendTab()
             }.addOnFailureListener { e ->
                 Toast.makeText(this, "Error accepting friend: ${e.message}", Toast.LENGTH_SHORT).show()
@@ -209,18 +203,17 @@ class notification : AppCompatActivity() {
         // ลบจาก Firebase
         db.document(doc.reference.path).delete()
             .addOnSuccessListener {
-                // 1. ลบรายการออกจาก List ที่เก็บไว้ใน Activity นี้
+
                 val currentList = notiList.toMutableList()
                 currentList.remove(doc)
                 notiList = currentList as ArrayList<DocumentSnapshot>
 
-                // 2. สั่ง Adapter อัปเดตข้อมูลทันที
+                //อัปเดตข้อมูลทันที
                 notiAdapter.updateData(notiList, currentTab)
 
-                // 3. เช็กว่าถ้าลบหมดแล้วให้โชว์หน้า Empty State
+                // เช็กว่าถ้าลบหมดแล้วให้โชว์หน้า Empty State
                 checkEmptyState(notiList)
 
-                // 4. แจ้งเตือนผู้ใช้
                 Toast.makeText(this, "Deleted successfully", Toast.LENGTH_SHORT).show()
             }
             .addOnFailureListener { e ->

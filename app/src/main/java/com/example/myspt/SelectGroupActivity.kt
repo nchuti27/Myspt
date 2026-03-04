@@ -17,11 +17,10 @@ class SelectGroupActivity : AppCompatActivity() {
     private lateinit var btnSkipGroup: Button
     private lateinit var backButton: ImageView
 
-    // เพิ่มตัวแปร Firebase
+
     private lateinit var db: FirebaseFirestore
     private lateinit var auth: FirebaseAuth
 
-    // สร้าง List ไว้เก็บข้อมูลกลุ่มจริงๆ
     private val groupList = ArrayList<Group>()
     private lateinit var adapter: GroupAdapter
 
@@ -29,16 +28,13 @@ class SelectGroupActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_select_group)
 
-        // กำหนดค่า Firebase
         db = FirebaseFirestore.getInstance()
         auth = FirebaseAuth.getInstance()
 
-        // ผูกตัวแปรกับ ID ใน XML
         rvGroups = findViewById(R.id.rvGroups)
         btnSkipGroup = findViewById(R.id.btnSkipGroup)
         backButton = findViewById(R.id.backButton)
 
-        // ตั้งค่าปุ่มย้อนกลับให้กลับไปหน้า MainActivity
         backButton.setOnClickListener {
             val intent = Intent(this, MainActivity::class.java)
             intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -46,7 +42,6 @@ class SelectGroupActivity : AppCompatActivity() {
             finish()
         }
 
-        // ตั้งค่า Adapter (ตอนแรกลิสต์จะยังว่างเปล่า รอข้อมูลจาก Firebase โหลดเสร็จ)
         adapter = GroupAdapter(groupList) { selectedGroup ->
             navigateToNewBill(selectedGroup.members)
         }
@@ -58,17 +53,16 @@ class SelectGroupActivity : AppCompatActivity() {
             navigateToNewBill(arrayListOf())
         }
 
-        // เรียกฟังก์ชันดึงข้อมูลกลุ่มจริงๆ ของผู้ใช้
         loadRealGroups()
     }
 
     private fun loadRealGroups() {
         val myUid = auth.currentUser?.uid ?: return
 
-        // 1. ดึงข้อมูล User ปัจจุบัน เพื่อดูว่ามีกลุ่มอะไรบ้าง
+        // ข้อมูล User ปัจจุบัน เพื่อดูว่ามีกลุ่มอะไรบ้าง
         db.collection("users").document(myUid).get().addOnSuccessListener { document ->
             val groupIds = document.get("groups") as? List<String> ?: listOf()
-            groupList.clear() // ล้างข้อมูลเก่าก่อน
+            groupList.clear() // ล้างข้อมูลเก่า
 
             if (groupIds.isEmpty()) {
                 adapter.notifyDataSetChanged()
@@ -76,15 +70,14 @@ class SelectGroupActivity : AppCompatActivity() {
             }
 
             var loadedCount = 0
-            // 2. วนลูปดึงข้อมูลรายละเอียดของแต่ละกลุ่ม
+            //วนลูปดึงข้อมูลรายละเอียดของแต่ละกลุ่ม
             for (gId in groupIds) {
                 db.collection("groups").document(gId).get().addOnSuccessListener { gDoc ->
                     if (gDoc.exists()) {
                         val name = gDoc.getString("groupName") ?: "Unknown Group"
-                        // ดึงรายชื่อสมาชิกมาด้วย (เพื่อส่งต่อไปหน้า BillSplit)
+                        // ดึงรายชื่อสมาชิก
                         val membersUids = gDoc.get("members") as? ArrayList<String> ?: arrayListOf()
 
-                        // เพิ่มลงใน List
                         groupList.add(Group(name = name, members = membersUids))
                     }
 
@@ -96,7 +89,7 @@ class SelectGroupActivity : AppCompatActivity() {
                 }
             }
         }.addOnFailureListener {
-            Toast.makeText(this, "ดึงข้อมูลกลุ่มล้มเหลว", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Retrieve data of failed groups", Toast.LENGTH_SHORT).show()
         }
     }
 

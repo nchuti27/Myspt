@@ -70,7 +70,6 @@ class CreateGroup : AppCompatActivity() {
         btnCreate?.setOnClickListener {
             val name = etGroupName.text.toString().trim()
 
-            // 🌟 ส่วนที่แก้: ห้ามสร้างกลุ่มคนเดียว (ต้องมีเพื่อนอย่างน้อย 1 คน)
             if (selectedMemberUids.isEmpty()) {
                 Toast.makeText(this, "Please select at least one friend to create a group", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
@@ -137,7 +136,7 @@ class CreateGroup : AppCompatActivity() {
         val groupData = hashMapOf(
             "groupName" to groupName,
             "admin" to myUid,
-            "members" to arrayListOf(myUid), // เริ่มต้นมีแค่เรา แต่คำเชิญจะถูกส่งออกไปทันที
+            "members" to arrayListOf(myUid), // เริ่มต้นมีแค่เรา
             "createdAt" to com.google.firebase.Timestamp.now()
         )
 

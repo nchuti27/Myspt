@@ -31,7 +31,7 @@ class RecentBillAdapter(private val billList: ArrayList<BillItem>) :
         holder.tvBillName.text = currentItem.itemName
         holder.tvBillTotal.text = String.format("%.2f ฿", currentItem.price)
 
-        // คลิกเพื่อดูรายละเอียดบิล
+        //ดูรายละเอียดบิล
         holder.itemView.setOnClickListener { view ->
             val intent = Intent(view.context, BillDetail::class.java)
             intent.putExtra("BILL_ID", currentItem.id) // ส่ง ID ไปดึงข้อมูลละเอียด [cite: 2026-02-13]
@@ -39,7 +39,6 @@ class RecentBillAdapter(private val billList: ArrayList<BillItem>) :
             view.context.startActivity(intent)
         }
 
-        // เมนูจุด 3 จุดสำหรับลบ
         holder.btnBillMenu.setOnClickListener { view ->
             val popup = PopupMenu(view.context, view)
             popup.menu.add("Delete Bill").setOnMenuItemClickListener {
@@ -55,13 +54,11 @@ class RecentBillAdapter(private val billList: ArrayList<BillItem>) :
             .setTitle("Delete History")
             .setMessage("Are you sure you want to delete '${item.itemName}'?")
             .setPositiveButton("Delete") { _, _ ->
-                // ✅ ลบข้อมูลจริงใน Firestore [cite: 2026-02-13]
                 if (!item.id.isNullOrEmpty()) {
                     FirebaseFirestore.getInstance().collection("bills").document(item.id!!)
                         .delete()
                         .addOnSuccessListener {
                             Toast.makeText(context, "Bill deleted successfully", Toast.LENGTH_SHORT).show()
-                            // ไม่ต้อง remove จาก list เองถ้าใช้ SnapshotListener ในหน้า Activity [cite: 2026-02-27]
                         }
                 }
             }

@@ -26,7 +26,7 @@ class UploadQrActivity : AppCompatActivity() {
     private val auth = FirebaseAuth.getInstance()
     private val storage = FirebaseStorage.getInstance()
 
-    // ตัวเปิด Gallery เพื่อเลือกรูป [cite: 2026-02-23]
+    // ตัวเปิด Gallery เพื่อเลือกรูป
     private val getImage = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) {
             imageUri = uri
@@ -51,7 +51,7 @@ class UploadQrActivity : AppCompatActivity() {
             uploadImageToFirebase()
         }
 
-        // 3. ปุ่มย้อนกลับ (ใช้ finish() เพื่อปิดหน้านี้และกลับไปหน้าก่อนหน้า)
+        // 3. ปุ่มย้อนกลับ
         btnBack.setOnClickListener {
             finish()
         }
@@ -88,7 +88,6 @@ class UploadQrActivity : AppCompatActivity() {
     private fun saveUrlToFirestore(url: String) {
         val uid = auth.currentUser?.uid ?: return
 
-        // บันทึกลิงก์รูปภาพลง Firestore [cite: 2026-02-23]
         db.collection("users").document(uid)
             .update("payment_qr", url)
             .addOnSuccessListener {

@@ -58,7 +58,7 @@ class Owe : AppCompatActivity() {
     private fun fetchDebtsFromFirebase() {
         if (myUid.isEmpty()) return
 
-        // ดึงฝั่ง Owe You (เราเป็นเจ้าหนี้)
+        // ดึงฝั่ง Owe You
         db.collection("debts").whereEqualTo("creditorId", myUid).whereEqualTo("status", "pending")
             .addSnapshotListener { snapshots, _ ->
                 oweYouList.clear()
@@ -70,7 +70,7 @@ class Owe : AppCompatActivity() {
                 adapterOweYou.updateData(oweYouList)
             }
 
-        // ดึงฝั่ง You Owe (เราเป็นลูกหนี้)
+        // ดึงฝั่ง You Owe
         db.collection("debts").whereEqualTo("friendId", myUid).whereEqualTo("status", "pending")
             .addSnapshotListener { snapshots, _ ->
                 youOweList.clear()
@@ -83,8 +83,7 @@ class Owe : AppCompatActivity() {
             }
     }
 
-    // ในไฟล์ Owe.kt
-    // ในไฟล์ Owe.kt
+
     private fun markDebtAsPaid(debt: Debt) {
         val batch = db.batch()
         val debtRef = db.collection("debts").document(debt.debtId)
@@ -93,8 +92,8 @@ class Owe : AppCompatActivity() {
         batch.update(debtRef, "status", "paid")
 
         val notiData = hashMapOf(
-            "to_uid" to debt.creditorId,    // 🌟 เปลี่ยนจาก receiverId เป็น to_uid ให้ตรงกับหน้าดึงข้อมูล
-            "from_uid" to myUid,            // 🌟 เปลี่ยนจาก senderId เป็น from_uid
+            "to_uid" to debt.creditorId,
+            "from_uid" to myUid,
             "from_name" to debt.name,
             "type" to "PAYMENT_RECEIVED",
             "message" to "Received payment: ฿${String.format("%.2f", debt.amount)} from ${debt.name}",

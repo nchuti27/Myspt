@@ -13,7 +13,7 @@ import androidx.core.view.WindowInsetsCompat
 import com.google.firebase.auth.FirebaseAuth
 
 class Login : AppCompatActivity() {
-    // เปลี่ยนมาใช้ lateinit เพื่อความสะดวกและปลอดภัยกว่า null [cite: 2026-02-28]
+
     private lateinit var btnLogin: Button
     private lateinit var edtLuser: EditText
     private lateinit var edtLpass: EditText
@@ -27,7 +27,6 @@ class Login : AppCompatActivity() {
         enableEdgeToEdge()
         setContentView(R.layout.activity_login)
 
-        // ตรวจสอบว่าใน activity_login.xml มี android:id="@+id/main" แล้วหรือยัง
         val mainView = findViewById<android.view.View>(R.id.main)
         mainView?.let {
             ViewCompat.setOnApplyWindowInsetsListener(it) { v, insets ->
@@ -39,7 +38,7 @@ class Login : AppCompatActivity() {
 
         auth = FirebaseAuth.getInstance()
 
-        // ✅ เช็คถ้าเคย Login ไว้แล้ว ให้ไปหน้าหลักเลย (ช่วยลดอาการแอปค้างหน้า Login) [cite: 2026-01-26]
+        // เช็ค Login ไว้แล้ว ให้ไปหน้าหลักเลย
         if (auth.currentUser != null) {
             startActivity(Intent(this, MainActivity::class.java))
             finish()
@@ -57,7 +56,6 @@ class Login : AppCompatActivity() {
             } else if (uPass.isEmpty()) {
                 edtLpass.error = "Please input your password"
             } else {
-                // แสดงความคืบหน้า (ถ้ามี ProgressBar จะดีมากครับ) [cite: 2026-02-23]
                 auth.signInWithEmailAndPassword(uEmail, uPass)
                     .addOnCompleteListener { task ->
                         if (task.isSuccessful) {
@@ -82,7 +80,6 @@ class Login : AppCompatActivity() {
     }
 
     private fun init() {
-        // ผูก View ให้ตรงกับ ID ใน activity_login.xml
         btnLogin = findViewById(R.id.login_btn)
         edtLpass = findViewById(R.id.pass_pt)
         edtLuser = findViewById(R.id.user_pt)

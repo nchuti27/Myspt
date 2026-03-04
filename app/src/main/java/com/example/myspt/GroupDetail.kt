@@ -40,7 +40,6 @@ class GroupDetail : AppCompatActivity() {
 
         initViews()
 
-        // ตั้งค่า Adapter พร้อมลอจิกเช็คคนสุดท้ายก่อนลบ
         memberAdapter = MemberListAdapter(memberList) { memberId ->
             removeMemberFromGroup(memberId)
         }
@@ -183,7 +182,7 @@ class GroupDetail : AppCompatActivity() {
             }
     }
 
-    // 🌟 ส่วนที่แก้: เช็คคนสุดท้าย + ลบบิล + ลบกลุ่ม
+    //  เช็คคนสุดท้าย + ลบบิล + ลบกลุ่ม
     private fun removeMemberFromGroup(uidToRemove: String) {
         val builder = androidx.appcompat.app.AlertDialog.Builder(this)
         builder.setTitle("Remove Member")
@@ -202,16 +201,16 @@ class GroupDetail : AppCompatActivity() {
 
                 val batch = db.batch()
 
-                // กรณีที่ 1: ลบสมาชิกคนสุดท้าย (ยุบกลุ่ม)
+                // ลบสมาชิกคนสุดท้าย
                 if (members.size <= 1) {
-                    // ลบตัวกลุ่ม
+                    // ลบกลุ่ม
                     batch.delete(groupRef)
 
-                    // 🌟 ล้าง ID กลุ่มออกจากทั้ง "ตัวเรา" และ "เพื่อน"
+                    // ล้าง ID
                     batch.update(userToRemoveRef, "groups", FieldValue.arrayRemove(gId))
                     batch.update(currentUserRef, "groups", FieldValue.arrayRemove(gId))
 
-                    // ไปหาบิลเพื่อลบทิ้งด้วย
+                    //บิลลบทิ้ง
                     db.collection("bills").whereEqualTo("groupId", gId).get()
                         .addOnSuccessListener { bills ->
                             for (bill in bills) {
@@ -223,7 +222,7 @@ class GroupDetail : AppCompatActivity() {
                             }
                         }
                 }
-                // กรณีที่ 2: แค่เอาเพื่อนออก (กลุ่มยังอยู่)
+                // ่เอาเพื่อนออก
                 else {
                     batch.update(groupRef, "members", FieldValue.arrayRemove(uidToRemove))
                     batch.update(userToRemoveRef, "groups", FieldValue.arrayRemove(gId))

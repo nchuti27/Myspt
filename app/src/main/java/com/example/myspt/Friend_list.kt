@@ -58,7 +58,6 @@ class Friend_list : AppCompatActivity() {
         btnAddFriendPage.setOnClickListener { startActivity(Intent(this, AddFriend::class.java)) }
         btnBack.setOnClickListener { finish() }
 
-        // ✅ ใช้ Adapter ตัวจบในไฟล์เดียวกัน
         friendAdapter = FriendAdapter(fullFriendList)
         rvFriendList.layoutManager = LinearLayoutManager(this)
         rvFriendList.adapter = friendAdapter
@@ -98,7 +97,7 @@ class Friend_list : AppCompatActivity() {
                     val username = doc.getString("username") ?: ""
                     val pUrl = doc.getString("profileUrl")
                     val uid = doc.id
-                    // ✅ ส่งค่าเริ่มต้น isExpanded = false เพื่อให้แผงปุ่มซ่อนอยู่ตอนเริ่ม
+                    // ส่งค่าเริ่มต้น isExpanded = false เพื่อให้แผงปุ่มซ่อนอยู่ตอนเริ่ม
                     fullFriendList.add(FriendData(name, username, uid, pUrl, false))
                 }
                 friendAdapter.updateData(fullFriendList)
@@ -106,7 +105,7 @@ class Friend_list : AppCompatActivity() {
     }
 }
 
-// ✅ 3. Adapter ชุดจบ: กางแผงปุ่มได้เหมือน Group List
+
 class FriendAdapter(private var originalList: ArrayList<FriendData>) :
     RecyclerView.Adapter<FriendAdapter.FriendViewHolder>() {
 
@@ -133,7 +132,7 @@ class FriendAdapter(private var originalList: ArrayList<FriendData>) :
 
         holder.tvName.text = currentItem.name
 
-        // ✅ กางหรือซ่อน ตามค่า isExpanded ใน Model (เหมือน g list)
+        // กางหรือซ่อisExpanded
         holder.layoutActions.visibility = if (currentItem.isExpanded) View.VISIBLE else View.GONE
         holder.divider.visibility = if (currentItem.isExpanded) View.VISIBLE else View.GONE
 
@@ -143,14 +142,12 @@ class FriendAdapter(private var originalList: ArrayList<FriendData>) :
             .circleCrop()
             .into(holder.ivProfile)
 
-        // ✅ ปุ่ม 3 จุด: ทำหน้าที่สลับสถานะเปิด/ปิด (Toggle)
         holder.btnMore.setOnClickListener {
             TransitionManager.beginDelayedTransition(holder.itemView as ViewGroup)
             currentItem.isExpanded = !currentItem.isExpanded
             notifyItemChanged(position)
         }
 
-        // ✅ ปุ่มลบเพื่อน: ย้าย Dialog มาไว้ที่นี่ เพื่อให้เด้งหลังจากกางแผงออกมาแล้ว
         holder.btnRemoveFriend.setOnClickListener {
             AlertDialog.Builder(context)
                 .setTitle("Remove Friend")
@@ -166,7 +163,6 @@ class FriendAdapter(private var originalList: ArrayList<FriendData>) :
                 .show()
         }
 
-        // ✅ ปุ่มรายละเอียด
         holder.btnFriendDetail.setOnClickListener {
             currentItem.isExpanded = false
             notifyItemChanged(position)
@@ -175,7 +171,7 @@ class FriendAdapter(private var originalList: ArrayList<FriendData>) :
                 putExtra("FRIEND_NAME", currentItem.name)
                 putExtra("FRIEND_USERNAME", currentItem.username)
                 putExtra("FRIEND_IMG", currentItem.profileUrl)
-                // 🌟 บรรทัดสำคัญ! ส่งค่าว่าเป็นเพื่อนกันเพื่อให้โชว์ QR
+                // ส่งค่าว่าเป็นเพื่อนกันเพื่อให้โชว์ QR
                 putExtra("IS_FRIEND", true)
             }
             context.startActivity(intent)
@@ -186,25 +182,22 @@ class FriendAdapter(private var originalList: ArrayList<FriendData>) :
         val myUid = FirebaseAuth.getInstance().currentUser?.uid ?: return
         val db = FirebaseFirestore.getInstance()
 
-        // 🌟 ใช้ Batch เพื่อลบทั้ง 2 ฝั่งพร้อมกัน
+        // ลบทั้ง 2 ฝั่งพร้อมกัน
         val batch = db.batch()
 
-        // 1. ลบเพื่อนออกจากเรา
+        // ลบเพื่อนออกจากเรา
         val myRef = db.collection("users").document(myUid)
         batch.update(myRef, "friends", FieldValue.arrayRemove(friendUid))
 
-        // 2. ลบเราออกจากเพื่อน
+        // ลบเราออกจากเพื่อน
         val friendRef = db.collection("users").document(friendUid)
         batch.update(friendRef, "friends", FieldValue.arrayRemove(myUid))
 
-        // 3. Commit คำสั่ง
         batch.commit().addOnSuccessListener {
-            // อัปเดต UI เมื่อลบสำเร็จ
             originalList.removeAll { it.uid == friendUid }
             if (position != RecyclerView.NO_POSITION && position < filteredList.size) {
                 filteredList.removeAt(position)
                 notifyItemRemoved(position)
-                // notifyItemRangeChanged(position, filteredList.size) // ซ่อนไว้ก่อน บางทีทำให้ Animation กระตุก
             }
             Toast.makeText(context, "Unfriended successfully", Toast.LENGTH_SHORT).show()
         }.addOnFailureListener { e ->

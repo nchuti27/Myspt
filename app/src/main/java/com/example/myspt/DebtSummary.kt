@@ -22,11 +22,10 @@ class DebtSummary : AppCompatActivity() {
     private var tabFriends: TextView? = null
     private var btnMenu: ImageView? = null
 
-    // 🌟 เพิ่มตัวแปรสำหรับ RecyclerView และ Adapter แยกสองฝั่ง
     private lateinit var rvOweYou: RecyclerView
     private lateinit var rvYouOwe: RecyclerView
-    private lateinit var oweYouAdapter: DebtAdapter // ใช้ตัวที่มี Checkbox/กระดิ่ง
-    private lateinit var youOweAdapter: DebtYouOweAdapter // ใช้ตัวโชว์ยอดเฉยๆ
+    private lateinit var oweYouAdapter: DebtAdapter
+    private lateinit var youOweAdapter: DebtYouOweAdapter
 
     private val db = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
@@ -44,10 +43,8 @@ class DebtSummary : AppCompatActivity() {
         init()
         setupAdapters() // ตั้งค่าตัวจัดการรายการ
 
-        // 🌟 ปุ่มกดย้อนกลับ
         btnBack?.setOnClickListener { finish() }
 
-        // สลับแท็บไปหน้า FriendOwe
         tabFriends?.setOnClickListener {
             val intent = Intent(this, FriendOwe::class.java)
             val options = android.app.ActivityOptions.makeCustomAnimation(this, 0, 0)
@@ -55,7 +52,6 @@ class DebtSummary : AppCompatActivity() {
             finish()
         }
 
-        // เมนูเพิ่มเติม
         btnMenu?.setOnClickListener { view ->
             val popupMenu = PopupMenu(this@DebtSummary, view)
             popupMenu.menuInflater.inflate(R.menu.menu_group_options, popupMenu.menu)
@@ -87,21 +83,19 @@ class DebtSummary : AppCompatActivity() {
     }
 
     private fun setupAdapters() {
-        // 1. ฝั่ง Owe You (เขาติดหนี้เรา): ใส่ลอจิกเมื่อติ๊กช่อง Checkbox
+        // 1. ฝั่ง Owe You
         oweYouAdapter = DebtAdapter(arrayListOf()) { debt ->
-            // 🌟 เมื่อติ๊กช่อง cbDebt (อนุมัติว่าเขาจ่ายแล้ว)
             confirmPayment(debt)
         }
-
         rvOweYou.layoutManager = LinearLayoutManager(this)
         rvOweYou.adapter = oweYouAdapter
 
-        // 2. ฝั่ง You Owe (เราติดหนี้เขา): แสดงผลยอดเงินปกติ
+        // 2. ฝั่ง You Owe
         youOweAdapter = DebtYouOweAdapter(arrayListOf())
         rvYouOwe.layoutManager = LinearLayoutManager(this)
         rvYouOwe.adapter = youOweAdapter
 
-        // ดึงข้อมูลจริงจาก Firestore
+
         loadDebtData()
     }
 
@@ -110,11 +104,10 @@ class DebtSummary : AppCompatActivity() {
             .setTitle("Confirm Payment")
             .setMessage("Did you receive ฿${String.format(java.util.Locale.getDefault(), "%.2f", debt.amount)} from ${debt.name}?")
             .setPositiveButton("Yes") { _, _ ->
-                // 🌟 ลบหนี้ออกจาก Database จริงๆ เมื่อยืนยันรับเงิน
+                // ลบหนี้ออกจาก Database
                 db.collection("debts").document(debt.debtId).delete()
                     .addOnSuccessListener {
                         Toast.makeText(this, "Debt cleared successfully!", Toast.LENGTH_SHORT).show()
-                        // ไม่ต้องสั่ง updateData เองเพราะ Listener จะจัดการให้ครับ
                     }
             }
             .setNegativeButton("No", null)
@@ -130,7 +123,6 @@ class DebtSummary : AppCompatActivity() {
                 val youOweList = ArrayList<Debt>()
 
                 for (doc in snapshots.documents) {
-                    // 🌟 กรองเฉพาะสถานะ "pending" (ยังไม่จ่าย)
                     val status = doc.getString("status") ?: "pending"
                     if (status != "pending") continue
 

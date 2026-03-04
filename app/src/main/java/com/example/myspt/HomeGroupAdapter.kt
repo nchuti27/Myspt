@@ -42,12 +42,11 @@ class HomeGroupAdapter(
 
         holder.tvGroupName?.text = if (currentItem.isAddButton) "Add" else currentItem.name
 
-        // ✅ โหลดรูปภาพกลุ่ม/โปรไฟล์
+
         if (currentItem.isAddButton) {
             holder.imgGroup?.setImageResource(android.R.drawable.ic_input_add)
             holder.imgGroup?.setPadding(40, 40, 40, 40)
         } else {
-            // ใช้ Glide โหลดรูปภาพ ถ้าไม่มีให้ใช้รูปพื้นฐาน [cite: 2026-02-23]
             holder.imgGroup?.let {
                 Glide.with(holder.itemView.context)
                     .load(currentItem.profileUrl ?: R.drawable.ic_launcher_background)

@@ -40,7 +40,6 @@ class HomeFriendAdapter(private val friendList: ArrayList<FriendData>) :
 
         holder.tvName.text = currentItem.name
 
-        // ✅ กางหรือซ่อนแผงตามสถานะในข้อมูล (เหมือน Group List)
         holder.layoutActions.visibility = if (currentItem.isExpanded) View.VISIBLE else View.GONE
         holder.divider.visibility = if (currentItem.isExpanded) View.VISIBLE else View.GONE
 
@@ -49,14 +48,12 @@ class HomeFriendAdapter(private val friendList: ArrayList<FriendData>) :
             .circleCrop()
             .into(holder.ivProfile)
 
-        // ✅ ปุ่ม 3 จุด: สลับสถานะเปิด/ปิด (Toggle)
         holder.btnMore.setOnClickListener {
             TransitionManager.beginDelayedTransition(holder.itemView as ViewGroup)
             currentItem.isExpanded = !currentItem.isExpanded
             notifyItemChanged(position)
         }
 
-        // ✅ ปุ่ม Remove Friend: ค่อยเด้ง Dialog ในนี้
         holder.btnRemoveFriend.setOnClickListener {
             AlertDialog.Builder(context)
                 .setTitle("Remove Friend")
@@ -72,13 +69,11 @@ class HomeFriendAdapter(private val friendList: ArrayList<FriendData>) :
                 .show()
         }
 
-        // ✅ ปุ่ม Friend Detail
         holder.btnFriendDetail.setOnClickListener {
             val intent = Intent(context, FriendProfile::class.java).apply {
                 putExtra("FRIEND_UID", currentItem.uid)
                 putExtra("FRIEND_NAME", currentItem.name)
                 putExtra("FRIEND_IMG", currentItem.profileUrl)
-                // 🌟 บรรทัดสำคัญที่ห้ามลืม! บอกหน้าโปรไฟล์ว่าเป็นเพื่อนกันแล้ว
                 putExtra("IS_FRIEND", true)
             }
             context.startActivity(intent)

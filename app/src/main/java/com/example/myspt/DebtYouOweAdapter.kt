@@ -11,7 +11,7 @@ class DebtYouOweAdapter(private var debtList: List<Debt>) : RecyclerView.Adapter
 
     class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val txtName: TextView = itemView.findViewById(R.id.txtName)
-        val txtBillDetail: TextView = itemView.findViewById(R.id.txtBillDetail) // 🌟 เพิ่มตัวแปรนี้
+        val txtBillDetail: TextView = itemView.findViewById(R.id.txtBillDetail)
         val txtAmount: TextView = itemView.findViewById(R.id.txtAmount)
     }
 
@@ -23,7 +23,6 @@ class DebtYouOweAdapter(private var debtList: List<Debt>) : RecyclerView.Adapter
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val debt = debtList[position]
 
-        // 🌟 เปลี่ยนแค่จุดเดียวคือ .isEmpty()
         val displayName = if (debt.creditorName.isEmpty() || debt.creditorName == "Unknown") {
             debt.name
         } else {

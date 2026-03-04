@@ -11,8 +11,8 @@ import androidx.recyclerview.widget.RecyclerView
 
 class BillAdapter(
     private val billList: ArrayList<BillItem>,
-    private val selectedMembers: ArrayList<String>, // UIDs
-    private val memberNames: ArrayList<String>,     // เพิ่มพารามิเตอร์นี้เข้าไป
+    private val selectedMembers: ArrayList<String>, // UID
+    private val memberNames: ArrayList<String>,
     private val onTotalChange: () -> Unit
 ) : RecyclerView.Adapter<BillAdapter.BillViewHolder>() {
 

@@ -4,5 +4,5 @@ data class FriendItem(
     val uid: String,
     val name: String,
     var isSelected: Boolean = false,
-    val profileUrl: String? = null // 🌟 เพิ่มบรรทัดนี้ใน FriendItem.kt
+    val profileUrl: String? = null
 )

@@ -35,7 +35,6 @@ class MainActivity : AppCompatActivity() {
     private var rvFriends: RecyclerView? = null
     private var rvGroups: RecyclerView? = null
 
-    // ประกาศรายการข้อมูลและ Adapter ไว้ระดับคลาส
     private val friendItems = ArrayList<CircleItem>()
     private val groupItems = ArrayList<CircleItem>()
     private lateinit var friendAdapter: CircleAdapter
@@ -65,7 +64,6 @@ class MainActivity : AppCompatActivity() {
         setupClickListeners()
     }
 
-    // ทำงานทุกครั้งที่ผู้ใช้กลับมาที่หน้า Home (เพื่ออัปเดตข้อมูลให้เป็นปัจจุบันเสมอ)
     override fun onResume() {
         super.onResume()
         setupFriendList()
@@ -100,10 +98,10 @@ class MainActivity : AppCompatActivity() {
         rvFriends?.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
         rvFriends?.adapter = friendAdapter
 
-        // กลุ่ม (แก้ไขพารามิเตอร์ให้ครบ 4 ตัว เพื่อป้องกัน Error 'No value passed for parameter')
+        // กลุ่ม
         groupAdapter = HomeGroupAdapter(
             groupList = groupItems,
-            isListView = false, // หน้า Main แสดงเป็นวงกลม (Horizontal)
+            isListView = false,
             onClick = { item ->
                 if (item.isAddButton) {
                     startActivity(Intent(this, CreateGroup::class.java))
@@ -113,7 +111,7 @@ class MainActivity : AppCompatActivity() {
                     startActivity(intent)
                 }
             },
-            onLeaveClick = null // หน้า Main ไม่ต้องใช้ปุ่ม Leave
+            onLeaveClick = null
         )
 
         rvGroups?.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
@@ -126,7 +124,7 @@ class MainActivity : AppCompatActivity() {
         tvSeeMoreFriend?.setOnClickListener { startActivity(Intent(this, Friend_list::class.java)) }
         tvSeeMoreGroup?.setOnClickListener { startActivity(Intent(this, Grouplist::class.java)) }
 
-        // ⚠️ แก้ไขจุดที่ตั้งค่า btnSplitBill ซ้ำซ้อน
+
         // btnSplitBill?.setOnClickListener { startActivity(Intent(this, BillSplit::class.java)) }
         btnSplitBill?.setOnClickListener { startActivity(Intent(this, SelectGroupActivity::class.java)) }
 

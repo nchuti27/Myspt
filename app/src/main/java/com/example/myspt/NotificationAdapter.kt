@@ -42,7 +42,7 @@ class NotificationAdapter(
         holder.btnDelete.visibility = View.VISIBLE
         holder.btnDelete.text = "Delete"
         holder.ivMore.visibility = View.VISIBLE
-        holder.imgAvatar.setImageResource(R.drawable.outline_person) // รีเซ็ตเป็นรูป default ก่อน
+        holder.imgAvatar.setImageResource(R.drawable.outline_person)
 
         if (type == "debt_reminder" || type == "PAYMENT_RECEIVED") {
 
@@ -52,7 +52,7 @@ class NotificationAdapter(
 
             holder.btnAccept.visibility = View.GONE
             holder.btnDelete.visibility = View.GONE
-            holder.imgAvatar.setImageResource(R.drawable.outline_money) // เปลี่ยนเป็นไอคอนแจ้งเตือน
+            holder.imgAvatar.setImageResource(R.drawable.outline_money)
 
         } else {
             when (activeTab) {

@@ -5,5 +5,5 @@ data class Group(
     val id: String = "",
     val name: String = "",
     val members: ArrayList<String> = arrayListOf(),
-    val profileUrl: String? = null // 🌟 ต้องเพิ่มบรรทัดนี้ถึงจะหายแดงใน Adapter
+    val profileUrl: String? = null
 )

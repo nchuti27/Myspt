@@ -120,7 +120,7 @@ class BillSplit : AppCompatActivity() {
             }
         }
 
-        if (amountPerPerson.isEmpty()) { Toast.makeText(this, "กรุณาเลือกผู้หาร", Toast.LENGTH_SHORT).show(); return }
+        if (amountPerPerson.isEmpty()) { Toast.makeText(this, "Please select a divisor", Toast.LENGTH_SHORT).show(); return }
 
         val dialog = AlertDialog.Builder(this).create()
         val view = layoutInflater.inflate(R.layout.layout_dialog_payment, null)
@@ -141,8 +141,6 @@ class BillSplit : AppCompatActivity() {
             })
             dialog.dismiss()
         }
-
-        // ปุ่ม Back (No): ปิด Dialog
         view.findViewById<AppCompatButton>(R.id.backButton).setOnClickListener {
             dialog.dismiss()
         }

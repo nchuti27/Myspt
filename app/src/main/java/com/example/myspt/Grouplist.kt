@@ -36,7 +36,6 @@ class Grouplist : AppCompatActivity() {
 
         initViews()
         setupRecyclerView()
-        // เรียกดึงข้อมูลครั้งแรกครั้งเดียวพอ
         fetchGroupList()
         setupSearch()
     }
@@ -92,7 +91,7 @@ class Grouplist : AppCompatActivity() {
                 .whereIn(com.google.firebase.firestore.FieldPath.documentId(), groupIds)
                 .get()
                 .addOnSuccessListener { documents ->
-                    allGroups.clear() // เคลียร์อีกรอบเพื่อความชัวร์ก่อนรับค่าใหม่
+                    allGroups.clear()
                     for (gDoc in documents) {
                         val name = gDoc.getString("groupName") ?: "Unknown"
                         allGroups.add(CircleItem(id = gDoc.id, name = name, isAddButton = false))

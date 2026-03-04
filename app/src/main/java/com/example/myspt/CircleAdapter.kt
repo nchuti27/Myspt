@@ -37,11 +37,9 @@ class CircleAdapter(
             holder.img.setPadding(0, 0, 0, 0)
             holder.img.setStrokeWidth(2f)
 
-            // ✅ แก้ไขจาก imageUrl เป็น profileUrl ให้ตรงกับ CircleItem
             if (item.profileUrl.isNullOrEmpty()) {
                 holder.img.setImageResource(R.drawable.ic_launcher_background)
             } else {
-                // แนะนำให้ใช้ Glide โหลดรูปจริงแทนการโชว์แค่พื้นหลังครับ [cite: 2026-02-23]
                 Glide.with(holder.itemView.context)
                     .load(item.profileUrl)
                     .placeholder(R.drawable.ic_launcher_background)

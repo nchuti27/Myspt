@@ -21,7 +21,7 @@ class FriendProfile : AppCompatActivity() {
     private lateinit var tvFullName: TextView
     private lateinit var tvUsername: TextView
     private lateinit var btnSaveQr: Button
-    private lateinit var tvQrLabel: TextView // 🌟 เพิ่มตัวแปรสำหรับข้อความหัวข้อ QR
+    private lateinit var tvQrLabel: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,18 +34,18 @@ class FriendProfile : AppCompatActivity() {
         val friendName = intent.getStringExtra("FRIEND_NAME") ?: "Unknown"
         val friendUsername = intent.getStringExtra("FRIEND_USERNAME") ?: ""
 
-        // 🌟 2. รับสถานะความเป็นเพื่อน (ถ้าไม่ได้ส่งมาจะถือว่าเป็น false ไว้ก่อน)
+
         val isFriend = intent.getBooleanExtra("IS_FRIEND", false)
 
         // 3. แสดงข้อมูลเบื้องต้น
         tvFullName.text = friendName
         tvUsername.text = if (friendUsername.startsWith("@")) friendUsername else "@$friendUsername"
 
-        // 🌟 4. ลอจิกการซ่อน/แสดง QR Code
+        // แสดง QR Code
         if (!isFriend) {
             ivQrCode.visibility = View.GONE
             btnSaveQr.visibility = View.GONE
-            tvQrLabel.text = "Connect with friend to see QR Code" // เปลี่ยนข้อความบอกผู้ใช้
+            tvQrLabel.text = "Connect with friend to see QR Code"
             Toast.makeText(this, "Add friend to see QR Code", Toast.LENGTH_SHORT).show()
         } else {
             ivQrCode.visibility = View.VISIBLE
@@ -53,7 +53,6 @@ class FriendProfile : AppCompatActivity() {
             tvQrLabel.text = "PromptPay QR Code"
         }
 
-        // 5. ดึงข้อมูลเชิงลึก (รูปภาพ) จาก Firestore
         if (friendUid != null) {
             loadFriendDataFromFirestore(friendUid, isFriend)
         }
@@ -69,7 +68,6 @@ class FriendProfile : AppCompatActivity() {
         tvFullName = findViewById(R.id.tvFriendFullName)
         tvUsername = findViewById(R.id.tvFriendUsername)
         btnSaveQr = findViewById(R.id.btnSaveQr)
-        // 🌟 สมมติว่าใน XML พี่ใช้ ID นี้สำหรับตัวหนังสือเหนือ QR
         tvQrLabel = findViewById(R.id.tvQrLabel)
 
         val btnBack = findViewById<ImageButton>(R.id.backButton)
@@ -93,7 +91,6 @@ class FriendProfile : AppCompatActivity() {
                         ivProfile.load(profileUrl) { crossfade(true) }
                     }
 
-                    // 🌟 โหลดรูป QR เฉพาะเมื่อเป็นเพื่อนกันเท่านั้น
                     if (isFriend && !qrUrl.isNullOrEmpty()) {
                         ivQrCode.load(qrUrl) { crossfade(true) }
                     }

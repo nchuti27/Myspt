@@ -16,7 +16,7 @@ class EditProfile : AppCompatActivity() {
     private lateinit var etEmail: EditText
     private lateinit var btnQr: Button
     private lateinit var btnBack: ImageButton
-    private lateinit var btnChangePhoto: FloatingActionButton // เพิ่มปุ่มกล้อง
+    private lateinit var btnChangePhoto: FloatingActionButton
 
     private lateinit var savetxt: TextView
 
@@ -34,17 +34,15 @@ class EditProfile : AppCompatActivity() {
         btnQr = findViewById(R.id.btnQr)
         savetxt = findViewById(R.id.savetxt)
         btnBack = findViewById(R.id.btnBack2Main)
-        btnChangePhoto = findViewById(R.id.btnChangePhoto) //
+        btnChangePhoto = findViewById(R.id.btnChangePhoto)
 
-        // 2. ดึงข้อมูล User มาแสดง
+        // 2. ดึงข้อมูล User
         loadUserData()
-
-        // 3. ตั้งค่าการกดปุ่ม
         btnBack.setOnClickListener { finish() }
 
         savetxt.setOnClickListener { saveUserProfile() }
 
-        // เมื่อกดปุ่มกล้อง ให้เด้งเมนูเลือกรูปภาพ
+        // เมื่อกดปุ่มกล้องเมนูเลือกรูปภาพ
         btnChangePhoto.setOnClickListener {
             showPhotoOptionsDialog()
         }
@@ -71,21 +69,17 @@ class EditProfile : AppCompatActivity() {
 
     private fun showPhotoOptionsDialog() {
         val dialog = BottomSheetDialog(this)
-        // อย่าลืมสร้างไฟล์ layout_dialog_photo.xml ไว้ในโฟลเดอร์ layout นะครับ
-        // ใช้ findViewById(android.R.id.content) เป็น root แทน null ครับ [cite: 2026-02-23]
         val view = layoutInflater.inflate(R.layout.dialogphoto, findViewById(android.R.id.content), false)
 
         val lnPhotoLibrary = view.findViewById<LinearLayout>(R.id.lnPhotoLibrary)
         val lnTakePhoto = view.findViewById<LinearLayout>(R.id.lnTakePhoto)
 
         lnPhotoLibrary.setOnClickListener {
-            // TODO: โค้ดสำหรับเปิด Gallery เพื่อเลือกรูป
             Toast.makeText(this, "Opening Photo Library...", Toast.LENGTH_SHORT).show()
             dialog.dismiss()
         }
 
         lnTakePhoto.setOnClickListener {
-            // TODO: โค้ดสำหรับเปิดกล้องถ่ายรูป
             Toast.makeText(this, "Opening Camera...", Toast.LENGTH_SHORT).show()
             dialog.dismiss()
         }
@@ -103,7 +97,6 @@ class EditProfile : AppCompatActivity() {
             return
         }
 
-        // อัปเดตเฉพาะชื่อใน Firestore
         db.collection("users").document(uid).update("name", newName)
             .addOnSuccessListener {
                 Toast.makeText(this, "Profile Updated Successfully!", Toast.LENGTH_SHORT).show()

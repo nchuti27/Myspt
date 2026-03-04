@@ -70,7 +70,7 @@ class NotiGroup : AppCompatActivity() {
             finish()
         }
 
-        // 🌟 ระบบ Clear All เฉพาะแท็บ Group
+
         btnClearAll?.setOnClickListener {
             if (groupNotiList.isEmpty()) {
                 Toast.makeText(this, "No notifications to clear", Toast.LENGTH_SHORT).show()
@@ -102,12 +102,11 @@ class NotiGroup : AppCompatActivity() {
     }
 
     private fun setupRecyclerView() {
-        // ส่งแท็บ "GROUP" ไปให้ Adapter เพื่อจัดการปุ่มให้ถูกต้อง
         groupAdapter = NotificationAdapter(groupNotiList,
             onAccept = { doc -> joinGroup(doc) },
             onDelete = { doc -> declineGroup(doc) }
         )
-        groupAdapter.updateData(groupNotiList, "GROUP") // 🌟 กำหนดแท็บเริ่มต้น
+        groupAdapter.updateData(groupNotiList, "GROUP")
 
         checkEmptyState(groupNotiList)
 
@@ -126,15 +125,13 @@ class NotiGroup : AppCompatActivity() {
                 if (snapshots != null) {
                     groupNotiList.clear()
                     groupNotiList.addAll(snapshots.documents)
-                    checkEmptyState(groupNotiList) // 🌟 เพิ่มบรรทัดนี้
+                    checkEmptyState(groupNotiList)
                     groupAdapter.updateData(groupNotiList, "GROUP")
                 }
             }
     }
 
     private fun confirmClearAll() {
-        // 🌟 ในหน้านี้พี่น่าจะใช้ชื่อ groupNotiList (หรือชื่ออื่นที่พี่ประกาศไว้ข้างบน)
-        // ถ้าพี่ประกาศชื่ออะไรไว้ ให้เปลี่ยนคำว่า groupNotiList เป็นชื่อนั้นครับ
         if (groupNotiList.isEmpty()) {
             Toast.makeText(this, "No group invites to clear", Toast.LENGTH_SHORT).show()
             return
@@ -146,14 +143,12 @@ class NotiGroup : AppCompatActivity() {
             .setPositiveButton("Clear All") { _, _ ->
                 val batch = db.batch()
 
-                // 🌟 เปลี่ยนจาก notiList เป็น groupNotiList ตามที่หน้านี้มี
                 for (doc in groupNotiList) {
                     batch.delete(doc.reference)
                 }
 
                 batch.commit().addOnSuccessListener {
                     Toast.makeText(this, "All invites cleared", Toast.LENGTH_SHORT).show()
-                    // รายการจะหายจากหน้าจออัตโนมัติเพราะ SnapshotListener ทำงานอยู่
                 }.addOnFailureListener { e ->
                     Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
                 }

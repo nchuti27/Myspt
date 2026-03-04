@@ -23,7 +23,6 @@ class Register : AppCompatActivity() {
     var edtMail : EditText? = null
 
     private lateinit var auth: FirebaseAuth
-    // 2. ประกาศตัวแปร Firestore
     private lateinit var db: FirebaseFirestore
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -68,7 +67,6 @@ class Register : AppCompatActivity() {
                 !rMail.endsWith("@gmail.com") -> edtMail!!.error = "Only @gmail.com is allowed"
 
                 else -> {
-                    // ส่วนเดิม: เช็ค Username ใน Firestore และสมัคร Auth
                     db.collection("users")
                         .whereEqualTo("username", rUser)
                         .get()

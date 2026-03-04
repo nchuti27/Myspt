@@ -26,7 +26,7 @@ class RecentBill : AppCompatActivity() {
         enableEdgeToEdge()
         setContentView(R.layout.activity_recent_bill)
 
-        db = FirebaseFirestore.getInstance() // [cite: 2026-02-13]
+        db = FirebaseFirestore.getInstance()
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -36,7 +36,6 @@ class RecentBill : AppCompatActivity() {
 
         init()
         setupListeners()
-        // ✅ เปลี่ยนมาโหลดข้อมูลจริงจาก Firestore [cite: 2026-02-13, 2026-02-21]
         loadRecentBillsFromFirestore()
     }
 
@@ -63,14 +62,13 @@ class RecentBill : AppCompatActivity() {
 
                 billList.clear()
                 for (doc in snapshots!!) {
-                    // ✅ ดึงให้ตรงชื่อฟิลด์ใน Firebase (billName)
                     val name = doc.getString("billName") ?: "No Name"
                     val total = doc.getDouble("totalAmount") ?: 0.0
                     val item = BillItem(name, 1, total)
                     item.id = doc.id
                     billList.add(item)
                 }
-                adapter.notifyDataSetChanged() // สั่งให้ RecyclerView แสดงผลใหม่
+                adapter.notifyDataSetChanged()
             }
     }
 }
