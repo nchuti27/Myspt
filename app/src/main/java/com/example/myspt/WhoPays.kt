@@ -16,6 +16,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FieldValue
 
 class WhoPays : AppCompatActivity() {
 
@@ -26,10 +27,14 @@ class WhoPays : AppCompatActivity() {
     private var isConfirmed: Boolean = false
     private var etBillName: EditText? = null
 
+
     private var rvSummaryItems: RecyclerView? = null
     private var tvTotalAmount: TextView? = null
-    private var etPaidAmount: EditText? = null
-    private var spinnerPayer: Spinner? = null
+
+    // 🌟 ส่วนของคนจ่ายหลายคน
+    private var rvPayersList: RecyclerView? = null
+    private lateinit var payerAdapter: PayerAdapter
+    private var payersDataList = ArrayList<PayerData>()
 
     private var amountPerPerson = HashMap<String, Double>()
     private var memberNames = HashMap<String, String>()
@@ -41,8 +46,6 @@ class WhoPays : AppCompatActivity() {
     private var totalAmount: Double = 0.0
     private var billName: String = "New Bill"
 
-    private var actualPayerUid: String? = null
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -51,7 +54,7 @@ class WhoPays : AppCompatActivity() {
         db = FirebaseFirestore.getInstance()
         auth = FirebaseAuth.getInstance()
 
-        // รับค่าชื่อบิลจากหน้าแรก
+        // 🌟 แก้ไข: รับค่าชื่อบิลให้ชัวร์
         billName = intent.getStringExtra("BILL_NAME") ?: "New Bill"
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
@@ -60,11 +63,8 @@ class WhoPays : AppCompatActivity() {
             insets
         }
 
-        // ดักการกดปุ่มย้อนกลับ
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                navigateBack()
-            }
+            override fun handleOnBackPressed() { navigateBack() }
         })
 
         init()
@@ -80,8 +80,7 @@ class WhoPays : AppCompatActivity() {
         btnConfirm = findViewById(R.id.btnConfirm)
         rvSummaryItems = findViewById(R.id.rvSummaryItems)
         tvTotalAmount = findViewById(R.id.tvTotalAmount)
-        etPaidAmount = findViewById(R.id.etPaidAmount)
-        spinnerPayer = findViewById(R.id.spinnerPayer)
+        rvPayersList = findViewById(R.id.rvPayersList) // 🌟 ต้องมีใน XML นะครับ
 
         findViewById<TextView>(R.id.tabItems)?.setOnClickListener { navigateBack() }
     }
@@ -89,130 +88,127 @@ class WhoPays : AppCompatActivity() {
     private fun setupData() {
         val splitResult = intent.getSerializableExtra("SPLIT_RESULT") as? HashMap<String, Double>
         val namesMap = intent.getSerializableExtra("MEMBER_NAMES") as? HashMap<String, String>
-        val itemsList = intent.getSerializableExtra("BILL_ITEMS") as? ArrayList<BillItem>
+        val selectedUids = intent.getStringArrayListExtra("SELECTED_MEMBERS") ?: arrayListOf()
 
-        // แสดงชื่อบิลที่ส่งมาจากหน้าแรก
+        // 🌟 แก้ไขจุดที่ 1: รับข้อมูลแบบยืดหยุ่น ป้องกันข้อมูลหายระหว่างทาง
+        val rawItems = intent.getSerializableExtra("BILL_ITEMS") as? ArrayList<*>
+        billItems.clear()
+
+        rawItems?.forEach { item ->
+            if (item is BillItem) {
+                billItems.add(item)
+            }
+        }
+
+        // 🌟 แก้ไขจุดที่ 2: ถ้า List ยังว่าง ให้ใส่ของปลอมลงไปเช็ค Layout ทันที
+        if (billItems.isEmpty()) {
+            billItems.add(BillItem("กำลังดึงข้อมูล...", 1, 0.0))
+        }
+
         etBillName?.setText(billName)
-
         if (splitResult != null) amountPerPerson.putAll(splitResult)
         if (namesMap != null) memberNames.putAll(namesMap)
 
-        if (itemsList != null) {
-            val allEnteredItems = itemsList.filter { it.itemName.isNotBlank() }
-            billItems.addAll(allEnteredItems)
-        }
-
         totalAmount = amountPerPerson.values.sum()
         tvTotalAmount?.text = String.format("%.2f ฿", totalAmount)
-        etPaidAmount?.setText(String.format("%.2f", totalAmount))
 
-        uidList.addAll(memberNames.keys)
-        val nameList = uidList.map { memberNames[it] ?: "Unknown" }
+        payersDataList.clear()
+        for (uid in selectedUids) {
+            payersDataList.add(PayerData(uid, memberNames[uid] ?: "Unknown", 0.0))
+        }
 
-        val spinnerAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, nameList)
-        spinnerPayer?.adapter = spinnerAdapter
-
+        // 🌟 แก้ไขจุดที่ 3: สั่งวาด RecyclerView ของรายการสินค้า
+        val itemSummaryAdapter = ItemSummaryAdapter(billItems)
         rvSummaryItems?.layoutManager = LinearLayoutManager(this)
-        rvSummaryItems?.adapter = ItemSummaryAdapter(billItems)
+        rvSummaryItems?.adapter = itemSummaryAdapter
+        itemSummaryAdapter.notifyDataSetChanged() //
+
+        // 🌟 แก้ไขจุดที่ 4: สั่งวาด RecyclerView ของรายชื่อคนจ่าย
+        payerAdapter = PayerAdapter(payersDataList)
+        rvPayersList?.layoutManager = LinearLayoutManager(this) //
+        rvPayersList?.adapter = payerAdapter
+        payerAdapter.notifyDataSetChanged()
     }
 
     private fun setupClickListeners() {
         backButton?.setOnClickListener { navigateBack() }
-
-        btnConfirm?.setOnClickListener {
-            if (isConfirmed) return@setOnClickListener
-
-            androidx.appcompat.app.AlertDialog.Builder(this)
-                .setTitle("Confirm Payment")
-                .setMessage("Are you sure you want to confirm? Once confirmed, this bill cannot be edited again.")
-                .setPositiveButton("Confirm") { dialog, _ ->
-                    saveBillToDatabase()
-                    dialog.dismiss()
-                }
-                .setNegativeButton("Cancel") { dialog, _ -> dialog.dismiss() }
-                .show()
-        }
-
+        btnConfirm?.setOnClickListener { processConfirm() }
         Ptabfriend?.setOnClickListener {
             if (isConfirmed) {
-                val intent = Intent(this, FriendOwe::class.java)
-                // ส่ง UID ของคนจ่ายเงินที่เลือกจริงไปยังหน้าถัดไป
-                intent.putExtra("PAYER_UID", actualPayerUid ?: auth.currentUser?.uid)
-                intent.putExtra("SPLIT_RESULT", amountPerPerson)
-                intent.putExtra("MEMBER_NAMES", memberNames)
+                val payersMap = HashMap<String, Double>()
+                payersDataList.forEach { payersMap[it.uid] = it.amountPaid }
 
+                val intent = Intent(this, FriendOwe::class.java).apply {
+                    putExtra("SPLIT_RESULT", amountPerPerson)
+                    putExtra("MEMBER_NAMES", memberNames)
+                    putExtra("PAYERS_MAP", payersMap)  // ✅ ใส่ใน apply block เดียวกัน
+                }
                 startActivity(intent)
-            } else {
-                showPleaseConfirmDialog()
             }
         }
-
         btnMenu?.setOnClickListener { view -> showMenu(view) }
     }
 
-    private fun saveBillToDatabase() {
-        val myUid = auth.currentUser?.uid ?: return
-        val selectedPayerIndex = spinnerPayer?.selectedItemPosition ?: 0
+    private fun processConfirm() {
+        if (isConfirmed) return
 
-        // เก็บค่าเข้าตัวแปร
-        actualPayerUid = if (uidList.isNotEmpty()) uidList[selectedPayerIndex] else myUid
-
-        // ตรวจสอบชื่อบิล
-        val inputName = etBillName?.text.toString().trim()
-        val finalBillName = when {
-            inputName.isNotEmpty() && inputName != "null" -> inputName
-            billName.isNotBlank() && billName != "null" -> billName
-            else -> "Untitled Bill"
+        val totalPaid = payersDataList.sumOf { it.amountPaid }
+        if (Math.abs(totalPaid - totalAmount) > 0.01) {
+            Toast.makeText(this, "Paid total ($totalPaid) must match bill ($totalAmount)", Toast.LENGTH_SHORT).show()
+            return
         }
 
-        // ปิดปุ่มเพื่อป้องกันการกดซ้ำ
-        btnConfirm?.isEnabled = false
-        btnConfirm?.alpha = 0.5f
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Confirm Payment")
+            .setMessage("Save this bill and notify friends?")
+            .setPositiveButton("Confirm") { _, _ -> saveBillWithPoolOffset() }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun saveBillWithPoolOffset() {
+        val finalBillName = etBillName?.text.toString().trim().ifEmpty { billName }
+        val payersMap = payersDataList.associate { it.uid to it.amountPaid }
 
         val billData = hashMapOf(
             "billName" to finalBillName,
             "totalAmount" to totalAmount,
-            "paidBy" to actualPayerUid,
+            "payers" to payersMap,
             "timestamp" to com.google.firebase.Timestamp.now(),
             "status" to "pending",
-            "splitDetails" to amountPerPerson,
             "items" to billItems
         )
 
-        db.collection("bills").add(billData)
-            .addOnSuccessListener {
+        db.collection("bills").add(billData).addOnSuccessListener { billRef ->
+            val payersMap = payersDataList.associate { it.uid to it.amountPaid }
 
-                // เดึงชื่อเจ้าหนี้
-                val creditorName = memberNames[actualPayerUid] ?: "Unknown"
+            // 🌟 วนลูปสมาชิกทุกคนเพื่อสร้างหนี้รายคนลง Firebase
+            for (memberId in memberNames.keys) {
+                val share = amountPerPerson[memberId] ?: 0.0 // ยอดที่ควรจ่าย
+                val paid = payersMap[memberId] ?: 0.0        // ยอดที่จ่ายจริง
+                val offset = paid - share                     // ส่วนต่างสุทธิ
 
-                // วนลูปรายชื่อทุกคนที่มีในบิล
-                for ((debtorUid, amount) in amountPerPerson) {
-                    // ข้ามคนที่เป็นคนออกเงินไปก่อน
-                    if (debtorUid == actualPayerUid) continue
-
-                    // สร้างข้อมูลหนี้สำหรับคนนี้
+                if (Math.abs(offset) > 0.01) {
                     val debtData = hashMapOf(
+                        "billId" to billRef.id,
                         "billName" to finalBillName,
-                        "creditorId" to actualPayerUid, // คนที่เป็นเจ้าหนี้
-                        "friendId" to debtorUid,        // คนที่เป็นลูกหนี้
-                        "name" to (memberNames[debtorUid] ?: "Unknown"), // ชื่อของลูกหนี้
-                        "creditorName" to creditorName,
-                        "amount" to amount,             // จำนวนเงินที่คนนี้ต้องจ่าย
-                        "status" to "pending"           // สถานะเริ่มต้น
+                        "status" to "pending",
+                        "amount" to Math.abs(offset),
+                        "name" to (memberNames[memberId] ?: "Unknown"),
+                        // 🌟 หัวใจสำคัญ: แยกฝั่งเจ้าหนี้/ลูกหนี้
+                        "creditorId" to if (offset > 0) memberId else "pool",
+                        "friendId" to if (offset < 0) memberId else "pool",
+                        "timestamp" to FieldValue.serverTimestamp()
                     )
-
-                    db.collection("debts").add(debtData)
+                    db.collection("debts").add(debtData) //
                 }
-
-                isConfirmed = true
-                Toast.makeText(this, "Bill Saved Successfully!", Toast.LENGTH_SHORT).show()
             }
-            .addOnFailureListener { e ->
-                btnConfirm?.isEnabled = true
-                btnConfirm?.alpha = 1.0f
-                Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
+            isConfirmed = true
+            Toast.makeText(this, "Bill & Debts Saved!", Toast.LENGTH_SHORT).show()
+        }
     }
+
+    // --- 🌟 ฟังก์ชัน Helper ที่หายไปและทำให้ Error ( navigateBack, showMenu ฯลฯ) ---
 
     private fun navigateBack() {
         if (isConfirmed) {
@@ -245,7 +241,6 @@ class WhoPays : AppCompatActivity() {
         dialog.findViewById<Button>(R.id.btnNo)?.setOnClickListener { dialog.dismiss() }
         dialog.findViewById<Button>(R.id.btnYes)?.setOnClickListener {
             dialog.dismiss()
-            Toast.makeText(this, "You have left the group.", Toast.LENGTH_SHORT).show()
             val intent = Intent(this, MainActivity::class.java)
             intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
             startActivity(intent)
@@ -262,6 +257,7 @@ class WhoPays : AppCompatActivity() {
         dialog.show()
     }
 
+    // 🌟 คลาส Adapter ภายในที่หายไป
     class ItemSummaryAdapter(private val items: List<BillItem>) : RecyclerView.Adapter<ItemSummaryAdapter.ViewHolder>() {
         class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
             val tvItemName: TextView = view.findViewById(R.id.tvItemName)

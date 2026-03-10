@@ -43,13 +43,17 @@ class DebtAdapter(
 
     override fun onBindViewHolder(holder: DebtViewHolder, position: Int) {
         val debt = debtList[position]
-
         holder.txtName.text = debt.name
         holder.txtBillDetail.text = "Bill: ${debt.billName}"
         holder.txtAmount.text = "฿ ${String.format("%.2f", debt.amount)}"
 
+        // 🌟 แก้ไข: ป้องกัน CheckBox ค้างตอนเลื่อนจอ
+        holder.cbDebt.setOnCheckedChangeListener(null)
         holder.cbDebt.isChecked = (debt.status == "paid")
-        holder.cbDebt.setOnClickListener { onDebtChecked(debt) }
+
+        holder.cbDebt.setOnClickListener {
+            onDebtChecked(debt)
+        }
 
         holder.btnNotification.setOnClickListener {
             sendDebtNotification(holder.itemView.context, debt)

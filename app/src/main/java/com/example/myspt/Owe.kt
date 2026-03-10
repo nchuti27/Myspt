@@ -58,27 +58,33 @@ class Owe : AppCompatActivity() {
     private fun fetchDebtsFromFirebase() {
         if (myUid.isEmpty()) return
 
-        // ดึงฝั่ง Owe You
-        db.collection("debts").whereEqualTo("creditorId", myUid).whereEqualTo("status", "pending")
+        // 1. ดึงฝั่ง Owe You (คนอื่นค้างเรา)
+        db.collection("debts")
+            .whereEqualTo("creditorId", myUid)
+            .whereEqualTo("status", "pending")
             .addSnapshotListener { snapshots, _ ->
-                oweYouList.clear()
+                val list = mutableListOf<Debt>()
                 snapshots?.forEach { doc ->
                     val debt = doc.toObject(Debt::class.java)
-                    debt.debtId = doc.id
-                    oweYouList.add(debt)
+                    debt.debtId = doc.id // 🌟 สำคัญ: ต้องเก็บ ID ไว้ใช้ตอนกดจ่ายเงิน
+                    list.add(debt)
                 }
+                oweYouList = list
                 adapterOweYou.updateData(oweYouList)
             }
 
-        // ดึงฝั่ง You Owe
-        db.collection("debts").whereEqualTo("friendId", myUid).whereEqualTo("status", "pending")
+        // 2. ดึงฝั่ง You Owe (เราค้างคนอื่น)
+        db.collection("debts")
+            .whereEqualTo("friendId", myUid)
+            .whereEqualTo("status", "pending")
             .addSnapshotListener { snapshots, _ ->
-                youOweList.clear()
+                val list = mutableListOf<Debt>()
                 snapshots?.forEach { doc ->
                     val debt = doc.toObject(Debt::class.java)
                     debt.debtId = doc.id
-                    youOweList.add(debt)
+                    list.add(debt)
                 }
+                youOweList = list
                 adapterYouOwe.updateData(youOweList)
             }
     }
