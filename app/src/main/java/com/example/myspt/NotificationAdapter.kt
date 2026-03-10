@@ -57,6 +57,15 @@ class NotificationAdapter(
                 holder.imgAvatar.setImageResource(R.drawable.outline_money)
                 holder.btnDelete.visibility = View.VISIBLE
                 holder.btnDelete.text = "Dismiss"
+
+            }
+            "friend_accepted" -> {
+                holder.tvName.text = doc.getString("from_name") ?: "Someone"
+                holder.tvMessage.text = "accepted your friend request! 🎉"
+                holder.imgAvatar.setImageResource(R.drawable.outline_person) // หรือ icon ที่มี
+                holder.btnDelete.visibility = View.VISIBLE
+                holder.btnDelete.text = "Dismiss"
+                // ไม่ต้องมี btnAccept
             }
             else -> {
                 // friend request / group invite เหมือนเดิม

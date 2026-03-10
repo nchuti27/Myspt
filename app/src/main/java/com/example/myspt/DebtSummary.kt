@@ -100,15 +100,35 @@ class DebtSummary : AppCompatActivity() {
     }
 
     private fun confirmPayment(debt: Debt) {
+        val myUid = auth.currentUser?.uid ?: return
+
         AlertDialog.Builder(this)
             .setTitle("Confirm Payment")
             .setMessage("Did you receive ฿${String.format(java.util.Locale.getDefault(), "%.2f", debt.amount)} from ${debt.name}?")
             .setPositiveButton("Yes") { _, _ ->
-                // ลบหนี้ออกจาก Database
-                db.collection("debts").document(debt.debtId).delete()
-                    .addOnSuccessListener {
-                        Toast.makeText(this, "Debt cleared successfully!", Toast.LENGTH_SHORT).show()
-                    }
+                val batch = db.batch()
+
+                // ✅ 1. ลบหนี้
+                val debtRef = db.collection("debts").document(debt.debtId)
+                batch.delete(debtRef)
+
+                // ✅ 2. ส่ง notification ไปหาลูกหนี้ (friendId) ว่าเจ้าหนี้ยืนยันรับเงินแล้ว
+                val notiRef = db.collection("notifications").document()
+                batch.set(notiRef, hashMapOf(
+                    "to_uid"    to debt.friendId,   // ลูกหนี้รับ noti
+                    "from_uid"  to myUid,
+                    "from_name" to (auth.currentUser?.displayName ?: debt.creditorName),
+                    "type"      to "PAYMENT_RECEIVED",
+                    "message"   to "${debt.creditorName} confirmed your payment of ฿${String.format("%.2f", debt.amount)} for ${debt.billName}",
+                    "status"    to "pending",
+                    "timestamp" to com.google.firebase.firestore.FieldValue.serverTimestamp()
+                ))
+
+                batch.commit().addOnSuccessListener {
+                    Toast.makeText(this, "Debt cleared & notified!", Toast.LENGTH_SHORT).show()
+                }.addOnFailureListener {
+                    Toast.makeText(this, "Error: ${it.message}", Toast.LENGTH_SHORT).show()
+                }
             }
             .setNegativeButton("No", null)
             .show()

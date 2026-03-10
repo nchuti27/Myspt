@@ -164,10 +164,12 @@ class notification : AppCompatActivity() {
 
             val notiRef = db.collection("notifications").document()
             batch.set(notiRef, hashMapOf(
-                "receiverId" to senderUid,
-                "senderId" to myUid,
-                "type" to "FRIEND_ACCEPTED",
+                "to_uid" to senderUid,        // ✅ แก้จาก receiverId
+                "from_uid" to myUid,          // ✅ แก้จาก senderId
+                "from_name" to myName,        // ✅ เพิ่ม from_name
+                "type" to "friend_accepted",  // ✅ lowercase ให้ตรงกับ NotificationAdapter
                 "message" to "$myName accepted your friend request.",
+                "status" to "pending",
                 "timestamp" to FieldValue.serverTimestamp()
             ))
 
