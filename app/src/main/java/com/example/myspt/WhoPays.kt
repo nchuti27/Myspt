@@ -137,24 +137,33 @@ class WhoPays : AppCompatActivity() {
             if (isConfirmed) {
                 val payersMap = HashMap<String, Double>()
                 payersDataList.forEach { payersMap[it.uid] = it.amountPaid }
-
                 val intent = Intent(this, FriendOwe::class.java).apply {
                     putExtra("SPLIT_RESULT", amountPerPerson)
                     putExtra("MEMBER_NAMES", memberNames)
-                    putExtra("PAYERS_MAP", payersMap)  // ✅ ใส่ใน apply block เดียวกัน
+                    putExtra("PAYERS_MAP", payersMap)
                 }
                 startActivity(intent)
+            } else {
+                // ✅ แจ้งให้ confirm ก่อน
+                Toast.makeText(this, "Please confirm payment first", Toast.LENGTH_SHORT).show()
             }
         }
-        btnMenu?.setOnClickListener { view -> showMenu(view) }
     }
 
     private fun processConfirm() {
         if (isConfirmed) return
 
         val totalPaid = payersDataList.sumOf { it.amountPaid }
+
+        // ✅ debug ดูค่าจริงๆ
+        android.util.Log.d("WhoPays", "totalPaid=$totalPaid, totalAmount=$totalAmount")
+
         if (Math.abs(totalPaid - totalAmount) > 0.01) {
-            Toast.makeText(this, "Paid total ($totalPaid) must match bill ($totalAmount)", Toast.LENGTH_SHORT).show()
+            Toast.makeText(
+                this,
+                "Total Amount Paid ฿${String.format("%.2f", totalPaid)} ไม่ตรงกับบิล ฿${String.format("%.2f", totalAmount)}",
+                Toast.LENGTH_LONG  // ✅ เปลี่ยนเป็น LONG ให้เห็นชัดขึ้น
+            ).show()
             return
         }
 
@@ -180,34 +189,47 @@ class WhoPays : AppCompatActivity() {
         )
 
         db.collection("bills").add(billData).addOnSuccessListener { billRef ->
-            val payersMap = payersDataList.associate { it.uid to it.amountPaid }
 
-            // 🌟 วนลูปสมาชิกทุกคนเพื่อสร้างหนี้รายคนลง Firebase
+            // ✅ แยกเจ้าหนี้กับลูกหนี้ออกจากกันก่อน
+            val creditors = mutableListOf<Triple<String, String, Double>>() // uid, name, เงินส่วนเกิน
+            val debtors = mutableListOf<Triple<String, String, Double>>()   // uid, name, เงินที่ขาด
+
             for (memberId in memberNames.keys) {
-                val share = amountPerPerson[memberId] ?: 0.0 // ยอดที่ควรจ่าย
-                val paid = payersMap[memberId] ?: 0.0        // ยอดที่จ่ายจริง
-                val offset = paid - share                     // ส่วนต่างสุทธิ
+                val share = amountPerPerson[memberId] ?: 0.0
+                val paid = payersMap[memberId] ?: 0.0
+                val offset = paid - share
 
-                if (Math.abs(offset) > 0.01) {
-                    val debtData = hashMapOf(
-                        "billId" to billRef.id,
-                        "billName" to finalBillName,
-                        "status" to "pending",
-                        "amount" to Math.abs(offset),
-                        "name" to (memberNames[memberId] ?: "Unknown"),
-                        // 🌟 หัวใจสำคัญ: แยกฝั่งเจ้าหนี้/ลูกหนี้
-                        "creditorId" to if (offset > 0) memberId else "pool",
-                        "friendId" to if (offset < 0) memberId else "pool",
-                        "timestamp" to FieldValue.serverTimestamp()
-                    )
-                    db.collection("debts").add(debtData) //
+                when {
+                    offset > 0.01  -> creditors.add(Triple(memberId, memberNames[memberId] ?: "Unknown", offset))
+                    offset < -0.01 -> debtors.add(Triple(memberId, memberNames[memberId] ?: "Unknown", Math.abs(offset)))
                 }
             }
+
+            // ✅ จับคู่ลูกหนี้กับเจ้าหนี้จริงๆ
+            for (debtor in debtors) {
+                for (creditor in creditors) {
+                    val debtData = hashMapOf(
+                        "billId"       to billRef.id,
+                        "billName"     to finalBillName,
+                        "status"       to "pending",
+                        "amount"       to debtor.third,
+                        "name"         to debtor.second,      // ชื่อลูกหนี้
+                        "creditorName" to creditor.second,    // ชื่อเจ้าหนี้จริงๆ ✅
+                        "creditorId"   to creditor.first,     // uid เจ้าหนี้จริงๆ ✅
+                        "friendId"     to debtor.first,       // uid ลูกหนี้
+                        "timestamp"    to FieldValue.serverTimestamp()
+                    )
+                    db.collection("debts").add(debtData)
+                }
+            }
+
             isConfirmed = true
+            btnConfirm?.isEnabled = false
+            btnConfirm?.backgroundTintList =
+                android.content.res.ColorStateList.valueOf(android.graphics.Color.GRAY)
             Toast.makeText(this, "Bill & Debts Saved!", Toast.LENGTH_SHORT).show()
         }
     }
-
     // --- 🌟 ฟังก์ชัน Helper ที่หายไปและทำให้ Error ( navigateBack, showMenu ฯลฯ) ---
 
     private fun navigateBack() {

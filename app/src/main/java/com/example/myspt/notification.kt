@@ -94,10 +94,9 @@ class notification : AppCompatActivity() {
 
         val myUid = auth.currentUser?.uid ?: return
         notiListener = db.collection("notifications")
-            .whereEqualTo("to_uid", myUid)
+            .whereEqualTo("to_uid", myUid)  // ✅ ใช้ to_uid แทน receiverId
             .addSnapshotListener { snapshots, error ->
                 if (error != null) return@addSnapshotListener
-                val newNotis = snapshots?.documents ?: listOf()
 
                 db.collection("friend_requests")
                     .whereEqualTo("to_uid", myUid)
@@ -105,9 +104,8 @@ class notification : AppCompatActivity() {
                     .get()
                     .addOnSuccessListener { friendSnapshots ->
                         notiList.clear()
-                        notiList.addAll(newNotis)
-                        notiList.addAll(friendSnapshots.documents) // ใส่คำขอเพื่อน
-
+                        notiList.addAll(snapshots?.documents ?: listOf())
+                        notiList.addAll(friendSnapshots.documents)
                         notiList.sortByDescending { it.getTimestamp("timestamp") }
 
                         checkEmptyState(notiList)

@@ -11,16 +11,21 @@ import android.widget.Toast
 import androidx.recyclerview.widget.RecyclerView
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
-
+import com.google.firebase.firestore.Exclude
 data class Debt(
-    var debtId: String = "",
-    var creditorId: String = "",
-    var friendId: String = "",
-    var name: String = "",
-    var creditorName: String = "",
-    var billName: String = "",
-    var amount: Double = 0.0,
-    var status: String = "pending"
+var debtId: String = "",
+var billId: String = "",
+var creditorId: String = "",
+var friendId: String = "",
+var name: String = "",
+var creditorName: String = "",
+var billName: String = "",
+var amount: Double = 0.0,
+var status: String = "pending",
+
+@get:Exclude
+@set:Exclude
+var timestamp: Any? = null  // ✅ รับ field แต่ไม่ map เข้า class
 )
 
 class DebtAdapter(
@@ -43,31 +48,29 @@ class DebtAdapter(
 
     override fun onBindViewHolder(holder: DebtViewHolder, position: Int) {
         val debt = debtList[position]
-        holder.txtName.text = debt.name
+
+        // ✅ Owe You = คนอื่นค้างเรา → แสดงชื่อลูกหนี้ (friendId)
+        holder.txtName.text = debt.name.ifEmpty { "Unknown" }
         holder.txtBillDetail.text = "Bill: ${debt.billName}"
         holder.txtAmount.text = "฿ ${String.format("%.2f", debt.amount)}"
 
-        // 🌟 แก้ไข: ป้องกัน CheckBox ค้างตอนเลื่อนจอ
         holder.cbDebt.setOnCheckedChangeListener(null)
         holder.cbDebt.isChecked = (debt.status == "paid")
 
-        holder.cbDebt.setOnClickListener {
-            onDebtChecked(debt)
-        }
+        holder.cbDebt.setOnClickListener { onDebtChecked(debt) }
 
         holder.btnNotification.setOnClickListener {
             sendDebtNotification(holder.itemView.context, debt)
         }
     }
-
     private fun sendDebtNotification(context: Context, debt: Debt) {
         val db = FirebaseFirestore.getInstance()
         val auth = com.google.firebase.auth.FirebaseAuth.getInstance()
         val myName = auth.currentUser?.displayName ?: "A friend"
 
         val notiData = hashMapOf(
-            "to_uid" to debt.friendId,
-            "from_uid" to debt.creditorId,
+            "to_uid" to debt.friendId,  // คนที่ต้องรับ noti = ลูกหนี้
+            "from_uid" to debt.creditorId,  // คนกดแจ้ง = เจ้าหนี้
             "from_name" to myName,
             "message" to "Payment Reminder: ${debt.billName} | Amount: ฿${debt.amount}",
             "type" to "debt_reminder",

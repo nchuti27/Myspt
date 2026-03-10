@@ -56,12 +56,12 @@ class RecentBill : AppCompatActivity() {
 
     private fun loadRecentBillsFromFirestore() {
         db.collection("bills")
-            .orderBy("timestamp", Query.Direction.DESCENDING)
+            .orderBy("timestamp", Query.Direction.DESCENDING) // ✅ ล่าสุดบนสุด
             .addSnapshotListener { snapshots, e ->
                 if (e != null) return@addSnapshotListener
 
                 billList.clear()
-                for (doc in snapshots!!) {
+                snapshots?.documents?.forEach { doc ->
                     val name = doc.getString("billName") ?: "No Name"
                     val total = doc.getDouble("totalAmount") ?: 0.0
                     val item = BillItem(name, 1, total)

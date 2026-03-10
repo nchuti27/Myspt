@@ -23,17 +23,11 @@ class DebtYouOweAdapter(private var debtList: List<Debt>) : RecyclerView.Adapter
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val debt = debtList[position]
 
-        val displayName = if (debt.creditorName.isEmpty() || debt.creditorName == "Unknown") {
-            debt.name
-        } else {
-            debt.creditorName
-        }
-        holder.txtName.text = displayName
-
-        val displayBill = debt.billName
+        // ✅ You Owe = เราค้างเขา → แสดงชื่อเจ้าหนี้เสมอ
+        holder.txtName.text = debt.creditorName.ifEmpty { "Unknown" }
 
         val context = holder.itemView.context
-        holder.txtBillDetail.text = context.getString(R.string.bill_detail_format, displayBill)
+        holder.txtBillDetail.text = context.getString(R.string.bill_detail_format, debt.billName)
         holder.txtAmount.text = context.getString(R.string.amount_format, debt.amount)
     }
 
