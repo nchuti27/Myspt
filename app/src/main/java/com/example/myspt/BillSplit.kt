@@ -112,35 +112,56 @@ class BillSplit : AppCompatActivity() {
         val billName = etBillName?.text.toString().trim()
         if (billName.isEmpty()) { etBillName?.error = "Enter name"; return }
 
+        var grandTotal = 0.0
         val amountPerPerson = HashMap<String, Double>()
+
+        // 🌟 1. คำนวณยอดที่ทุกคนต้องจ่าย (Liability)
         for (item in billList) {
+            val itemTotal = item.price * item.quantity
+            grandTotal += itemTotal // รวมยอดบิลทั้งหมด
+
             if (item.selectedUsers.isNotEmpty() && item.price > 0) {
-                val cost = (item.price * item.quantity) / item.selectedUsers.size
-                for (uid in item.selectedUsers) amountPerPerson[uid] = (amountPerPerson[uid] ?: 0.0) + cost
+                val costPerUser = itemTotal / item.selectedUsers.size
+                for (uid in item.selectedUsers) {
+                    amountPerPerson[uid] = (amountPerPerson[uid] ?: 0.0) + costPerUser
+                }
             }
         }
 
-        if (amountPerPerson.isEmpty()) { Toast.makeText(this, "Please select a divisor", Toast.LENGTH_SHORT).show(); return }
+        if (amountPerPerson.isEmpty()) {
+            Toast.makeText(this, "Please select members for items", Toast.LENGTH_SHORT).show()
+            return
+        }
 
         val dialog = AlertDialog.Builder(this).create()
         val view = layoutInflater.inflate(R.layout.layout_dialog_payment, null)
         dialog.setView(view)
 
-        view.findViewById<TextView>(R.id.tvPaymentMessage).text = "You need to pay: ${String.format("%.2f", amountPerPerson[FirebaseAuth.getInstance().currentUser?.uid] ?: 0.0)} ฿"
+        val myUid = FirebaseAuth.getInstance().currentUser?.uid ?: ""
+        view.findViewById<TextView>(R.id.tvPaymentMessage).text =
+            "Your share: ${String.format("%.2f", amountPerPerson[myUid] ?: 0.0)} ฿"
 
-        // ปุ่ม OK: ไปหน้าถัดไป
         view.findViewById<AppCompatButton>(R.id.btnOk).setOnClickListener {
             val nameMap = HashMap<String, String>()
-            selectedMembers.forEachIndexed { i, uid -> if (i < memberNames.size) nameMap[uid] = memberNames[i] }
+            selectedMembers.forEachIndexed { i, uid ->
+                if (i < memberNames.size) nameMap[uid] = memberNames[i]
+            }
 
-            startActivity(Intent(this, WhoPays::class.java).apply {
+            // 🌟 2. ส่งข้อมูลไปหน้า WhoPays เพื่อทำระบบคนจ่ายหลายคน
+            // ใน BillSplit.kt (หน้าที่มีปุ่ม SPLIT BILL)
+            val intent = Intent(this, WhoPays::class.java).apply {
                 putExtra("BILL_NAME", billName)
+                putExtra("GRAND_TOTAL", grandTotal)
                 putExtra("SPLIT_RESULT", amountPerPerson)
                 putExtra("MEMBER_NAMES", nameMap)
+                putExtra("SELECTED_MEMBERS", selectedMembers)
+                // 🌟 หัวใจสำคัญ: ต้องชื่อ "BILL_ITEMS" และต้องส่ง billList ไปครับ
                 putExtra("BILL_ITEMS", billList)
-            })
+            }
+            startActivity(intent)
             dialog.dismiss()
         }
+
         view.findViewById<AppCompatButton>(R.id.backButton).setOnClickListener {
             dialog.dismiss()
         }

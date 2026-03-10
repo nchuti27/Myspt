@@ -25,12 +25,22 @@ class OweAdapter(private val oweList: List<OweItem>) :
         val item = oweList[position]
         holder.tvFriendName.text = item.friendName
 
-        if (item.amount >= 0) {
-            holder.tvAmount.text = String.format(Locale.getDefault(), "owes you: %.2f ฿", item.amount)
-            holder.tvAmount.setTextColor(Color.parseColor("#4CAF50")) // สีเขียว
-        } else {
-            holder.tvAmount.text = String.format(Locale.getDefault(), "you owe: %.2f ฿", kotlin.math.abs(item.amount))
-            holder.tvAmount.setTextColor(Color.RED)
+        when {
+            item.amount > 0.01 -> {
+                // ยังต้องจ่ายอีก
+                holder.tvAmount.text = String.format(Locale.getDefault(), "Owes: %.2f ฿", item.amount)
+                holder.tvAmount.setTextColor(Color.RED)
+            }
+            item.amount < -0.01 -> {
+                // จ่ายเกิน — รอรับคืน
+                holder.tvAmount.text = String.format(Locale.getDefault(), "Gets back: %.2f ฿", kotlin.math.abs(item.amount))
+                holder.tvAmount.setTextColor(Color.parseColor("#4CAF50"))
+            }
+            else -> {
+                // จ่ายครบพอดี
+                holder.tvAmount.text = "✓ Settled"
+                holder.tvAmount.setTextColor(Color.GRAY)
+            }
         }
     }
 
