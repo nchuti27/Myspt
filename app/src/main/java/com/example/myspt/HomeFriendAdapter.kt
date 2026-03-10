@@ -1,279 +1,104 @@
 package com.example.myspt
 
-import android.app.Dialog
+import android.content.Context
 import android.content.Intent
-import android.os.Bundle
+import android.transition.TransitionManager
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
-import androidx.activity.OnBackPressedCallback
-import androidx.activity.enableEdgeToEdge
-import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
+import com.google.android.material.button.MaterialButton
+import com.google.android.material.imageview.ShapeableImageView
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FieldValue
+import com.google.firebase.firestore.FirebaseFirestore
 
-class WhoPays : AppCompatActivity() {
+class HomeFriendAdapter(private val friendList: ArrayList<FriendData>) :
+    RecyclerView.Adapter<HomeFriendAdapter.HomeFriendViewHolder>() {
 
-    private var backButton: ImageButton? = null
-    private var btnMenu: ImageView? = null
-    private var Ptabfriend: TextView? = null
-    private var btnConfirm: Button? = null
-    private var isConfirmed: Boolean = false
-    private var etBillName: EditText? = null
-
-
-    private var rvSummaryItems: RecyclerView? = null
-    private var tvTotalAmount: TextView? = null
-
-    // 🌟 ส่วนของคนจ่ายหลายคน
-    private var rvPayersList: RecyclerView? = null
-    private lateinit var payerAdapter: PayerAdapter
-    private var payersDataList = ArrayList<PayerData>()
-
-    private var amountPerPerson = HashMap<String, Double>()
-    private var memberNames = HashMap<String, String>()
-    private var uidList = ArrayList<String>()
-    private var billItems = ArrayList<BillItem>()
-
-    private lateinit var db: FirebaseFirestore
-    private lateinit var auth: FirebaseAuth
-    private var totalAmount: Double = 0.0
-    private var billName: String = "New Bill"
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        setContentView(R.layout.activity_who_pays)
-
-        db = FirebaseFirestore.getInstance()
-        auth = FirebaseAuth.getInstance()
-
-        // 🌟 แก้ไข: รับค่าชื่อบิลให้ชัวร์
-        billName = intent.getStringExtra("BILL_NAME") ?: "New Bill"
-
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
-        }
-
-        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() { navigateBack() }
-        })
-
-        init()
-        setupData()
-        setupClickListeners()
+    class HomeFriendViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        val ivProfile: ShapeableImageView = itemView.findViewById(R.id.ivFriendProfile)
+        val tvName: TextView = itemView.findViewById(R.id.tvFriendName)
+        val btnMore: ImageButton = itemView.findViewById(R.id.btnMore)
+        val layoutActions: LinearLayout = itemView.findViewById(R.id.layoutActions)
+        val divider: View = itemView.findViewById(R.id.divider)
+        val btnFriendDetail: MaterialButton = itemView.findViewById(R.id.btnFriendDetail)
+        val btnRemoveFriend: MaterialButton = itemView.findViewById(R.id.btnRemoveFriend)
     }
 
-    private fun init() {
-        etBillName = findViewById(R.id.etBillName)
-        backButton = findViewById(R.id.backButton)
-        btnMenu = findViewById(R.id.btnMenu)
-        Ptabfriend = findViewById(R.id.Ptabfriend)
-        btnConfirm = findViewById(R.id.btnConfirm)
-        rvSummaryItems = findViewById(R.id.rvSummaryItems)
-        tvTotalAmount = findViewById(R.id.tvTotalAmount)
-        rvPayersList = findViewById(R.id.rvPayersList) // 🌟 ต้องมีใน XML นะครับ
-
-        findViewById<TextView>(R.id.tabItems)?.setOnClickListener { navigateBack() }
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): HomeFriendViewHolder {
+        val view = LayoutInflater.from(parent.context).inflate(R.layout.item_friend_list, parent, false)
+        return HomeFriendViewHolder(view)
     }
 
-    private fun setupData() {
-        val splitResult = intent.getSerializableExtra("SPLIT_RESULT") as? HashMap<String, Double>
-        val namesMap = intent.getSerializableExtra("MEMBER_NAMES") as? HashMap<String, String>
-        val selectedUids = intent.getStringArrayListExtra("SELECTED_MEMBERS") ?: arrayListOf()
+    override fun onBindViewHolder(holder: HomeFriendViewHolder, position: Int) {
+        val currentItem = friendList[position]
+        val context = holder.itemView.context
 
-        // 🌟 แก้ไขจุดที่ 1: รับข้อมูลแบบยืดหยุ่น ป้องกันข้อมูลหายระหว่างทาง
-        val rawItems = intent.getSerializableExtra("BILL_ITEMS") as? ArrayList<*>
-        billItems.clear()
+        holder.tvName.text = currentItem.name
 
-        rawItems?.forEach { item ->
-            if (item is BillItem) {
-                billItems.add(item)
-            }
+        holder.layoutActions.visibility = if (currentItem.isExpanded) View.VISIBLE else View.GONE
+        holder.divider.visibility = if (currentItem.isExpanded) View.VISIBLE else View.GONE
+
+        Glide.with(context)
+            .load(currentItem.profileUrl ?: R.drawable.outline_person)
+            .circleCrop()
+            .into(holder.ivProfile)
+
+        holder.btnMore.setOnClickListener {
+            TransitionManager.beginDelayedTransition(holder.itemView as ViewGroup)
+            currentItem.isExpanded = !currentItem.isExpanded
+            notifyItemChanged(position)
         }
 
-        // 🌟 แก้ไขจุดที่ 2: ถ้า List ยังว่าง ให้ใส่ของปลอมลงไปเช็ค Layout ทันที
-        if (billItems.isEmpty()) {
-            billItems.add(BillItem("กำลังดึงข้อมูล...", 1, 0.0))
-        }
-
-        etBillName?.setText(billName)
-        if (splitResult != null) amountPerPerson.putAll(splitResult)
-        if (namesMap != null) memberNames.putAll(namesMap)
-
-        totalAmount = amountPerPerson.values.sum()
-        tvTotalAmount?.text = String.format("%.2f ฿", totalAmount)
-
-        payersDataList.clear()
-        for (uid in selectedUids) {
-            payersDataList.add(PayerData(uid, memberNames[uid] ?: "Unknown", 0.0))
-        }
-
-        // 🌟 แก้ไขจุดที่ 3: สั่งวาด RecyclerView ของรายการสินค้า
-        val itemSummaryAdapter = ItemSummaryAdapter(billItems)
-        rvSummaryItems?.layoutManager = LinearLayoutManager(this)
-        rvSummaryItems?.adapter = itemSummaryAdapter
-        itemSummaryAdapter.notifyDataSetChanged() //
-
-        // 🌟 แก้ไขจุดที่ 4: สั่งวาด RecyclerView ของรายชื่อคนจ่าย
-        payerAdapter = PayerAdapter(payersDataList)
-        rvPayersList?.layoutManager = LinearLayoutManager(this) //
-        rvPayersList?.adapter = payerAdapter
-        payerAdapter.notifyDataSetChanged()
-    }
-
-    private fun setupClickListeners() {
-        backButton?.setOnClickListener { navigateBack() }
-        btnConfirm?.setOnClickListener { processConfirm() }
-        Ptabfriend?.setOnClickListener {
-            if (isConfirmed) {
-                val payersMap = HashMap<String, Double>()
-                payersDataList.forEach { payersMap[it.uid] = it.amountPaid }
-
-                val intent = Intent(this, FriendOwe::class.java).apply {
-                    putExtra("SPLIT_RESULT", amountPerPerson)
-                    putExtra("MEMBER_NAMES", memberNames)
-                    putExtra("PAYERS_MAP", payersMap)  // ✅ ใส่ใน apply block เดียวกัน
+        holder.btnRemoveFriend.setOnClickListener {
+            AlertDialog.Builder(context)
+                .setTitle("Remove Friend")
+                .setMessage("Do you want to remove ${currentItem.name}?")
+                .setPositiveButton("Remove") { _, _ ->
+                    removeFriendFromFirestore(currentItem.uid, context, holder.bindingAdapterPosition)
                 }
-                startActivity(intent)
-            }
-        }
-        btnMenu?.setOnClickListener { view -> showMenu(view) }
-    }
-
-    private fun processConfirm() {
-        if (isConfirmed) return
-
-        val totalPaid = payersDataList.sumOf { it.amountPaid }
-        if (Math.abs(totalPaid - totalAmount) > 0.01) {
-            Toast.makeText(this, "Paid total ($totalPaid) must match bill ($totalAmount)", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle("Confirm Payment")
-            .setMessage("Save this bill and notify friends?")
-            .setPositiveButton("Confirm") { _, _ -> saveBillWithPoolOffset() }
-            .setNegativeButton("Cancel", null)
-            .show()
-    }
-
-    private fun saveBillWithPoolOffset() {
-        val finalBillName = etBillName?.text.toString().trim().ifEmpty { billName }
-        val payersMap = payersDataList.associate { it.uid to it.amountPaid }
-
-        val billData = hashMapOf(
-            "billName" to finalBillName,
-            "totalAmount" to totalAmount,
-            "payers" to payersMap,
-            "timestamp" to com.google.firebase.Timestamp.now(),
-            "status" to "pending",
-            "items" to billItems
-        )
-
-        db.collection("bills").add(billData).addOnSuccessListener { billRef ->
-            val payersMap = payersDataList.associate { it.uid to it.amountPaid }
-
-            // 🌟 วนลูปสมาชิกทุกคนเพื่อสร้างหนี้รายคนลง Firebase
-            for (memberId in memberNames.keys) {
-                val share = amountPerPerson[memberId] ?: 0.0 // ยอดที่ควรจ่าย
-                val paid = payersMap[memberId] ?: 0.0        // ยอดที่จ่ายจริง
-                val offset = paid - share                     // ส่วนต่างสุทธิ
-
-                if (Math.abs(offset) > 0.01) {
-                    val debtData = hashMapOf(
-                        "billId" to billRef.id,
-                        "billName" to finalBillName,
-                        "status" to "pending",
-                        "amount" to Math.abs(offset),
-                        "name" to (memberNames[memberId] ?: "Unknown"),
-                        // 🌟 หัวใจสำคัญ: แยกฝั่งเจ้าหนี้/ลูกหนี้
-                        "creditorId" to if (offset > 0) memberId else "pool",
-                        "friendId" to if (offset < 0) memberId else "pool",
-                        "timestamp" to FieldValue.serverTimestamp()
-                    )
-                    db.collection("debts").add(debtData) //
+                .setNegativeButton("Cancel") { dialog, _ ->
+                    currentItem.isExpanded = false
+                    notifyItemChanged(position)
+                    dialog.dismiss()
                 }
+                .show()
+        }
+
+        holder.btnFriendDetail.setOnClickListener {
+            val intent = Intent(context, FriendProfile::class.java).apply {
+                putExtra("FRIEND_UID", currentItem.uid)
+                putExtra("FRIEND_NAME", currentItem.name)
+                putExtra("FRIEND_IMG", currentItem.profileUrl)
+                putExtra("IS_FRIEND", true)
             }
-            isConfirmed = true
-            Toast.makeText(this, "Bill & Debts Saved!", Toast.LENGTH_SHORT).show()
+            context.startActivity(intent)
         }
     }
 
-    // --- 🌟 ฟังก์ชัน Helper ที่หายไปและทำให้ Error ( navigateBack, showMenu ฯลฯ) ---
-
-    private fun navigateBack() {
-        if (isConfirmed) {
-            val intent = Intent(this, MainActivity::class.java)
-            intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
-            startActivity(intent)
-            finish()
-        } else {
-            finish()
-        }
+    fun updateData(newList: ArrayList<FriendData>) {
+        friendList.clear()
+        friendList.addAll(newList)
+        notifyDataSetChanged()
     }
 
-    private fun showMenu(view: View) {
-        val popupMenu = PopupMenu(this, view)
-        popupMenu.menuInflater.inflate(R.menu.menu_group_options, popupMenu.menu)
-        popupMenu.setOnMenuItemClickListener { menuItem ->
-            when (menuItem.itemId) {
-                R.id.action_edit_items -> { navigateBack(); true }
-                R.id.action_leave_group -> { showLeaveDialog(); true }
-                else -> false
+    private fun removeFriendFromFirestore(friendUid: String, context: Context, position: Int) {
+        val myUid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        FirebaseFirestore.getInstance().collection("users").document(myUid)
+            .update("friends", FieldValue.arrayRemove(friendUid))
+            .addOnSuccessListener {
+                if (position != RecyclerView.NO_POSITION && position < friendList.size) {
+                    friendList.removeAt(position)
+                    notifyItemRemoved(position)
+                    notifyItemRangeChanged(position, friendList.size)
+                }
+                Toast.makeText(context, "Removed successfully", Toast.LENGTH_SHORT).show()
             }
-        }
-        popupMenu.show()
     }
 
-    private fun showLeaveDialog() {
-        val dialog = Dialog(this)
-        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-        dialog.setContentView(R.layout.dialog_leave_group)
-        dialog.findViewById<Button>(R.id.btnNo)?.setOnClickListener { dialog.dismiss() }
-        dialog.findViewById<Button>(R.id.btnYes)?.setOnClickListener {
-            dialog.dismiss()
-            val intent = Intent(this, MainActivity::class.java)
-            intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
-            startActivity(intent)
-            finish()
-        }
-        dialog.show()
-    }
-
-    private fun showPleaseConfirmDialog() {
-        val dialog = Dialog(this)
-        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-        dialog.setContentView(R.layout.dialog_confirm_payer)
-        dialog.findViewById<Button>(R.id.btnOk)?.setOnClickListener { dialog.dismiss() }
-        dialog.show()
-    }
-
-    // 🌟 คลาส Adapter ภายในที่หายไป
-    class ItemSummaryAdapter(private val items: List<BillItem>) : RecyclerView.Adapter<ItemSummaryAdapter.ViewHolder>() {
-        class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-            val tvItemName: TextView = view.findViewById(R.id.tvItemName)
-            val tvQuantity: TextView = view.findViewById(R.id.tvQuantity)
-            val tvPrice: TextView = view.findViewById(R.id.tvPrice)
-        }
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-            val view = LayoutInflater.from(parent.context).inflate(R.layout.item_summary_row, parent, false)
-            return ViewHolder(view)
-        }
-        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-            val item = items[position]
-            holder.tvItemName.text = item.itemName
-            holder.tvQuantity.text = item.quantity.toString()
-            holder.tvPrice.text = String.format("%.2f ฿", item.price * item.quantity)
-        }
-        override fun getItemCount() = items.size
-    }
+    override fun getItemCount(): Int = friendList.size
 }
