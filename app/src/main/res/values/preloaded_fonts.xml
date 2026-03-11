@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <array name="preloaded_fonts" translatable="false">
+        <item>@font/akatab_bold</item>
+        <item>@font/akatab_extrabold</item>
+        <item>@font/amiko_bold</item>
+        <item>@font/aoboshi_one</item>
+        <item>@font/asap_medium</item>
+        <item>@font/baloo</item>
+    </array>
+</resources>
