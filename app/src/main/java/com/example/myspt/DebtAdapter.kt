@@ -66,25 +66,30 @@ class DebtAdapter(
     private fun sendDebtNotification(context: Context, debt: Debt) {
         val db = FirebaseFirestore.getInstance()
         val auth = com.google.firebase.auth.FirebaseAuth.getInstance()
-        val myName = auth.currentUser?.displayName ?: "A friend"
+        val myUid = auth.currentUser?.uid ?: return
 
-        val notiData = hashMapOf(
-            "to_uid" to debt.friendId,  // คนที่ต้องรับ noti = ลูกหนี้
-            "from_uid" to debt.creditorId,  // คนกดแจ้ง = เจ้าหนี้
-            "from_name" to myName,
-            "message" to "Payment Reminder: ${debt.billName} | Amount: ฿${debt.amount}",
-            "type" to "debt_reminder",
-            "status" to "pending",
-            "timestamp" to FieldValue.serverTimestamp()
-        )
+        // ✅ ดึงชื่อจาก Firestore แทน displayName
+        db.collection("users").document(myUid).get().addOnSuccessListener { doc ->
+            val myName = doc.getString("name") ?: auth.currentUser?.displayName ?: "A friend"
 
-        db.collection("notifications").add(notiData)
-            .addOnSuccessListener {
-                Toast.makeText(context, "Notification sent!", Toast.LENGTH_SHORT).show()
-            }
-            .addOnFailureListener {
-                Toast.makeText(context, "Unable to send reminders. Please try again.", Toast.LENGTH_SHORT).show()
-            }
+            val notiData = hashMapOf(
+                "to_uid"    to debt.friendId,
+                "from_uid"  to debt.creditorId,
+                "from_name" to myName,  // ✅ ชื่อจริงจาก Firestore
+                "message"   to "Payment Reminder: ${debt.billName} | Amount: ฿${String.format("%.2f", debt.amount)}",
+                "type"      to "debt_reminder",
+                "status"    to "pending",
+                "timestamp" to FieldValue.serverTimestamp()
+            )
+
+            db.collection("notifications").add(notiData)
+                .addOnSuccessListener {
+                    Toast.makeText(context, "Notification sent!", Toast.LENGTH_SHORT).show()
+                }
+                .addOnFailureListener {
+                    Toast.makeText(context, "Unable to send reminder.", Toast.LENGTH_SHORT).show()
+                }
+        }
     }
 
     override fun getItemCount(): Int = debtList.size

@@ -81,6 +81,7 @@ class BillDetail : AppCompatActivity() {
                     val total = doc.getDouble("totalAmount") ?: 0.0
                     txtTotalAmount.text = String.format(java.util.Locale.getDefault(), "฿ %.2f", total)
 
+                    // ✅ ดึง items เหมือนเดิม
                     @Suppress("UNCHECKED_CAST")
                     val items = doc.get("items") as? List<Map<String, Any>>
                     if (items != null) {
@@ -88,18 +89,41 @@ class BillDetail : AppCompatActivity() {
                         for (itemData in items) {
                             val name = itemData["itemName"] as? String ?: ""
                             val qty = (itemData["quantity"] as? Long)?.toInt() ?: 1
-
                             val price = when (val p = itemData["price"]) {
                                 is Double -> p
                                 is Long -> p.toDouble()
                                 is Number -> p.toDouble()
                                 else -> 0.0
                             }
-
                             itemList.add(BillItem(name, qty, price))
                         }
                         itemAdapter.notifyDataSetChanged()
                     }
+
+                    // ✅ ดึง payers map แล้วแปลง uid → ชื่อ
+                    @Suppress("UNCHECKED_CAST")
+                    val payers = doc.get("payers") as? Map<String, Any> ?: return@addOnSuccessListener
+                    val uids = payers.keys.toList()
+                    if (uids.isEmpty()) return@addOnSuccessListener
+
+                    db.collection("users")
+                        .whereIn(com.google.firebase.firestore.FieldPath.documentId(), uids.take(10))
+                        .get()
+                        .addOnSuccessListener { userDocs ->
+                            val sb = StringBuilder("\n")
+                            for (uid in uids) {
+                                val name = userDocs.documents.find { it.id == uid }?.getString("name") ?: "Unknown"
+                                val amount = when (val a = payers[uid]) {
+                                    is Double -> a
+                                    is Long -> a.toDouble()
+                                    is Number -> a.toDouble()
+                                    else -> 0.0
+                                }
+                                if (amount > 0) sb.append("Paid by $name  :   ฿ ${String.format("%.2f ", amount)}\n")
+                            }
+                            // ✅ แสดงใน TextView — ต้องเพิ่ม tvPayers ใน layout ด้วย
+                            findViewById<TextView>(R.id.tvPayers)?.text = sb.toString().trimEnd()
+                        }
                 }
             }
     }

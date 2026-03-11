@@ -18,7 +18,7 @@ class RecentBill : AppCompatActivity() {
     private lateinit var btnBack: ImageView
     private lateinit var db: FirebaseFirestore
 
-    private val billList = ArrayList<BillItem>()
+    private val recentBillList = ArrayList<RecentBillItem>()
     private lateinit var adapter: RecentBillAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,9 +44,7 @@ class RecentBill : AppCompatActivity() {
         btnBack = findViewById(R.id.backButton)
 
         rvRecentBills.layoutManager = LinearLayoutManager(this)
-
-        // เชื่อมต่อ Adapter
-        adapter = RecentBillAdapter(billList)
+        adapter = RecentBillAdapter(recentBillList) // ✅ ต้องเป็น recentBillList
         rvRecentBills.adapter = adapter
     }
 
@@ -56,17 +54,19 @@ class RecentBill : AppCompatActivity() {
 
     private fun loadRecentBillsFromFirestore() {
         db.collection("bills")
-            .orderBy("timestamp", Query.Direction.DESCENDING) // ✅ ล่าสุดบนสุด
+            .orderBy("timestamp", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshots, e ->
                 if (e != null) return@addSnapshotListener
 
-                billList.clear()
+                recentBillList.clear()
                 snapshots?.documents?.forEach { doc ->
-                    val name = doc.getString("billName") ?: "No Name"
-                    val total = doc.getDouble("totalAmount") ?: 0.0
-                    val item = BillItem(name, 1, total)
-                    item.id = doc.id
-                    billList.add(item)
+                    val item = RecentBillItem(  // ✅ เปลี่ยนจาก BillItem
+                        id = doc.id,
+                        name = doc.getString("billName") ?: "No Name",
+                        total = doc.getDouble("totalAmount") ?: 0.0,
+                        date = ""
+                    )
+                    recentBillList.add(item)
                 }
                 adapter.notifyDataSetChanged()
             }

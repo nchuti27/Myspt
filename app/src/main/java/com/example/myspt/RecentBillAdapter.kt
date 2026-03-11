@@ -12,12 +12,12 @@ import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.RecyclerView
 import com.google.firebase.firestore.FirebaseFirestore
 
-class RecentBillAdapter(private val billList: ArrayList<BillItem>) :
+class RecentBillAdapter(private val billList: ArrayList<RecentBillItem>) : // ✅ เปลี่ยนจาก BillItem
     RecyclerView.Adapter<RecentBillAdapter.ViewHolder>() {
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val tvBillName: TextView = view.findViewById(R.id.tvBillName)
-        val tvBillTotal: TextView = view.findViewById(R.id.tvBillTotal) // ✅ ปรับ ID ให้ตรงกับ UI ยอดเงิน
+        val tvBillTotal: TextView = view.findViewById(R.id.tvBillTotal)
         val btnBillMenu: ImageView = view.findViewById(R.id.btnBillMenu)
     }
 
@@ -27,44 +27,43 @@ class RecentBillAdapter(private val billList: ArrayList<BillItem>) :
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val currentItem = billList[position]
-        holder.tvBillName.text = currentItem.itemName
-        holder.tvBillTotal.text = String.format("%.2f ฿", currentItem.price)
+        val item = billList[position]
 
-        //ดูรายละเอียดบิล
+        holder.tvBillName.text = item.name           // ✅ เปลี่ยนจาก itemName
+        holder.tvBillTotal.text = String.format("฿ %.2f", item.total) // ✅ เปลี่ยนจาก price
+
         holder.itemView.setOnClickListener { view ->
-            val intent = Intent(view.context, BillDetail::class.java)
-            intent.putExtra("BILL_ID", currentItem.id) // ส่ง ID ไปดึงข้อมูลละเอียด [cite: 2026-02-13]
-            intent.putExtra("BILL_NAME", currentItem.itemName)
+            val intent = Intent(view.context, BillDetail::class.java).apply {
+                putExtra("BILL_ID", item.id)
+                putExtra("BILL_NAME", item.name)     // ✅ เปลี่ยนจาก itemName
+            }
             view.context.startActivity(intent)
         }
 
         holder.btnBillMenu.setOnClickListener { view ->
             val popup = PopupMenu(view.context, view)
             popup.menu.add("Delete Bill").setOnMenuItemClickListener {
-                confirmDelete(view.context, currentItem, position)
+                confirmDelete(view.context, item)    // ✅ ไม่ต้องส่ง position แล้ว
                 true
             }
             popup.show()
         }
     }
 
-    private fun confirmDelete(context: android.content.Context, item: BillItem, position: Int) {
+    private fun confirmDelete(context: android.content.Context, item: RecentBillItem) { // ✅ เปลี่ยนจาก BillItem
         AlertDialog.Builder(context)
             .setTitle("Delete History")
-            .setMessage("Are you sure you want to delete '${item.itemName}'?")
+            .setMessage("Delete '${item.name}'?")   // ✅ เปลี่ยนจาก itemName
             .setPositiveButton("Delete") { _, _ ->
-                if (!item.id.isNullOrEmpty()) {
-                    FirebaseFirestore.getInstance().collection("bills").document(item.id!!)
-                        .delete()
-                        .addOnSuccessListener {
-                            Toast.makeText(context, "Bill deleted successfully", Toast.LENGTH_SHORT).show()
-                        }
-                }
+                FirebaseFirestore.getInstance().collection("bills").document(item.id)
+                    .delete()
+                    .addOnSuccessListener {
+                        Toast.makeText(context, "Bill deleted successfully", Toast.LENGTH_SHORT).show()
+                    }
             }
             .setNegativeButton("Cancel", null)
             .show()
     }
 
-    override fun getItemCount(): Int = billList.size
+    override fun getItemCount() = billList.size
 }

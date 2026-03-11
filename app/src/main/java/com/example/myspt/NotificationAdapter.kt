@@ -45,30 +45,21 @@ class NotificationAdapter(
 
         when (type) {
             "debt_reminder" -> {
-                holder.tvName.text = doc.getString("from_name") ?: "Someone"
+                holder.tvName.text = "Debt Reminder"
                 holder.tvMessage.text = doc.getString("message") ?: "You have a pending debt"
                 holder.imgAvatar.setImageResource(R.drawable.outline_money)
-                holder.btnDelete.visibility = View.VISIBLE
-                holder.btnDelete.text = "Dismiss"
             }
             "PAYMENT_RECEIVED" -> {
                 holder.tvName.text = "Payment Received"
                 holder.tvMessage.text = doc.getString("message") ?: ""
                 holder.imgAvatar.setImageResource(R.drawable.outline_money)
-                holder.btnDelete.visibility = View.VISIBLE
-                holder.btnDelete.text = "Dismiss"
-
             }
             "friend_accepted" -> {
                 holder.tvName.text = doc.getString("from_name") ?: "Someone"
-                holder.tvMessage.text = "accepted your friend request! 🎉"
+                holder.tvMessage.text = "accepted your friend request"
                 holder.imgAvatar.setImageResource(R.drawable.outline_person) // หรือ icon ที่มี
-                holder.btnDelete.visibility = View.VISIBLE
-                holder.btnDelete.text = "Dismiss"
-                // ไม่ต้องมี btnAccept
             }
             else -> {
-                // friend request / group invite เหมือนเดิม
                 when (activeTab) {
                     "FRIEND" -> {
                         holder.tvName.text = doc.getString("from_name") ?: "Someone"
