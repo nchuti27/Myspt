@@ -45,7 +45,7 @@ class NotificationAdapter(
 
         when (type) {
             "debt_reminder" -> {
-                holder.tvName.text = "Debt Reminder"
+                holder.tvName.text = "Payment Reminder"
                 holder.tvMessage.text = doc.getString("message") ?: "You have a pending debt"
                 holder.imgAvatar.setImageResource(R.drawable.outline_money)
             }

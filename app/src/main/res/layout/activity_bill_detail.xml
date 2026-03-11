@@ -105,7 +105,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Total Amount"
-                        android:textSize="16sp"
+                        android:textSize="20sp"
                         android:textStyle="bold" />
 
                     <TextView
@@ -123,12 +123,12 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_below="@id/tvTotalLabel"
-                        android:layout_marginTop="12dp"
+                        android:layout_marginTop="-4dp"
+                        android:fontFamily="sans-serif-medium"
                         android:paddingTop="12dp"
                         android:paddingBottom="4dp"
-                        android:textSize="14sp"
                         android:textColor="#333333"
-                        android:fontFamily="sans-serif-medium" />
+                        android:textSize="14sp" />
 
                 </RelativeLayout>
 

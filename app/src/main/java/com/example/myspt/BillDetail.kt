@@ -110,7 +110,7 @@ class BillDetail : AppCompatActivity() {
                         .whereIn(com.google.firebase.firestore.FieldPath.documentId(), uids.take(10))
                         .get()
                         .addOnSuccessListener { userDocs ->
-                            val sb = StringBuilder("\n")
+                            val sb = StringBuilder("Paid by\n")
                             for (uid in uids) {
                                 val name = userDocs.documents.find { it.id == uid }?.getString("name") ?: "Unknown"
                                 val amount = when (val a = payers[uid]) {
@@ -119,7 +119,7 @@ class BillDetail : AppCompatActivity() {
                                     is Number -> a.toDouble()
                                     else -> 0.0
                                 }
-                                if (amount > 0) sb.append("Paid by $name  :   ฿ ${String.format("%.2f ", amount)}\n")
+                                if (amount > 0) sb.append("     $name  :   ฿ ${String.format("%.2f ", amount)}\n")
                             }
                             // ✅ แสดงใน TextView — ต้องเพิ่ม tvPayers ใน layout ด้วย
                             findViewById<TextView>(R.id.tvPayers)?.text = sb.toString().trimEnd()
@@ -142,7 +142,7 @@ class BillDetail : AppCompatActivity() {
             val item = items[position]
             val context = holder.itemView.context
             holder.tvName.text = item.itemName
-            holder.tvQty.text = context.getString(R.string.quantity_format, item.quantity)
+            holder.tvQty.text = item.quantity.toString() // ✅ เอา x ออก
             holder.tvPrice.text = String.format(java.util.Locale.getDefault(), "%.2f", item.price * item.quantity)
         }
         override fun getItemCount() = items.size

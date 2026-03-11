@@ -76,7 +76,7 @@ class DebtAdapter(
                 "to_uid"    to debt.friendId,
                 "from_uid"  to debt.creditorId,
                 "from_name" to myName,  // ✅ ชื่อจริงจาก Firestore
-                "message"   to "Payment Reminder: ${debt.billName} | Amount: ฿${String.format("%.2f", debt.amount)}",
+                "message"   to "Bill : ${debt.billName}  Amount: ฿${String.format("%.2f", debt.amount)}",
                 "type"      to "debt_reminder",
                 "status"    to "pending",
                 "timestamp" to FieldValue.serverTimestamp()
