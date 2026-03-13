@@ -10,7 +10,7 @@
     android:id="@+id/headerContainer"
     android:layout_width="match_parent"
     android:layout_height="100dp"
-    android:background="@color/fintech_blue"
+    android:background="@drawable/bg_gradient_header"
     app:layout_constraintTop_toTopOf="parent">
 
     <ImageButton
