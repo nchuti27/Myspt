@@ -11,7 +11,7 @@
     android:id="@+id/headerBg"
     android:layout_width="match_parent"
     android:layout_height="140dp"
-    android:background="@color/fintech_blue"
+    android:background="@drawable/bg_gradient_header"
     app:layout_constraintTop_toTopOf="parent" />
 
     <ImageView
@@ -32,12 +32,14 @@
         android:layout_height="wrap_content"
         android:text="Bill Detail"
         android:textColor="@color/white"
-        android:textSize="20sp"
+        android:textSize="22sp"
         android:textStyle="bold"
         app:layout_constraintBottom_toBottomOf="@id/backButton"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.498"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@id/backButton" />
+        app:layout_constraintTop_toTopOf="@id/backButton"
+        app:layout_constraintVertical_bias="0.0" />
 
     <androidx.cardview.widget.CardView
         android:layout_width="match_parent"

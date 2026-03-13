@@ -14,7 +14,7 @@
         android:id="@+id/headerBg"
         android:layout_width="0dp"
         android:layout_height="160dp"
-        android:background="@drawable/bg_header_wave"
+        android:background="@drawable/bg_gradient_header"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
