@@ -6,21 +6,18 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FFFFFF"
+    android:background="#EEF4FF"
     android:fitsSystemWindows="true"
     tools:context=".MainActivity">
 
     <!-- ===== HEADER ===== -->
-
-    <!-- ===== WHITE CARD ===== -->
-
     <LinearLayout
         android:id="@+id/headerSection"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:background="@drawable/bg_gradient_header2"
+        android:background="@drawable/bg_header_wave2"
         android:orientation="vertical"
-        android:paddingBottom="36dp"
+        android:paddingBottom="40dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
@@ -37,14 +34,14 @@
             android:paddingBottom="8dp">
 
             <FrameLayout
-                android:layout_width="42dp"
-                android:layout_height="42dp"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
                 android:background="@drawable/bg_avatar_circle">
 
                 <ImageView
                     android:id="@+id/imgUserProfile"
-                    android:layout_width="30dp"
-                    android:layout_height="28dp"
+                    android:layout_width="26dp"
+                    android:layout_height="26dp"
                     android:layout_gravity="center"
                     android:src="@drawable/outline_person"
                     app:tint="#3d79ca"
@@ -59,7 +56,7 @@
                 android:gravity="center"
                 android:letterSpacing="0.04"
                 android:text="Split Next"
-                android:textColor="#3d79ca"
+                android:textColor="#1A2D5A"
                 android:textSize="20sp"
                 android:textStyle="bold" />
 
@@ -70,15 +67,15 @@
                 android:orientation="horizontal">
 
                 <FrameLayout
-                    android:layout_width="38dp"
-                    android:layout_height="38dp"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
                     android:layout_marginEnd="8dp"
                     android:background="@drawable/bg_circle_white">
 
                     <ImageView
                         android:id="@+id/btnNotification"
-                        android:layout_width="23dp"
-                        android:layout_height="28dp"
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
                         android:layout_gravity="center"
                         android:src="@android:drawable/ic_popup_reminder"
                         app:tint="#3d79ca"
@@ -86,14 +83,14 @@
                 </FrameLayout>
 
                 <FrameLayout
-                    android:layout_width="38dp"
-                    android:layout_height="38dp"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
                     android:background="@drawable/bg_circle_white">
 
                     <ImageView
                         android:id="@+id/btnLogout"
-                        android:layout_width="23dp"
-                        android:layout_height="28dp"
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
                         android:layout_gravity="center"
                         app:srcCompat="@drawable/baseline_logout_24"
                         app:tint="#3d79ca"
@@ -109,7 +106,7 @@
             android:gravity="center_vertical"
             android:orientation="horizontal"
             android:paddingHorizontal="20dp"
-            android:paddingTop="16dp"
+            android:paddingTop="20dp"
             android:paddingBottom="10dp">
 
             <TextView
@@ -117,8 +114,8 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Friend"
-                android:textColor="#1A1A2E"
+                android:text="Friends"
+                android:textColor="#1A2D5A"
                 android:textSize="16sp"
                 android:textStyle="bold" />
 
@@ -147,15 +144,16 @@
 
     </LinearLayout>
 
+    <!-- ===== WHITE CARD ===== -->
     <LinearLayout
         android:id="@+id/cardContent"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_marginTop="0dp"
-        android:background="#FFFFFF"
+        android:layout_marginTop="-24dp"
+        android:background="@drawable/bg_card_content"
         android:elevation="8dp"
         android:orientation="vertical"
-        android:paddingTop="22dp"
+        android:paddingTop="26dp"
         android:paddingBottom="20dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -176,8 +174,8 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Group"
-                android:textColor="#1A1A2E"
+                android:text="Groups"
+                android:textColor="#1A2D5A"
                 android:textSize="16sp"
                 android:textStyle="bold" />
 
@@ -209,9 +207,9 @@
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:layout_marginHorizontal="20dp"
-            android:layout_marginTop="14dp"
-            android:layout_marginBottom="14dp"
-            android:background="#EEEEEE" />
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="16dp"
+            android:background="#E2EAF7" />
 
         <!-- Split the Bill -->
         <LinearLayout
@@ -219,15 +217,15 @@
             android:layout_width="match_parent"
             android:layout_height="85dp"
             android:layout_marginHorizontal="16dp"
-            android:layout_marginBottom="25dp"
-            android:background="@drawable/bg_fintech_card"
+            android:layout_marginBottom="14dp"
+            android:background="@drawable/bg_action_card_white"
             android:elevation="3dp"
             android:gravity="center_vertical"
             android:paddingHorizontal="18dp">
 
             <FrameLayout
-                android:layout_width="44dp"
-                android:layout_height="44dp"
+                android:layout_width="46dp"
+                android:layout_height="46dp"
                 android:background="@drawable/bg_icon_white_circle">
                 <ImageView
                     android:layout_width="22dp"
@@ -248,24 +246,17 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Split the bill"
-                    android:textColor="#1A1A2E"
+                    android:textColor="#1A2D5A"
                     android:textSize="15sp"
                     android:textStyle="bold" />
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Divide expenses easily"
-                    android:textColor="#8899BB"
+                    android:textColor="#7A9AC4"
                     android:textSize="13sp" />
             </LinearLayout>
 
-            <ImageView
-                android:layout_width="18dp"
-                android:layout_height="18dp"
-                android:rotation="90"
-                android:src="@android:drawable/arrow_up_float"
-                app:tint="#3d79ca"
-                tools:ignore="ContentDescription" />
         </LinearLayout>
 
         <!-- Recent Bill -->
@@ -274,15 +265,15 @@
             android:layout_width="match_parent"
             android:layout_height="85dp"
             android:layout_marginHorizontal="16dp"
-            android:layout_marginBottom="20dp"
-            android:background="@drawable/bg_fintech_card"
+            android:layout_marginBottom="14dp"
+            android:background="@drawable/bg_action_card_white"
             android:elevation="3dp"
             android:gravity="center_vertical"
             android:paddingHorizontal="18dp">
 
             <FrameLayout
-                android:layout_width="44dp"
-                android:layout_height="44dp"
+                android:layout_width="46dp"
+                android:layout_height="46dp"
                 android:background="@drawable/bg_icon_blue_light_circle">
                 <ImageView
                     android:layout_width="22dp"
@@ -303,24 +294,17 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Recent Bill"
-                    android:textColor="#1A1A2E"
+                    android:textColor="#1A2D5A"
                     android:textSize="15sp"
                     android:textStyle="bold" />
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="View your history"
-                    android:textColor="#8899BB"
+                    android:textColor="#7A9AC4"
                     android:textSize="13sp" />
             </LinearLayout>
 
-            <ImageView
-                android:layout_width="18dp"
-                android:layout_height="18dp"
-                android:rotation="90"
-                android:src="@android:drawable/arrow_up_float"
-                app:tint="#3d79ca"
-                tools:ignore="ContentDescription" />
         </LinearLayout>
 
         <!-- Owe -->
@@ -329,14 +313,14 @@
             android:layout_width="match_parent"
             android:layout_height="85dp"
             android:layout_marginHorizontal="16dp"
-            android:background="@drawable/bg_fintech_card"
+            android:background="@drawable/bg_action_card_white"
             android:elevation="3dp"
             android:gravity="center_vertical"
             android:paddingHorizontal="18dp">
 
             <FrameLayout
-                android:layout_width="44dp"
-                android:layout_height="44dp"
+                android:layout_width="46dp"
+                android:layout_height="46dp"
                 android:background="@drawable/bg_icon_blue_light_circle">
                 <ImageView
                     android:layout_width="22dp"
@@ -357,24 +341,17 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Owe"
-                    android:textColor="#1A1A2E"
+                    android:textColor="#1A2D5A"
                     android:textSize="15sp"
                     android:textStyle="bold" />
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Track what you owe"
-                    android:textColor="#8899BB"
+                    android:textColor="#7A9AC4"
                     android:textSize="13sp" />
             </LinearLayout>
 
-            <ImageView
-                android:layout_width="18dp"
-                android:layout_height="18dp"
-                android:rotation="90"
-                android:src="@android:drawable/arrow_up_float"
-                app:tint="#3d79ca"
-                tools:ignore="ContentDescription" />
         </LinearLayout>
 
     </LinearLayout>
