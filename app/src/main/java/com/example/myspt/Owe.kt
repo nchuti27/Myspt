@@ -98,7 +98,7 @@ class Owe : AppCompatActivity() {
         batch.update(debtRef, "status", "paid")
 
         val notiData = hashMapOf(
-            "to_uid" to debt.creditorId,
+            "to_uid" to debt.friendId,
             "from_uid" to myUid,
             "from_name" to debt.name,
             "type" to "PAYMENT_RECEIVED",

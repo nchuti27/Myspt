@@ -86,31 +86,37 @@ class FriendOwe : AppCompatActivity() {
         oweYouList.clear()
         youOweList.clear()
 
-        // ✅ ยอดรวมทั้งบิล = sum ของทุกคนที่ต้องจ่าย
         val grandTotal = splitResult.values.sum()
+
+        // แยกเจ้าหนี้ (จ่ายเกิน) และลูกหนี้ (จ่ายขาด)
+        val creditors = mutableListOf<Pair<String, Double>>() // name, เงินส่วนเกิน
+        val debtors = mutableListOf<Pair<String, Double>>()   // name, เงินที่ขาด
 
         for (uid in memberNames.keys) {
             val share = splitResult[uid] ?: 0.0
             val paid = payersMap[uid] ?: 0.0
-            val netOwed = share - paid
-
-            val item = OweItem(memberNames[uid] ?: "Unknown", netOwed, uid)
+            val net = paid - share
 
             when {
-                netOwed > 0.01  -> youOweList.add(item)
-                netOwed < -0.01 -> oweYouList.add(item)
-                else            -> youOweList.add(OweItem(memberNames[uid] ?: "Unknown", 0.0, uid))
+                net > 0.01  -> creditors.add(Pair(memberNames[uid] ?: "Unknown", net))
+                net < -0.01 -> debtors.add(Pair(memberNames[uid] ?: "Unknown", Math.abs(net)))
             }
         }
 
-        // ✅ แสดงยอดรวมทั้งบิล ไม่ใช่แค่ยอดค้าง
+        // จับคู่ debtor → creditor แสดงทุกคู่
+        for (debtor in debtors) {
+            for (creditor in creditors) {
+                // "chutlnannn pays jayphat ฿296"
+                oweYouList.add(OweItem("${debtor.first} pays ${creditor.first}", minOf(debtor.second, creditor.second), ""))
+            }
+        }
+
         tvTotalBalance?.text = String.format("%.2f ฿", grandTotal)
         tvTotalBalance?.setTextColor(Color.parseColor("#4CAF50"))
 
         adapterOweYou.notifyDataSetChanged()
         adapterYouOwe.notifyDataSetChanged()
     }
-
     private fun showMenu(view: View) {
         val popupMenu = PopupMenu(this, view)
         popupMenu.menuInflater.inflate(R.menu.menu_group_options, popupMenu.menu)
