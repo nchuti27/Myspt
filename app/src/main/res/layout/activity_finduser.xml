@@ -6,60 +6,113 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F5F7FA"
-    android:fitsSystemWindows="true"> <ImageButton
-    android:id="@+id/backButton"
-    android:layout_width="48dp"
-    android:layout_height="48dp"
-    android:layout_marginStart="16dp"
-    android:layout_marginTop="16dp"
-    android:background="?attr/selectableItemBackgroundBorderless"
-    android:contentDescription="Back"
-    android:src="@drawable/ic_arrow_back"
-    app:layout_constraintStart_toStartOf="parent"
-    app:layout_constraintTop_toTopOf="parent"
-    app:tint="#000000" />
+    android:background="#EEF4FF"
+    android:fitsSystemWindows="true">
+
+    <!-- Header gradient background -->
+
+    <ImageButton
+        android:id="@+id/backButton"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:background="@drawable/bg_circle_white"
+        android:contentDescription="Back"
+        android:elevation="4dp"
+        android:src="@drawable/ic_arrow_back"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:tint="#3d79ca" />
+
+    <!-- Profile card -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/profileCard"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="24dp"
+        android:layout_marginTop="0dp"
+        app:cardBackgroundColor="@android:color/white"
+        app:cardCornerRadius="28dp"
+        app:cardElevation="12dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/backButton"
+        app:layout_constraintVertical_bias="0.18">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:paddingHorizontal="24dp"
+            android:paddingTop="60dp"
+            android:paddingBottom="32dp">
+
+            <!-- Placeholder for username and button spacing -->
+
+
+            <!-- Divider -->
+
+            <TextView
+                android:id="@+id/tvFoundUserName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="0dp"
+                android:letterSpacing="0.01"
+                android:text="Found User Name"
+                android:textColor="#1A2D5A"
+                android:textSize="22sp"
+                android:textStyle="bold" />
+
+            <View
+                android:layout_width="48dp"
+                android:layout_height="3dp"
+                android:layout_gravity="center"
+                android:layout_marginTop="20dp"
+                android:background="@drawable/bg_divider_blue" />
+
+            <Button
+                android:id="@+id/btnAddFriend"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginHorizontal="0dp"
+                android:layout_marginTop="28dp"
+                android:backgroundTint="#3D79CA"
+                android:elevation="6dp"
+                android:letterSpacing="0.02"
+                android:text="Add Friend"
+                android:textAllCaps="false"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                app:cornerRadius="28dp"
+                app:icon="@drawable/ic_person_add"
+                app:iconGravity="textStart"
+                app:iconPadding="8dp"
+                app:iconTint="#FFFFFF" />
+
+        </LinearLayout>
+
+    </androidx.cardview.widget.CardView>
 
     <com.google.android.material.imageview.ShapeableImageView
         android:id="@+id/ivUserProfile"
         android:layout_width="120dp"
         android:layout_height="120dp"
+        android:layout_marginTop="80dp"
+        android:elevation="16dp"
         android:scaleType="centerCrop"
         android:src="@drawable/ic_launcher_background"
-        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.498"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/backButton"
-        app:layout_constraintVertical_bias="0.15"
-        app:shapeAppearanceOverlay="@style/CircleImage" />
+        app:layout_constraintTop_toTopOf="parent"
+        app:shapeAppearanceOverlay="@style/CircleImage"
+        app:strokeColor="#FFFFFF"
+        app:strokeWidth="4dp" />
 
-    <TextView
-        android:id="@+id/tvFoundUserName"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
-        android:text="Found User Name"
-        android:textColor="#000000"
-        android:textSize="22sp"
-        android:textStyle="bold"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/ivUserProfile" />
-
-    <Button
-        android:id="@+id/btnAddFriend"
-        android:layout_width="0dp"
-        android:layout_height="56dp"
-        android:layout_marginHorizontal="48dp"
-        android:layout_marginTop="24dp"
-        android:backgroundTint="#3D79CA"
-        android:text="ADD FRIEND"
-        android:textColor="#FFFFFF"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        app:cornerRadius="28dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/tvFoundUserName" />
+    <!-- Profile image — floats over card top edge -->
 
 </androidx.constraintlayout.widget.ConstraintLayout>
