@@ -6,27 +6,41 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/white"
-    android:fitsSystemWindows="true"> <ImageButton
-    android:id="@+id/backButton"
-    android:layout_width="48dp"
-    android:layout_height="48dp"
-    android:layout_marginStart="16dp"
-    android:layout_marginTop="16dp"
-    android:background="?attr/selectableItemBackgroundBorderless"
-    android:contentDescription="Back"
-    android:src="@drawable/ic_arrow_back"
-    app:layout_constraintStart_toStartOf="parent"
-    app:layout_constraintTop_toTopOf="parent" />
+    android:background="#EEF4FF"
+    android:fitsSystemWindows="true">
+
+    <!-- Decorative top wave / card background -->
+    <View
+        android:id="@+id/headerDecor"
+        android:layout_width="0dp"
+        android:layout_height="180dp"
+        android:background="@drawable/bg_header_wave"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <ImageButton
+        android:id="@+id/backButton"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:background="@drawable/bg_circle_white2"
+        android:contentDescription="Back"
+        android:elevation="4dp"
+        android:src="@drawable/ic_arrow_back"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
         android:id="@+id/tvTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Add Friend"
-        android:textColor="@android:color/black"
-        android:textSize="20sp"
+        android:textColor="@android:color/white"
+        android:textSize="22sp"
         android:textStyle="bold"
+        android:letterSpacing="0.02"
         app:layout_constraintBottom_toBottomOf="@+id/backButton"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -40,26 +54,37 @@
         android:layout_marginTop="80dp"
         app:errorTextColor="@android:color/holo_red_dark"
         app:hintEnabled="false"
+        app:boxBackgroundMode="none"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/tvTitle">
 
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/etSearchUser"
+        <!-- Card container for input -->
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@android:color/transparent"
-            android:hint="Enter friend's username"
-            android:inputType="text"
-            android:maxLines="1"
-            android:paddingBottom="16dp"
-            android:textColor="@android:color/black"
-            android:textSize="18sp" />
+            android:layout_height="match_parent"
+            android:background="@drawable/bg_input_card"
+            android:elevation="6dp"
+            android:orientation="vertical"
+            android:paddingHorizontal="20dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="4dp">
 
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="@android:color/darker_gray" />
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etSearchUser"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@android:color/transparent"
+                android:hint="Enter friend's username"
+                android:inputType="text"
+                android:maxLines="1"
+                android:paddingTop="8dp"
+                android:paddingBottom="16dp"
+                android:textColor="#1A2D5A"
+                android:textColorHint="#A0B4D0"
+                android:textSize="17sp" />
+
+        </LinearLayout>
 
     </com.google.android.material.textfield.TextInputLayout>
 
@@ -69,12 +94,16 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="40dp"
         android:backgroundTint="#3d79ca"
+        android:elevation="8dp"
         android:minWidth="150dp"
         android:paddingHorizontal="32dp"
         android:paddingVertical="12dp"
         android:text="Add friend"
         android:textAllCaps="false"
         android:textColor="@color/white"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:letterSpacing="0.02"
         app:cornerRadius="24dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
