@@ -7,12 +7,15 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#F4F8FB"
-    android:fitsSystemWindows="true"> <View
-    android:id="@+id/headerBg"
-    android:layout_width="match_parent"
-    android:layout_height="140dp"
-    android:background="@drawable/bg_gradient_header"
-    app:layout_constraintTop_toTopOf="parent" />
+    android:fitsSystemWindows="true">
+
+    <View
+        android:id="@+id/headerBg"
+        android:layout_width="match_parent"
+        android:layout_height="140dp"
+        android:background="@drawable/bg_gradient_header"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:layout_editor_absoluteX="16dp" />
 
     <ImageButton
         android:id="@+id/backButton"
@@ -26,7 +29,9 @@
         android:src="@drawable/ic_arrow_back"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:tint="@color/white" /> <TextView
+        app:tint="@color/white" />
+
+    <TextView
         android:id="@+id/txtTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -36,8 +41,10 @@
         android:textStyle="bold"
         app:layout_constraintBottom_toBottomOf="@id/backButton"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.498"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@id/backButton" />
+        app:layout_constraintTop_toTopOf="@id/backButton"
+        app:layout_constraintVertical_bias="1.0" />
 
     <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
