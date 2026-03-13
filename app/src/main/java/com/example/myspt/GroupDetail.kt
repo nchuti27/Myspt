@@ -3,6 +3,7 @@ package com.example.myspt
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -37,25 +38,28 @@ class GroupDetail : AppCompatActivity() {
         db = FirebaseFirestore.getInstance()
         auth = FirebaseAuth.getInstance()
         groupId = intent.getStringExtra("GROUP_ID")
+        val isReadOnly = intent.getBooleanExtra("READ_ONLY", false)
 
-        initViews()
+        android.util.Log.d("GROUPDETAIL", "groupId received = $groupId")  // ✅ debug log
 
-        memberAdapter = MemberListAdapter(memberList) { memberId ->
+        initViews(isReadOnly)
+
+        memberAdapter = MemberListAdapter(memberList, isReadOnly) { memberId ->
             removeMemberFromGroup(memberId)
         }
 
         rvMembers.layoutManager = LinearLayoutManager(this)
         rvMembers.adapter = memberAdapter
 
-        if (!groupId.isNullOrEmpty()) {
+        if (groupId != null) {
             loadGroupData()
         } else {
-            Toast.makeText(this, "Error: Group ID missing", Toast.LENGTH_SHORT).show()
-            finish()
+            android.util.Log.e("GROUPDETAIL", "groupId is NULL!")
+            Toast.makeText(this, "Error: Group not found", Toast.LENGTH_SHORT).show()
         }
     }
 
-    private fun initViews() {
+    private fun initViews(isReadOnly: Boolean = false) {
         editGroupName = findViewById(R.id.editGroupName)
         btnEditName = findViewById(R.id.btnEditName)
         btnAddMember = findViewById(R.id.btnAddMember)
@@ -86,6 +90,63 @@ class GroupDetail : AppCompatActivity() {
             }
             fetchMyNameAndSave(newName)
         }
+
+        if (isReadOnly) {
+            btnEditName.visibility = View.GONE
+            btnAddMember.visibility = View.GONE
+            btnSave.visibility = View.GONE
+            editGroupName.isEnabled = false
+        }
+    }
+
+    private fun loadGroupData() {
+        android.util.Log.d("GROUPDETAIL", "loadGroupData called for groupId = $groupId")
+        db.collection("groups").document(groupId!!)
+            .addSnapshotListener { snapshot, e ->
+                if (e != null) {
+                    android.util.Log.e("GROUPDETAIL", "Firestore error: ${e.message}")
+                    return@addSnapshotListener
+                }
+                android.util.Log.d("GROUPDETAIL", "snapshot exists = ${snapshot?.exists()}")
+                android.util.Log.d("GROUPDETAIL", "snapshot data = ${snapshot?.data}")
+
+                if (snapshot == null || !snapshot.exists()) return@addSnapshotListener
+
+                val name = snapshot.getString("groupName") ?: "Unknown Group"
+                val membersUids = snapshot.get("members") as? List<String> ?: listOf()
+
+                if (!editGroupName.hasFocus()) {
+                    editGroupName.setText(name)
+                }
+                editGroupName.hint = name
+                fetchMemberDetails(membersUids)
+            }
+    }
+
+    private fun fetchMemberDetails(uids: List<String>) {
+        if (uids.isEmpty()) {
+            memberList.clear()
+            memberAdapter.notifyDataSetChanged()
+            return
+        }
+        db.collection("users").whereIn(FieldPath.documentId(), uids.take(10))
+            .get()
+            .addOnSuccessListener { documents ->
+                memberList.clear()
+                for (doc in documents) {
+                    val profileUrl = doc.getString("profileImageUrl")
+                        ?: doc.getString("profileUrl")
+                    memberList.add(CircleItem(
+                        id = doc.id,
+                        name = doc.getString("name") ?: "Unknown",
+                        profileUrl = profileUrl
+                    ))
+                }
+                memberAdapter.notifyDataSetChanged()
+            }
+            .addOnFailureListener { e ->
+                android.util.Log.e("GROUPDETAIL", "fetchMemberDetails error: ${e.message}")
+            }
     }
 
     private fun fetchMyNameAndSave(newName: String) {
@@ -150,39 +211,6 @@ class GroupDetail : AppCompatActivity() {
         }
     }
 
-    private fun loadGroupData() {
-        db.collection("groups").document(groupId!!)
-            .addSnapshotListener { snapshot, e ->
-                if (e != null || snapshot == null || !snapshot.exists()) return@addSnapshotListener
-                val name = snapshot.getString("groupName") ?: "Unknown Group"
-                val membersUids = snapshot.get("members") as? List<String> ?: listOf()
-                if (!editGroupName.hasFocus()) editGroupName.setText(name)
-                fetchMemberDetails(membersUids)
-            }
-    }
-
-    private fun fetchMemberDetails(uids: List<String>) {
-        if (uids.isEmpty()) {
-            memberList.clear()
-            memberAdapter.notifyDataSetChanged()
-            return
-        }
-        db.collection("users").whereIn(FieldPath.documentId(), uids.take(10))
-            .get()
-            .addOnSuccessListener { documents ->
-                memberList.clear()
-                for (doc in documents) {
-                    memberList.add(CircleItem(
-                        id = doc.id,
-                        name = doc.getString("name") ?: "Unknown",
-                        profileUrl = doc.getString("profileUrl")
-                    ))
-                }
-                memberAdapter.notifyDataSetChanged()
-            }
-    }
-
-    //  เช็คคนสุดท้าย + ลบบิล + ลบกลุ่ม
     private fun removeMemberFromGroup(uidToRemove: String) {
         val builder = androidx.appcompat.app.AlertDialog.Builder(this)
         builder.setTitle("Remove Member")
@@ -190,27 +218,21 @@ class GroupDetail : AppCompatActivity() {
 
         builder.setPositiveButton("Remove") { _, _ ->
             val gId = groupId ?: return@setPositiveButton
-            val currentUid = auth.currentUser?.uid ?: return@setPositiveButton // 🌟 ดึง UID ของตัวเราเองมาด้วย
+            val currentUid = auth.currentUser?.uid ?: return@setPositiveButton
 
             val groupRef = db.collection("groups").document(gId)
-            val userToRemoveRef = db.collection("users").document(uidToRemove) // คนที่ถูกเลือกให้ลบ
-            val currentUserRef = db.collection("users").document(currentUid) // ตัวเราเอง
+            val userToRemoveRef = db.collection("users").document(uidToRemove)
+            val currentUserRef = db.collection("users").document(currentUid)
 
             groupRef.get().addOnSuccessListener { snapshot ->
                 val members = snapshot.get("members") as? MutableList<String> ?: mutableListOf()
-
                 val batch = db.batch()
 
-                // ลบสมาชิกคนสุดท้าย
                 if (members.size <= 1) {
-                    // ลบกลุ่ม
                     batch.delete(groupRef)
-
-                    // ล้าง ID
                     batch.update(userToRemoveRef, "groups", FieldValue.arrayRemove(gId))
                     batch.update(currentUserRef, "groups", FieldValue.arrayRemove(gId))
 
-                    //บิลลบทิ้ง
                     db.collection("bills").whereEqualTo("groupId", gId).get()
                         .addOnSuccessListener { bills ->
                             for (bill in bills) {
@@ -221,12 +243,9 @@ class GroupDetail : AppCompatActivity() {
                                 finish()
                             }
                         }
-                }
-                // ่เอาเพื่อนออก
-                else {
+                } else {
                     batch.update(groupRef, "members", FieldValue.arrayRemove(uidToRemove))
                     batch.update(userToRemoveRef, "groups", FieldValue.arrayRemove(gId))
-
                     batch.commit().addOnSuccessListener {
                         Toast.makeText(this, "Member removed.", Toast.LENGTH_SHORT).show()
                     }

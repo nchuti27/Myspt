@@ -36,12 +36,12 @@ class NotificationAdapter(
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val doc = notifications[position]
-        val type = doc.getString("type") ?: doc.getString("type") ?: ""
+        val type = doc.getString("type") ?: ""
 
-        // ✅ รีเซ็ตค่าเริ่มต้นทุกครั้ง
         holder.btnAccept.visibility = View.GONE
         holder.btnDelete.visibility = View.GONE
         holder.ivMore.visibility = View.VISIBLE
+        holder.imgAvatar.setOnClickListener(null) // ✅ reset ก่อนทุกครั้ง
 
         when (type) {
             "debt_reminder" -> {
@@ -58,7 +58,22 @@ class NotificationAdapter(
                 holder.tvName.text = doc.getString("from_name") ?: "Someone"
                 holder.tvMessage.text = "accepted your friend request"
                 holder.imgAvatar.setImageResource(R.drawable.outline_person)
-                // ✅ ลบ setOnClickListener ออกจากตรงนี้
+                holder.imgAvatar.setOnClickListener {
+                    val fromUid = doc.getString("from_uid") ?: return@setOnClickListener
+                    val fromName = doc.getString("from_name") ?: "Unknown"
+                    val myUid = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: return@setOnClickListener
+                    com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                        .collection("users").document(myUid).get()
+                        .addOnSuccessListener { userDoc ->
+                            @Suppress("UNCHECKED_CAST")
+                            val friends = userDoc.get("friends") as? List<String> ?: listOf()
+                            val intent = Intent(holder.itemView.context, FriendProfile::class.java)
+                            intent.putExtra("FRIEND_UID", fromUid)
+                            intent.putExtra("FRIEND_NAME", fromName)
+                            intent.putExtra("IS_FRIEND", friends.contains(fromUid))
+                            holder.itemView.context.startActivity(intent)
+                        }
+                }
             }
             else -> {
                 when (activeTab) {
@@ -68,6 +83,22 @@ class NotificationAdapter(
                         holder.btnAccept.visibility = View.VISIBLE
                         holder.btnDelete.visibility = View.VISIBLE
                         holder.btnDelete.text = "Decline"
+                        holder.imgAvatar.setOnClickListener {
+                            val fromUid = doc.getString("from_uid") ?: return@setOnClickListener
+                            val fromName = doc.getString("from_name") ?: "Unknown"
+                            val myUid = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: return@setOnClickListener
+                            com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                                .collection("users").document(myUid).get()
+                                .addOnSuccessListener { userDoc ->
+                                    @Suppress("UNCHECKED_CAST")
+                                    val friends = userDoc.get("friends") as? List<String> ?: listOf()
+                                    val intent = Intent(holder.itemView.context, FriendProfile::class.java)
+                                    intent.putExtra("FRIEND_UID", fromUid)
+                                    intent.putExtra("FRIEND_NAME", fromName)
+                                    intent.putExtra("IS_FRIEND", friends.contains(fromUid))
+                                    holder.itemView.context.startActivity(intent)
+                                }
+                        }
                     }
                     "GROUP" -> {
                         holder.tvName.text = doc.getString("groupName") ?: "Unknown Group"
@@ -75,12 +106,21 @@ class NotificationAdapter(
                         holder.btnAccept.visibility = View.VISIBLE
                         holder.btnDelete.visibility = View.VISIBLE
                         holder.btnDelete.text = "Decline"
+                        holder.imgAvatar.setOnClickListener {
+                            val groupId = doc.getString("groupId") ?: return@setOnClickListener
+                            android.util.Log.d("NOTI", "groupId = $groupId")  // ✅ เช็ค log ก่อน
+                            val intent = Intent(holder.itemView.context, GroupDetail::class.java)
+                            intent.putExtra("GROUP_ID", groupId)
+                            intent.putExtra("READ_ONLY", true)
+                            holder.itemView.context.startActivity(intent)
+                        }
                     }
                     "REQUEST" -> {
                         holder.tvName.text = doc.getString("to_name") ?: "Waiting..."
                         holder.tvMessage.text = "Waiting for approval..."
                         holder.btnDelete.visibility = View.VISIBLE
                         holder.btnDelete.text = "Cancel"
+                        holder.imgAvatar.setOnClickListener(null)
                     }
                 }
                 val profileUrl = doc.getString("from_profileUrl")
@@ -92,29 +132,7 @@ class NotificationAdapter(
 
         holder.btnAccept.setOnClickListener { onAccept(doc) }
         holder.btnDelete.setOnClickListener { onDelete(doc) }
-        // ✅ กดรูปโปรไฟล์ → ดูโปรไฟล์
-        holder.imgAvatar.setOnClickListener {
-            val fromUid = doc.getString("from_uid") ?: return@setOnClickListener
-            val fromName = doc.getString("from_name") ?: "Unknown"
-            val myUid = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: return@setOnClickListener
 
-            // ✅ เช็กก่อนว่าเป็นเพื่อนกันแล้วไหม
-            com.google.firebase.firestore.FirebaseFirestore.getInstance()
-                .collection("users").document(myUid).get()
-                .addOnSuccessListener { doc ->
-                    @Suppress("UNCHECKED_CAST")
-                    val friends = doc.get("friends") as? List<String> ?: listOf()
-                    val isFriend = friends.contains(fromUid)
-
-                    val intent = Intent(holder.itemView.context, FriendProfile::class.java)
-                    intent.putExtra("FRIEND_UID", fromUid)
-                    intent.putExtra("FRIEND_NAME", fromName)
-                    intent.putExtra("IS_FRIEND", isFriend)  // ✅ เป็นเพื่อน → เห็น QR, ไม่เป็น → ไม่เห็น
-                    holder.itemView.context.startActivity(intent)
-                }
-        }
-
-// ✅ 3 จุด เหลือแค่ Delete
         holder.ivMore.setOnClickListener { view ->
             val popup = PopupMenu(view.context, view)
             popup.menu.add("Delete")
@@ -125,7 +143,6 @@ class NotificationAdapter(
             popup.show()
         }
     }
-
 
     private fun showDeleteConfirmation(context: Context, doc: DocumentSnapshot) {
         AlertDialog.Builder(context)

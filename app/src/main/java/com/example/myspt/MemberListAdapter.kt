@@ -9,7 +9,8 @@ import androidx.recyclerview.widget.RecyclerView
 
 class MemberListAdapter(
     private val memberList: List<CircleItem>,
-    private val onRemoveClick: (String) -> Unit // รับฟังก์ชันลบจาก Activity
+    private val isReadOnly: Boolean = false,
+    private val onRemoveClick: (String) -> Unit
 ) : RecyclerView.Adapter<MemberListAdapter.ViewHolder>() {
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -27,8 +28,13 @@ class MemberListAdapter(
         val member = memberList[position]
         holder.tvMemberName.text = member.name
 
-        holder.btnRemove.setOnClickListener {
-            onRemoveClick(member.id)
+        if (isReadOnly) {
+            holder.btnRemove.visibility = View.GONE
+        } else {
+            holder.btnRemove.visibility = View.VISIBLE
+            holder.btnRemove.setOnClickListener {
+                onRemoveClick(member.id)
+            }
         }
     }
 
