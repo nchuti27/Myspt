@@ -161,7 +161,7 @@ class WhoPays : AppCompatActivity() {
         if (Math.abs(totalPaid - totalAmount) > 0.01) {
             Toast.makeText(
                 this,
-                "Total Amount Paid ฿${String.format("%.2f", totalPaid)} ไม่ตรงกับบิล ฿${String.format("%.2f", totalAmount)}",
+                "Total Amount Paid ฿${String.format("%.2f", totalPaid)} does not match bill ฿${String.format("%.2f", totalAmount)}",
                 Toast.LENGTH_LONG  // ✅ เปลี่ยนเป็น LONG ให้เห็นชัดขึ้น
             ).show()
             return
