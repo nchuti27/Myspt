@@ -37,6 +37,12 @@ class FriendProfile : AppCompatActivity() {
 
         val isFriend = intent.getBooleanExtra("IS_FRIEND", false)
 
+        if (!isFriend) {
+            ivQrCode.visibility = View.GONE      // ✅ ซ่อน QR
+            btnSaveQr.visibility = View.GONE     // ✅ ซ่อนปุ่ม Save
+            tvQrLabel.text = "Connect with friend to see QR Code"
+        }
+
         // 3. แสดงข้อมูลเบื้องต้น
         tvFullName.text = friendName
         tvUsername.text = if (friendUsername.startsWith("@")) friendUsername else "@$friendUsername"

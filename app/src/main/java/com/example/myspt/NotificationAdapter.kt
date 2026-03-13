@@ -57,7 +57,8 @@ class NotificationAdapter(
             "friend_accepted" -> {
                 holder.tvName.text = doc.getString("from_name") ?: "Someone"
                 holder.tvMessage.text = "accepted your friend request"
-                holder.imgAvatar.setImageResource(R.drawable.outline_person) // หรือ icon ที่มี
+                holder.imgAvatar.setImageResource(R.drawable.outline_person)
+                // ✅ ลบ setOnClickListener ออกจากตรงนี้
             }
             else -> {
                 when (activeTab) {
@@ -91,17 +92,34 @@ class NotificationAdapter(
 
         holder.btnAccept.setOnClickListener { onAccept(doc) }
         holder.btnDelete.setOnClickListener { onDelete(doc) }
+        // ✅ กดรูปโปรไฟล์ → ดูโปรไฟล์
+        holder.imgAvatar.setOnClickListener {
+            val fromUid = doc.getString("from_uid") ?: return@setOnClickListener
+            val fromName = doc.getString("from_name") ?: "Unknown"
+            val myUid = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: return@setOnClickListener
+
+            // ✅ เช็กก่อนว่าเป็นเพื่อนกันแล้วไหม
+            com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                .collection("users").document(myUid).get()
+                .addOnSuccessListener { doc ->
+                    @Suppress("UNCHECKED_CAST")
+                    val friends = doc.get("friends") as? List<String> ?: listOf()
+                    val isFriend = friends.contains(fromUid)
+
+                    val intent = Intent(holder.itemView.context, FriendProfile::class.java)
+                    intent.putExtra("FRIEND_UID", fromUid)
+                    intent.putExtra("FRIEND_NAME", fromName)
+                    intent.putExtra("IS_FRIEND", isFriend)  // ✅ เป็นเพื่อน → เห็น QR, ไม่เป็น → ไม่เห็น
+                    holder.itemView.context.startActivity(intent)
+                }
+        }
+
+// ✅ 3 จุด เหลือแค่ Delete
         holder.ivMore.setOnClickListener { view ->
             val popup = PopupMenu(view.context, view)
             popup.menu.add("Delete")
-            if (type != "debt_reminder" && type != "PAYMENT_RECEIVED") {
-                popup.menu.add("View Profile")
-            }
             popup.setOnMenuItemClickListener { item ->
-                when (item.title) {
-                    "Delete" -> onDelete(doc)
-                    "View Profile" -> { /* เหมือนเดิม */ }
-                }
+                if (item.title == "Delete") onDelete(doc)
                 true
             }
             popup.show()

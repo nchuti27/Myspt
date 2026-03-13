@@ -1,11 +1,13 @@
 package com.example.myspt
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import coil.load
 
 class FindUser : AppCompatActivity() {
     private var btnAddFriend: Button? = null
@@ -24,10 +26,31 @@ class FindUser : AppCompatActivity() {
 
         tvFoundUserName?.text = friendName
 
+        // ✅ กดรูปหรือชื่อ → ดูโปรไฟล์
+        val ivUserProfile = findViewById<com.google.android.material.imageview.ShapeableImageView>(R.id.ivUserProfile)
+        ivUserProfile.setOnClickListener { openProfile(friendUid, friendName) }
+        tvFoundUserName?.setOnClickListener { openProfile(friendUid, friendName) }
+
         if (friendUid != null) {
             checkStatus(friendUid, friendName)
-        } else {
-            Toast.makeText(this, "Error: User ID not found", Toast.LENGTH_SHORT).show()
+            loadProfileImage(friendUid, ivUserProfile)  // ✅ โหลดรูปด้วย
+        }
+    }
+
+    private fun openProfile(uid: String?, name: String) {
+        val intent = Intent(this, FriendProfile::class.java)
+        intent.putExtra("FRIEND_UID", uid)
+        intent.putExtra("FRIEND_NAME", name)
+        intent.putExtra("IS_FRIEND", false)
+        startActivity(intent)
+    }
+
+    private fun loadProfileImage(uid: String, iv: com.google.android.material.imageview.ShapeableImageView) {
+        db.collection("users").document(uid).get().addOnSuccessListener { doc ->
+            val url = doc.getString("profileImageUrl")
+            if (!url.isNullOrEmpty()) {
+                iv.load(url)  // ✅ เรียกบน ImageView โดยตรง
+            }
         }
     }
 
