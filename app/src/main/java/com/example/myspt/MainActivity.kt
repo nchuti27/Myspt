@@ -92,7 +92,12 @@ class MainActivity : AppCompatActivity() {
             if (item.isAddButton) {
                 startActivity(Intent(this, AddFriend::class.java))
             } else {
-                Toast.makeText(this, "Friend: ${item.name}", Toast.LENGTH_SHORT).show()
+                val intent = Intent(this, FriendProfile::class.java).apply {
+                    putExtra("FRIEND_UID", item.id)
+                    putExtra("FRIEND_NAME", item.name)
+                    putExtra("IS_FRIEND", true)
+                }
+                startActivity(intent)
             }
         }
         rvFriends?.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
