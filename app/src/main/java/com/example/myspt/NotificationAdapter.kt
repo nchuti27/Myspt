@@ -120,7 +120,24 @@ class NotificationAdapter(
                         holder.tvMessage.text = "Waiting for approval..."
                         holder.btnDelete.visibility = View.VISIBLE
                         holder.btnDelete.text = "Cancel"
+                        holder.imgAvatar.setImageResource(R.drawable.outline_person)
                         holder.imgAvatar.setOnClickListener(null)
+                        holder.imgAvatar.setOnClickListener {
+                            val fromUid = doc.getString("from_uid") ?: return@setOnClickListener
+                            val fromName = doc.getString("from_name") ?: "Unknown"
+                            val myUid = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: return@setOnClickListener
+                            com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                                .collection("users").document(myUid).get()
+                                .addOnSuccessListener { userDoc ->
+                                    @Suppress("UNCHECKED_CAST")
+                                    val friends = userDoc.get("friends") as? List<String> ?: listOf()
+                                    val intent = Intent(holder.itemView.context, FriendProfile::class.java)
+                                    intent.putExtra("FRIEND_UID", fromUid)
+                                    intent.putExtra("FRIEND_NAME", fromName)
+                                    intent.putExtra("IS_FRIEND", friends.contains(fromUid))
+                                    holder.itemView.context.startActivity(intent)
+                                }
+                        }
                     }
                 }
                 val profileUrl = doc.getString("from_profileUrl")
