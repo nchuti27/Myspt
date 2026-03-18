@@ -38,7 +38,6 @@ class Login : AppCompatActivity() {
 
         auth = FirebaseAuth.getInstance()
 
-        // เช็ค Login ไว้แล้ว ให้ไปหน้าหลักเลย
         if (auth.currentUser != null) {
             startActivity(Intent(this, MainActivity::class.java))
             finish()

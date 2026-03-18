@@ -26,14 +26,14 @@ class FindUser : AppCompatActivity() {
 
         tvFoundUserName?.text = friendName
 
-        // ✅ กดรูปหรือชื่อ → ดูโปรไฟล์
+
         val ivUserProfile = findViewById<com.google.android.material.imageview.ShapeableImageView>(R.id.ivUserProfile)
         ivUserProfile.setOnClickListener { openProfile(friendUid, friendName) }
         tvFoundUserName?.setOnClickListener { openProfile(friendUid, friendName) }
 
         if (friendUid != null) {
             checkStatus(friendUid, friendName)
-            loadProfileImage(friendUid, ivUserProfile)  // ✅ โหลดรูปด้วย
+            loadProfileImage(friendUid, ivUserProfile)
         }
     }
 
@@ -49,7 +49,7 @@ class FindUser : AppCompatActivity() {
         db.collection("users").document(uid).get().addOnSuccessListener { doc ->
             val url = doc.getString("profileImageUrl")
             if (!url.isNullOrEmpty()) {
-                iv.load(url)  // ✅ เรียกบน ImageView โดยตรง
+                iv.load(url)
             }
         }
     }

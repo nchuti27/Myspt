@@ -48,7 +48,6 @@ class SelectGroupActivity : AppCompatActivity() {
         rvGroups.adapter = adapter
         rvGroups.layoutManager = LinearLayoutManager(this)
 
-        // ปุ่มข้ามการเลือกกลุ่ม
         btnSkipGroup.setOnClickListener {
             navigateToNewBill(arrayListOf())
         }
@@ -59,10 +58,10 @@ class SelectGroupActivity : AppCompatActivity() {
     private fun loadRealGroups() {
         val myUid = auth.currentUser?.uid ?: return
 
-        // ข้อมูล User ปัจจุบัน เพื่อดูว่ามีกลุ่มอะไรบ้าง
+
         db.collection("users").document(myUid).get().addOnSuccessListener { document ->
             val groupIds = document.get("groups") as? List<String> ?: listOf()
-            groupList.clear() // ล้างข้อมูลเก่า
+            groupList.clear()
 
             if (groupIds.isEmpty()) {
                 adapter.notifyDataSetChanged()
@@ -70,19 +69,19 @@ class SelectGroupActivity : AppCompatActivity() {
             }
 
             var loadedCount = 0
-            //วนลูปดึงข้อมูลรายละเอียดของแต่ละกลุ่ม
+
             for (gId in groupIds) {
                 db.collection("groups").document(gId).get().addOnSuccessListener { gDoc ->
                     if (gDoc.exists()) {
                         val name = gDoc.getString("groupName") ?: "Unknown Group"
-                        // ดึงรายชื่อสมาชิก
+
                         val membersUids = gDoc.get("members") as? ArrayList<String> ?: arrayListOf()
 
                         groupList.add(Group(name = name, members = membersUids))
                     }
 
                     loadedCount++
-                    // เมื่อดึงข้อมูลครบทุกกลุ่มแล้ว ให้อัปเดตหน้าจอ
+
                     if (loadedCount == groupIds.size) {
                         adapter.notifyDataSetChanged()
                     }
@@ -95,7 +94,7 @@ class SelectGroupActivity : AppCompatActivity() {
 
     private fun navigateToNewBill(members: ArrayList<String>) {
         val intent = Intent(this, BillSplit::class.java)
-        // ส่งรายชื่อสมาชิกของกลุ่มที่เลือกไปหน้าต่อไป
+
         intent.putStringArrayListExtra("SELECTED_MEMBERS", members)
         startActivity(intent)
     }

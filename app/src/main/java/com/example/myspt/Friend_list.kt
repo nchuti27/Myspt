@@ -62,7 +62,7 @@ class Friend_list : AppCompatActivity() {
         rvFriendList.layoutManager = LinearLayoutManager(this)
         rvFriendList.adapter = friendAdapter
 
-        // ระบบค้นหาเพื่อน
+        // ค้นหาเพื่อน
         etSearch.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
@@ -97,7 +97,6 @@ class Friend_list : AppCompatActivity() {
                     val username = doc.getString("username") ?: ""
                     val pUrl = doc.getString("profileUrl")
                     val uid = doc.id
-                    // ส่งค่าเริ่มต้น isExpanded = false เพื่อให้แผงปุ่มซ่อนอยู่ตอนเริ่ม
                     fullFriendList.add(FriendData(name, username, uid, pUrl, false))
                 }
                 friendAdapter.updateData(fullFriendList)
@@ -132,7 +131,7 @@ class FriendAdapter(private var originalList: ArrayList<FriendData>) :
 
         holder.tvName.text = currentItem.name
 
-        // กางหรือซ่อisExpanded
+
         holder.layoutActions.visibility = if (currentItem.isExpanded) View.VISIBLE else View.GONE
         holder.divider.visibility = if (currentItem.isExpanded) View.VISIBLE else View.GONE
 
@@ -156,7 +155,7 @@ class FriendAdapter(private var originalList: ArrayList<FriendData>) :
                     removeFriendFromFirestore(currentItem.uid, context, holder.bindingAdapterPosition)
                 }
                 .setNegativeButton("Cancel") { dialog, _ ->
-                    currentItem.isExpanded = false // พับแผงเก็บเมื่อกดยกเลิก
+                    currentItem.isExpanded = false
                     notifyItemChanged(position)
                     dialog.dismiss()
                 }
@@ -182,14 +181,14 @@ class FriendAdapter(private var originalList: ArrayList<FriendData>) :
         val myUid = FirebaseAuth.getInstance().currentUser?.uid ?: return
         val db = FirebaseFirestore.getInstance()
 
-        // ลบทั้ง 2 ฝั่งพร้อมกัน
+
         val batch = db.batch()
 
-        // ลบเพื่อนออกจากเรา
+
         val myRef = db.collection("users").document(myUid)
         batch.update(myRef, "friends", FieldValue.arrayRemove(friendUid))
 
-        // ลบเราออกจากเพื่อน
+
         val friendRef = db.collection("users").document(friendUid)
         batch.update(friendRef, "friends", FieldValue.arrayRemove(myUid))
 

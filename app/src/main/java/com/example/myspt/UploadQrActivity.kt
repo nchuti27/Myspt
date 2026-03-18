@@ -26,7 +26,7 @@ class UploadQrActivity : AppCompatActivity() {
     private val auth = FirebaseAuth.getInstance()
     private val storage = FirebaseStorage.getInstance()
 
-    // ตัวเปิด Gallery เพื่อเลือกรูป
+
     private val getImage = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) {
             imageUri = uri
@@ -41,17 +41,17 @@ class UploadQrActivity : AppCompatActivity() {
 
         initView()
 
-        // 1. กดเลือกรูป
+
         btnSelectQr.setOnClickListener {
             getImage.launch("image/*")
         }
 
-        // 2. กดอัปโหลด
+
         btnUploadQr.setOnClickListener {
             uploadImageToFirebase()
         }
 
-        // 3. ปุ่มย้อนกลับ
+
         btnBack.setOnClickListener {
             finish()
         }
@@ -61,7 +61,7 @@ class UploadQrActivity : AppCompatActivity() {
         ivQrPreview = findViewById(R.id.ivQrPreview)
         btnSelectQr = findViewById(R.id.btnSelectQr)
         btnUploadQr = findViewById(R.id.btnUploadQr)
-        btnBack = findViewById(R.id.btnBackQR) // ✅ ตรวจ ID ใน XML ให้ตรงกับตัวนี้
+        btnBack = findViewById(R.id.btnBackQR)
     }
 
     private fun uploadImageToFirebase() {

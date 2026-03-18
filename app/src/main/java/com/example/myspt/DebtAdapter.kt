@@ -25,7 +25,7 @@ var status: String = "pending",
 
 @get:Exclude
 @set:Exclude
-var timestamp: Any? = null  // ✅ รับ field แต่ไม่ map เข้า class
+var timestamp: Any? = null
 )
 
 class DebtAdapter(
@@ -49,7 +49,6 @@ class DebtAdapter(
     override fun onBindViewHolder(holder: DebtViewHolder, position: Int) {
         val debt = debtList[position]
 
-        // ✅ Owe You = คนอื่นค้างเรา → แสดงชื่อลูกหนี้ (friendId)
         holder.txtName.text = debt.name.ifEmpty { "Unknown" }
         holder.txtBillDetail.text = "Bill: ${debt.billName}"
         holder.txtAmount.text = "฿ ${String.format("%.2f", debt.amount)}"
@@ -68,14 +67,13 @@ class DebtAdapter(
         val auth = com.google.firebase.auth.FirebaseAuth.getInstance()
         val myUid = auth.currentUser?.uid ?: return
 
-        // ✅ ดึงชื่อจาก Firestore แทน displayName
         db.collection("users").document(myUid).get().addOnSuccessListener { doc ->
             val myName = doc.getString("name") ?: auth.currentUser?.displayName ?: "A friend"
 
             val notiData = hashMapOf(
                 "to_uid"    to debt.friendId,
                 "from_uid"  to debt.creditorId,
-                "from_name" to myName,  // ✅ ชื่อจริงจาก Firestore
+                "from_name" to myName,
                 "message"   to "Bill : ${debt.billName}  Amount: ฿${String.format("%.2f", debt.amount)}",
                 "type"      to "debt_reminder",
                 "status"    to "pending",

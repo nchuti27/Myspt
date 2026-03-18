@@ -27,7 +27,7 @@ class PayerAdapter(private val payerList: List<PayerData>) :
         holder.tvPayerName.text = payer.name
         holder.etPaidAmount.setText(if (payer.amountPaid == 0.0) "" else payer.amountPaid.toString())
 
-        // 🌟 อัปเดตยอดเงินลงใน Object ทันทีที่พิมพ์
+
         holder.etPaidAmount.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {
                 payer.amountPaid = s.toString().toDoubleOrNull() ?: 0.0

@@ -55,7 +55,7 @@ class NotiRequest : AppCompatActivity() {
         backButton = findViewById(R.id.backButton)
         btnTabFriend = findViewById(R.id.btnTabFriend)
         btnTabGroup = findViewById(R.id.btnTabGroup)
-        btnClearAll = findViewById(R.id.btnClearAll) // 🌟 ผูกปุ่มถังขยะ
+        btnClearAll = findViewById(R.id.btnClearAll)
         rvNotification = findViewById(R.id.rvNotification)
         tvEmptyState = findViewById(R.id.tvEmptyState)
 

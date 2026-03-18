@@ -36,7 +36,6 @@ class SelectFriendAdapter(private val friends: List<FriendItem>) :
 
         holder.cbSelect.setOnCheckedChangeListener(null)
 
-        // ตั้งค่าสถานะ CheckBox
         holder.cbSelect.isChecked = selectedUids.contains(friend.uid)
 
         holder.cbSelect.setOnCheckedChangeListener { _, isChecked ->

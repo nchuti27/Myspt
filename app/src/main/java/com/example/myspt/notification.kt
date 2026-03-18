@@ -26,7 +26,7 @@ class notification : AppCompatActivity() {
     private lateinit var btnTabRequest: Button
     private lateinit var btnClearAll: ImageView
     private lateinit var rvNoti: RecyclerView
-    private lateinit var tvEmptyState: TextView // 1. ประกาศตัวแปร
+    private lateinit var tvEmptyState: TextView
 
     private var notiList = ArrayList<DocumentSnapshot>()
     private lateinit var notiAdapter: NotificationAdapter
@@ -94,7 +94,7 @@ class notification : AppCompatActivity() {
 
         val myUid = auth.currentUser?.uid ?: return
         notiListener = db.collection("notifications")
-            .whereEqualTo("to_uid", myUid)  // ✅ ใช้ to_uid แทน receiverId
+            .whereEqualTo("to_uid", myUid)
             .addSnapshotListener { snapshots, error ->
                 if (error != null) return@addSnapshotListener
 
@@ -136,7 +136,7 @@ class notification : AppCompatActivity() {
                 notiList.clear()
                 snapshots?.let { notiList.addAll(it.documents) }
 
-                checkEmptyState(notiList) // เรียกตรวจสอบ
+                checkEmptyState(notiList)
                 notiAdapter.updateData(notiList, currentTab)
             }
     }
@@ -164,10 +164,10 @@ class notification : AppCompatActivity() {
 
             val notiRef = db.collection("notifications").document()
             batch.set(notiRef, hashMapOf(
-                "to_uid" to senderUid,        // ✅ แก้จาก receiverId
-                "from_uid" to myUid,          // ✅ แก้จาก senderId
-                "from_name" to myName,        // ✅ เพิ่ม from_name
-                "type" to "friend_accepted",  // ✅ lowercase ให้ตรงกับ NotificationAdapter
+                "to_uid" to senderUid,
+                "from_uid" to myUid,
+                "from_name" to myName,
+                "type" to "friend_accepted",
                 "message" to "$myName accepted your friend request.",
                 "status" to "pending",
                 "timestamp" to FieldValue.serverTimestamp()

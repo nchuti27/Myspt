@@ -30,7 +30,7 @@ class EditProfile : AppCompatActivity() {
     private val auth = FirebaseAuth.getInstance()
     private val storage = FirebaseStorage.getInstance()
 
-    // ✅ เปิด Gallery
+
     private val pickImageLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -40,7 +40,7 @@ class EditProfile : AppCompatActivity() {
         }
     }
 
-    // ✅ เปิด Camera
+
     private var cameraImageUri: Uri? = null
     private val takePictureLauncher = registerForActivityResult(
         ActivityResultContracts.TakePicture()
@@ -61,8 +61,8 @@ class EditProfile : AppCompatActivity() {
         savetxt = findViewById(R.id.savetxt)
         btnBack = findViewById(R.id.btnBack2Main)
         btnChangePhoto = findViewById(R.id.btnChangePhoto)
-        // ✅ ใช้ ID ตรงกับ XML
-        ivProfilePhoto = findViewById(R.id.imgProfile) // ✅ ต้องมีใน XML
+
+        ivProfilePhoto = findViewById(R.id.imgProfile)
 
         loadUserData()
 
@@ -83,7 +83,7 @@ class EditProfile : AppCompatActivity() {
                     etUName.setText(document.getString("name"))
                     etEmail.setText(document.getString("email"))
 
-                    // ✅ โหลดรูปโปรไฟล์
+
                     val photoUrl = document.getString("profileUrl")
                     if (!photoUrl.isNullOrEmpty()) {
                         Glide.with(this).load(photoUrl).circleCrop().into(ivProfilePhoto)
@@ -97,14 +97,14 @@ class EditProfile : AppCompatActivity() {
         val view = layoutInflater.inflate(R.layout.dialogphoto, findViewById(android.R.id.content), false)
 
         view.findViewById<LinearLayout>(R.id.lnPhotoLibrary).setOnClickListener {
-            // ✅ เปิด Gallery จริงๆ
+
             val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
             pickImageLauncher.launch(intent)
             dialog.dismiss()
         }
 
         view.findViewById<LinearLayout>(R.id.lnTakePhoto).setOnClickListener {
-            // ✅ เปิด Camera จริงๆ
+
             val photoFile = java.io.File.createTempFile("photo_", ".jpg", cacheDir)
             cameraImageUri = androidx.core.content.FileProvider.getUriForFile(
                 this,
@@ -128,7 +128,7 @@ class EditProfile : AppCompatActivity() {
         ref.putFile(uri)
             .addOnSuccessListener {
                 ref.downloadUrl.addOnSuccessListener { downloadUrl ->
-                    // ✅ บันทึก URL ลง Firestore
+
                     db.collection("users").document(uid)
                         .update("profileUrl", downloadUrl.toString())
                         .addOnSuccessListener {

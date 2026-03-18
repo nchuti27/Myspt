@@ -82,12 +82,12 @@ class MainActivity : AppCompatActivity() {
         rvFriends = findViewById(R.id.rvFriends)
         rvGroups = findViewById(R.id.rvGroups)
 
-        // ตั้งค่า Adapter ให้ RecyclerView ทันทีตั้งแต่เริ่มหน้า
+
         setupRecyclerViews()
     }
 
     private fun setupRecyclerViews() {
-        // เพื่อน
+
         friendAdapter = CircleAdapter(friendItems) { item ->
             if (item.isAddButton) {
                 startActivity(Intent(this, AddFriend::class.java))
@@ -103,7 +103,7 @@ class MainActivity : AppCompatActivity() {
         rvFriends?.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
         rvFriends?.adapter = friendAdapter
 
-        // กลุ่ม
+
         groupAdapter = HomeGroupAdapter(
             groupList = groupItems,
             isListView = false,

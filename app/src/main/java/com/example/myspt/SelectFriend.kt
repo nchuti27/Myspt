@@ -57,7 +57,6 @@ class SelectFriend : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            // ส่งรายชื่อกลับไปให้ GroupDetail เป็นคนกด Save แล้วค่อยส่ง Invite
             val resultIntent = Intent()
             resultIntent.putStringArrayListExtra("SELECTED_FRIENDS", ArrayList(selectedUids))
             setResult(Activity.RESULT_OK, resultIntent)

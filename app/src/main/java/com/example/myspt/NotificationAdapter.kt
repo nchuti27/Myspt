@@ -41,7 +41,7 @@ class NotificationAdapter(
         holder.btnAccept.visibility = View.GONE
         holder.btnDelete.visibility = View.GONE
         holder.ivMore.visibility = View.VISIBLE
-        holder.imgAvatar.setOnClickListener(null) // ✅ reset ก่อนทุกครั้ง
+        holder.imgAvatar.setOnClickListener(null)
 
         when (type) {
             "debt_reminder" -> {
@@ -106,9 +106,10 @@ class NotificationAdapter(
                         holder.btnAccept.visibility = View.VISIBLE
                         holder.btnDelete.visibility = View.VISIBLE
                         holder.btnDelete.text = "Decline"
+                        holder.imgAvatar.setImageResource(R.drawable.baseline_groups)
                         holder.imgAvatar.setOnClickListener {
                             val groupId = doc.getString("groupId") ?: return@setOnClickListener
-                            android.util.Log.d("NOTI", "groupId = $groupId")  // ✅ เช็ค log ก่อน
+                            android.util.Log.d("NOTI", "groupId = $groupId")
                             val intent = Intent(holder.itemView.context, GroupDetail::class.java)
                             intent.putExtra("GROUP_ID", groupId)
                             intent.putExtra("READ_ONLY", true)

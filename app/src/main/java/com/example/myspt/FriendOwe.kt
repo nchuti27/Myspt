@@ -22,7 +22,7 @@ class FriendOwe : AppCompatActivity() {
 
     private lateinit var auth: FirebaseAuth
 
-    // 🌟 1. แก้ไขการประกาศตัวแปรให้ตรงกับ XML ใหม่
+
     private var rvOweYou: RecyclerView? = null
     private var rvYouOwe: RecyclerView? = null
     private var btnBack: ImageView? = null
@@ -30,7 +30,7 @@ class FriendOwe : AppCompatActivity() {
     private var tabItems: TextView? = null
     private var btnMenu: ImageView? = null
 
-    // 🌟 2. แยก List และ Adapter เป็น 2 ชุดตามหมวดหมู่
+
     private val oweYouList = ArrayList<OweItem>()
     private val youOweList = ArrayList<OweItem>()
     private lateinit var adapterOweYou: OweAdapter
@@ -54,7 +54,7 @@ class FriendOwe : AppCompatActivity() {
     }
 
     private fun init() {
-        // 🌟 3. ผูก ID ใหม่ (rvOweYou และ rvYouOwe) แทนที่ตัวเก่าที่หายไป
+
         rvOweYou = findViewById(R.id.rvOweYou)
         rvYouOwe = findViewById(R.id.rvYouOwe)
 
@@ -63,12 +63,12 @@ class FriendOwe : AppCompatActivity() {
         btnMenu = findViewById(R.id.btnMenu)
         tabItems = findViewById(R.id.tabItems)
 
-        // 🌟 4. ตั้งค่า Adapter ชุดที่ 1: ฝั่งเจ้าหนี้ (Owe You)
+
         adapterOweYou = OweAdapter(oweYouList)
         rvOweYou?.layoutManager = LinearLayoutManager(this)
         rvOweYou?.adapter = adapterOweYou
 
-        // 🌟 5. ตั้งค่า Adapter ชุดที่ 2: ฝั่งลูกหนี้ (You Owe)
+
         adapterYouOwe = OweAdapter(youOweList)
         rvYouOwe?.layoutManager = LinearLayoutManager(this)
         rvYouOwe?.adapter = adapterYouOwe
@@ -88,9 +88,9 @@ class FriendOwe : AppCompatActivity() {
 
         val grandTotal = splitResult.values.sum()
 
-        // แยกเจ้าหนี้ (จ่ายเกิน) และลูกหนี้ (จ่ายขาด)
-        val creditors = mutableListOf<Pair<String, Double>>() // name, เงินส่วนเกิน
-        val debtors = mutableListOf<Pair<String, Double>>()   // name, เงินที่ขาด
+
+        val creditors = mutableListOf<Pair<String, Double>>()
+        val debtors = mutableListOf<Pair<String, Double>>()
 
         for (uid in memberNames.keys) {
             val share = splitResult[uid] ?: 0.0
@@ -103,10 +103,9 @@ class FriendOwe : AppCompatActivity() {
             }
         }
 
-        // จับคู่ debtor → creditor แสดงทุกคู่
+
         for (debtor in debtors) {
             for (creditor in creditors) {
-                // "chutlnannn pays jayphat ฿296"
                 oweYouList.add(OweItem("${debtor.first} pays ${creditor.first}", minOf(debtor.second, creditor.second), ""))
             }
         }

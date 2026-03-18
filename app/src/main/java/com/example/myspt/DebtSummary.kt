@@ -41,7 +41,7 @@ class DebtSummary : AppCompatActivity() {
         }
 
         init()
-        setupAdapters() // ตั้งค่าตัวจัดการรายการ
+        setupAdapters()
 
         btnBack?.setOnClickListener { finish() }
 
@@ -77,20 +77,20 @@ class DebtSummary : AppCompatActivity() {
         tabFriends = findViewById(R.id.tabFriends)
         btnMenu = findViewById(R.id.btnMenu)
 
-        // 🌟 เชื่อม ID RecyclerView ให้ตรงกับหน้า XML
+
         rvOweYou = findViewById(R.id.rvOweYou)
         rvYouOwe = findViewById(R.id.rvYouOwe)
     }
 
     private fun setupAdapters() {
-        // 1. ฝั่ง Owe You
+
         oweYouAdapter = DebtAdapter(arrayListOf()) { debt ->
             confirmPayment(debt)
         }
         rvOweYou.layoutManager = LinearLayoutManager(this)
         rvOweYou.adapter = oweYouAdapter
 
-        // 2. ฝั่ง You Owe
+
         youOweAdapter = DebtYouOweAdapter(arrayListOf())
         rvYouOwe.layoutManager = LinearLayoutManager(this)
         rvYouOwe.adapter = youOweAdapter
@@ -108,11 +108,11 @@ class DebtSummary : AppCompatActivity() {
             .setPositiveButton("Yes") { _, _ ->
                 val batch = db.batch()
 
-                // ✅ 1. ลบหนี้
+
                 val debtRef = db.collection("debts").document(debt.debtId)
                 batch.delete(debtRef)
 
-                // ✅ 2. ส่ง notification ไปหาลูกหนี้ (friendId) ว่าเจ้าหนี้ยืนยันรับเงินแล้ว
+
                 val notiRef = db.collection("notifications").document()
                 batch.set(notiRef, hashMapOf(
                     "to_uid"    to debt.friendId,   // ลูกหนี้รับ noti

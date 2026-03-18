@@ -31,7 +31,7 @@ class WhoPays : AppCompatActivity() {
     private var rvSummaryItems: RecyclerView? = null
     private var tvTotalAmount: TextView? = null
 
-    // 🌟 ส่วนของคนจ่ายหลายคน
+
     private var rvPayersList: RecyclerView? = null
     private lateinit var payerAdapter: PayerAdapter
     private var payersDataList = ArrayList<PayerData>()
@@ -54,7 +54,7 @@ class WhoPays : AppCompatActivity() {
         db = FirebaseFirestore.getInstance()
         auth = FirebaseAuth.getInstance()
 
-        // 🌟 แก้ไข: รับค่าชื่อบิลให้ชัวร์
+
         billName = intent.getStringExtra("BILL_NAME") ?: "New Bill"
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
@@ -90,7 +90,7 @@ class WhoPays : AppCompatActivity() {
         val namesMap = intent.getSerializableExtra("MEMBER_NAMES") as? HashMap<String, String>
         val selectedUids = intent.getStringArrayListExtra("SELECTED_MEMBERS") ?: arrayListOf()
 
-        // 🌟 แก้ไขจุดที่ 1: รับข้อมูลแบบยืดหยุ่น ป้องกันข้อมูลหายระหว่างทาง
+
         val rawItems = intent.getSerializableExtra("BILL_ITEMS") as? ArrayList<*>
         billItems.clear()
 
@@ -100,9 +100,9 @@ class WhoPays : AppCompatActivity() {
             }
         }
 
-        // 🌟 แก้ไขจุดที่ 2: ถ้า List ยังว่าง ให้ใส่ของปลอมลงไปเช็ค Layout ทันที
+
         if (billItems.isEmpty()) {
-            billItems.add(BillItem("กำลังดึงข้อมูล...", 1, 0.0))
+            billItems.add(BillItem("Loading...", 1, 0.0))
         }
 
         etBillName?.setText(billName)
@@ -117,13 +117,13 @@ class WhoPays : AppCompatActivity() {
             payersDataList.add(PayerData(uid, memberNames[uid] ?: "Unknown", 0.0))
         }
 
-        // 🌟 แก้ไขจุดที่ 3: สั่งวาด RecyclerView ของรายการสินค้า
+
         val itemSummaryAdapter = ItemSummaryAdapter(billItems)
         rvSummaryItems?.layoutManager = LinearLayoutManager(this)
         rvSummaryItems?.adapter = itemSummaryAdapter
         itemSummaryAdapter.notifyDataSetChanged() //
 
-        // 🌟 แก้ไขจุดที่ 4: สั่งวาด RecyclerView ของรายชื่อคนจ่าย
+
         payerAdapter = PayerAdapter(payersDataList)
         rvPayersList?.layoutManager = LinearLayoutManager(this) //
         rvPayersList?.adapter = payerAdapter
@@ -144,7 +144,7 @@ class WhoPays : AppCompatActivity() {
                 }
                 startActivity(intent)
             } else {
-                // ✅ แจ้งให้ confirm ก่อน
+
                 Toast.makeText(this, "Please confirm payment first", Toast.LENGTH_SHORT).show()
             }
         }
@@ -155,14 +155,14 @@ class WhoPays : AppCompatActivity() {
 
         val totalPaid = payersDataList.sumOf { it.amountPaid }
 
-        // ✅ debug ดูค่าจริงๆ
+
         android.util.Log.d("WhoPays", "totalPaid=$totalPaid, totalAmount=$totalAmount")
 
         if (Math.abs(totalPaid - totalAmount) > 0.01) {
             Toast.makeText(
                 this,
                 "Total Amount Paid ฿${String.format("%.2f", totalPaid)} does not match bill ฿${String.format("%.2f", totalAmount)}",
-                Toast.LENGTH_LONG  // ✅ เปลี่ยนเป็น LONG ให้เห็นชัดขึ้น
+                Toast.LENGTH_LONG
             ).show()
             return
         }
@@ -190,7 +190,6 @@ class WhoPays : AppCompatActivity() {
 
         db.collection("bills").add(billData).addOnSuccessListener { billRef ->
 
-            // ✅ แยกเจ้าหนี้กับลูกหนี้ออกจากกันก่อน
             val creditors = mutableListOf<Triple<String, String, Double>>() // uid, name, เงินส่วนเกิน
             val debtors = mutableListOf<Triple<String, String, Double>>()   // uid, name, เงินที่ขาด
 
@@ -205,7 +204,7 @@ class WhoPays : AppCompatActivity() {
                 }
             }
 
-            // ✅ จับคู่ลูกหนี้กับเจ้าหนี้จริงๆ
+
             for (debtor in debtors) {
                 for (creditor in creditors) {
                     val debtData = hashMapOf(
@@ -214,8 +213,8 @@ class WhoPays : AppCompatActivity() {
                         "status"       to "pending",
                         "amount"       to debtor.third,
                         "name"         to debtor.second,      // ชื่อลูกหนี้
-                        "creditorName" to creditor.second,    // ชื่อเจ้าหนี้จริงๆ ✅
-                        "creditorId"   to creditor.first,     // uid เจ้าหนี้จริงๆ ✅
+                        "creditorName" to creditor.second,    // ชื่อเจ้าหนี้จริง
+                        "creditorId"   to creditor.first,     // uid เจ้าหนี้
                         "friendId"     to debtor.first,       // uid ลูกหนี้
                         "timestamp"    to FieldValue.serverTimestamp()
                     )
@@ -230,7 +229,7 @@ class WhoPays : AppCompatActivity() {
             Toast.makeText(this, "Bill & Debts Saved!", Toast.LENGTH_SHORT).show()
         }
     }
-    // --- 🌟 ฟังก์ชัน Helper ที่หายไปและทำให้ Error ( navigateBack, showMenu ฯลฯ) ---
+
 
     private fun navigateBack() {
         if (isConfirmed) {
@@ -279,7 +278,7 @@ class WhoPays : AppCompatActivity() {
         dialog.show()
     }
 
-    // 🌟 คลาส Adapter ภายในที่หายไป
+
     class ItemSummaryAdapter(private val items: List<BillItem>) : RecyclerView.Adapter<ItemSummaryAdapter.ViewHolder>() {
         class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
             val tvItemName: TextView = view.findViewById(R.id.tvItemName)

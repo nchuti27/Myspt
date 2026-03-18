@@ -38,8 +38,8 @@ class FriendProfile : AppCompatActivity() {
         val isFriend = intent.getBooleanExtra("IS_FRIEND", false)
 
         if (!isFriend) {
-            ivQrCode.visibility = View.GONE      // ✅ ซ่อน QR
-            btnSaveQr.visibility = View.GONE     // ✅ ซ่อนปุ่ม Save
+            ivQrCode.visibility = View.GONE
+            btnSaveQr.visibility = View.GONE
             tvQrLabel.text = "Connect with friend to see QR Code"
         }
 

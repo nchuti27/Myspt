@@ -23,7 +23,7 @@ class OweAdapter(private val oweList: List<OweItem>) :
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = oweList[position]
-        holder.tvFriendName.text = item.friendName  // "chutlnannn → jayphat"
+        holder.tvFriendName.text = item.friendName
         holder.tvAmount.text = "฿${String.format("%.2f", item.amount)}"
         holder.tvAmount.setTextColor(Color.RED)
     }

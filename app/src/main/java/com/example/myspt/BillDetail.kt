@@ -81,7 +81,7 @@ class BillDetail : AppCompatActivity() {
                     val total = doc.getDouble("totalAmount") ?: 0.0
                     txtTotalAmount.text = String.format(java.util.Locale.getDefault(), "฿ %.2f", total)
 
-                    // ✅ ดึง items เหมือนเดิม
+                    //
                     @Suppress("UNCHECKED_CAST")
                     val items = doc.get("items") as? List<Map<String, Any>>
                     if (items != null) {
@@ -100,7 +100,7 @@ class BillDetail : AppCompatActivity() {
                         itemAdapter.notifyDataSetChanged()
                     }
 
-                    // ✅ ดึง payers map แล้วแปลง uid → ชื่อ
+
                     @Suppress("UNCHECKED_CAST")
                     val payers = doc.get("payers") as? Map<String, Any> ?: return@addOnSuccessListener
                     val uids = payers.keys.toList()
@@ -121,7 +121,7 @@ class BillDetail : AppCompatActivity() {
                                 }
                                 if (amount > 0) sb.append("     $name  :   ฿ ${String.format("%.2f ", amount)}\n")
                             }
-                            // ✅ แสดงใน TextView — ต้องเพิ่ม tvPayers ใน layout ด้วย
+
                             findViewById<TextView>(R.id.tvPayers)?.text = sb.toString().trimEnd()
                         }
                 }
@@ -142,7 +142,7 @@ class BillDetail : AppCompatActivity() {
             val item = items[position]
             val context = holder.itemView.context
             holder.tvName.text = item.itemName
-            holder.tvQty.text = item.quantity.toString() // ✅ เอา x ออก
+            holder.tvQty.text = item.quantity.toString()
             holder.tvPrice.text = String.format(java.util.Locale.getDefault(), "%.2f", item.price * item.quantity)
         }
         override fun getItemCount() = items.size
